@@ -42,7 +42,7 @@ void Planner::initializeLookups() {
 //###################################################
 //                                                MAP
 //###################################################
-void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map) {
+void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map) {  // 这里显然是地图 
   if (Constants::coutDEBUG) {
     std::cout << "I am seeing the map..." << std::endl;
   }
@@ -98,7 +98,7 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map) {
 //                                   INITIALIZE START
 //###################################################
 void Planner::setStart(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& initial) {
-  float x = initial->pose.pose.position.x / Constants::cellSize;  
+  float x = initial->pose.pose.position.x / Constants::cellSize;  //在这主打一个转换
   float y = initial->pose.pose.position.y / Constants::cellSize;
   float t = tf::getYaw(initial->pose.pose.orientation);
   // publish the start without covariance for rviz
@@ -146,7 +146,7 @@ void Planner::setGoal(const geometry_msgs::PoseStamped::ConstPtr& end) {
 }
 
 //###################################################
-//                                      PLAN THE PATH
+//                                      PLAN THE PATH  这个函数是大核心，规划路径
 //###################################################
 void Planner::plan() {
   // if a start as well as goal are defined go ahead and plan

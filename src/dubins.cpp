@@ -118,7 +118,7 @@ int dubins_init_normalised( double alpha, double beta, double d, DubinsPath* pat
     return EDUBOK;
 }
 
-int dubins_init( double q0[3], double q1[3], double rho, DubinsPath* path )
+int dubins_init( double q0[3], double q1[3], double rho, DubinsPath* path )  // 在这里设置转弯半径
 {
     int i;
     double dx = q1[0] - q0[0];
@@ -312,7 +312,12 @@ int dubins_path_sample( DubinsPath* path, double t, double q[3] )
 
     return 0;
 }
-
+/*
+在Dubins路径中，参数t通常表示路径上的一个特定点，它是路径长度的一种度量。
+t的值从0开始，表示路径的起点，到路径的总长度结束，表示路径的终点。
+在这个函数中，t被用来计算Dubins路径上对应的配置（位置和方向）。通过改变t的值，
+可以在整个Dubins路径上取样，从而得到路径上的一系列配置。
+*/
 int dubins_path_sample_many( DubinsPath* path, DubinsPathSamplingCallback cb, double stepSize, void* user_data )
 {
     double x = 0.0;

@@ -1,0 +1,2975 @@
+
+----------------------------------------------------------------------------------------------------
+下面这份代码文件是 algorithm.cpp 的内容,这份CPP文件不带.h文件
+
+----------------------------------------------------------------------------------------------------
+#include "algorithm.h"
+
+#include <boost/heap/binomial_heap.hpp>
+
+using namespace HybridAStar;
+
+float aStar(Node2D& start, Node2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
+void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
+Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
+
+//###################################################
+//                                    NODE COMPARISON
+//###################################################
+/*!
+   \brief A structure to sort nodes in a heap structure
+*/
+struct CompareNodes {
+  /// Sorting 3D nodes by increasing C value - the total estimated cost
+  bool operator()(const Node3D* lhs, const Node3D* rhs) const {
+    return lhs->getC() > rhs->getC();
+  }
+  /// Sorting 2D nodes by increasing C value - the total estimated cost
+  bool operator()(const Node2D* lhs, const Node2D* rhs) const {
+    return lhs->getC() > rhs->getC();
+  }
+};
+
+//###################################################
+//                                        3D A*
+//###################################################
+Node3D* Algorithm::hybridAStar(Node3D& start,
+                               const Node3D& goal,
+                               Node3D* nodes3D,
+                               Node2D* nodes2D,
+                               int width,
+                               int height,
+                               CollisionDetection& configurationSpace,
+                               float* dubinsLookup,
+                               Visualize& visualization) {
+
+  // PREDECESSOR AND SUCCESSOR INDEX
+  int iPred, iSucc;
+  float newG;
+  // Number of possible directions, 3 for forward driving and an additional 3 for reversing
+  int dir = Constants::reverse ? 6 : 3;
+  // Number of iterations the algorithm has run for stopping based on Constants::iterations
+  int iterations = 0;
+
+  // VISUALIZATION DELAY
+  ros::Duration d(0.003);
+
+  // OPEN LIST AS BOOST IMPLEMENTATION
+  typedef boost::heap::binomial_heap<Node3D*,
+          boost::heap::compare<CompareNodes>
+          > priorityQueue;
+  priorityQueue O;
+
+  // update h value
+  updateH(start, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
+  // mark start as open
+  start.open();
+  // push on priority queue aka open list
+  O.push(&start);
+  iPred = start.setIdx(width, height);
+  nodes3D[iPred] = start;
+
+  // NODE POINTER
+  Node3D* nPred;
+  Node3D* nSucc;
+
+  // float max = 0.f;
+
+  // continue until O empty
+  while (!O.empty()) {
+
+    //    // DEBUG
+    //    Node3D* pre = nullptr;
+    //    Node3D* succ = nullptr;
+
+    //    std::cout << "\t--->>>" << std::endl;
+
+    //    for (priorityQueue::ordered_iterator it = O.ordered_begin(); it != O.ordered_end(); ++it) {
+    //      succ = (*it);
+    //      std::cout << "VAL"
+    //                << " | C:" << succ->getC()
+    //                << " | x:" << succ->getX()
+    //                << " | y:" << succ->getY()
+    //                << " | t:" << helper::toDeg(succ->getT())
+    //                << " | i:" << succ->getIdx()
+    //                << " | O:" << succ->isOpen()
+    //                << " | pred:" << succ->getPred()
+    //                << std::endl;
+
+    //      if (pre != nullptr) {
+
+    //        if (pre->getC() > succ->getC()) {
+    //          std::cout << "PRE"
+    //                    << " | C:" << pre->getC()
+    //                    << " | x:" << pre->getX()
+    //                    << " | y:" << pre->getY()
+    //                    << " | t:" << helper::toDeg(pre->getT())
+    //                    << " | i:" << pre->getIdx()
+    //                    << " | O:" << pre->isOpen()
+    //                    << " | pred:" << pre->getPred()
+    //                    << std::endl;
+    //          std::cout << "SCC"
+    //                    << " | C:" << succ->getC()
+    //                    << " | x:" << succ->getX()
+    //                    << " | y:" << succ->getY()
+    //                    << " | t:" << helper::toDeg(succ->getT())
+    //                    << " | i:" << succ->getIdx()
+    //                    << " | O:" << succ->isOpen()
+    //                    << " | pred:" << succ->getPred()
+    //                    << std::endl;
+
+    //          if (pre->getC() - succ->getC() > max) {
+    //            max = pre->getC() - succ->getC();
+    //          }
+    //        }
+    //      }
+
+    //      pre = succ;
+    //    }
+
+    // pop node with lowest cost from priority queue
+    nPred = O.top();
+    // set index
+    iPred = nPred->setIdx(width, height);
+    iterations++;
+
+    // RViz visualization
+    if (Constants::visualization) {
+      visualization.publishNode3DPoses(*nPred);
+      visualization.publishNode3DPose(*nPred);
+      d.sleep();
+    }
+
+    // _____________________________
+    // LAZY DELETION of rewired node
+    // if there exists a pointer this node has already been expanded
+    if (nodes3D[iPred].isClosed()) {
+      // pop node from the open list and start with a fresh node
+      O.pop();
+      continue;
+    }
+    // _________________
+    // EXPANSION OF NODE
+    else if (nodes3D[iPred].isOpen()) {
+      // add node to closed list
+      nodes3D[iPred].close();
+      // remove node from open list
+      O.pop();
+
+      // _________
+      // GOAL TEST
+      if (*nPred == goal || iterations > Constants::iterations) {
+        // DEBUG
+        return nPred;
+      }
+
+      // ____________________
+      // CONTINUE WITH SEARCH
+      else {
+        // _______________________
+        // SEARCH WITH DUBINS SHOT
+        if (Constants::dubinsShot && nPred->isInRange(goal) && nPred->getPrim() < 3) {
+          nSucc = dubinsShot(*nPred, goal, configurationSpace);
+
+          if (nSucc != nullptr && *nSucc == goal) {
+            //DEBUG
+            // std::cout << "max diff " << max << std::endl;
+            return nSucc;
+          }
+        }
+
+        // ______________________________
+        // SEARCH WITH FORWARD SIMULATION
+        for (int i = 0; i < dir; i++) {
+          // create possible successor
+          nSucc = nPred->createSuccessor(i);
+          // set index of the successor
+          iSucc = nSucc->setIdx(width, height);
+
+          // ensure successor is on grid and traversable
+          if (nSucc->isOnGrid(width, height) && configurationSpace.isTraversable(nSucc)) {
+
+            // ensure successor is not on closed list or it has the same index as the predecessor
+            if (!nodes3D[iSucc].isClosed() || iPred == iSucc) {
+
+              // calculate new G value
+              nSucc->updateG();
+              newG = nSucc->getG();
+
+              // if successor not on open list or found a shorter way to the cell
+              if (!nodes3D[iSucc].isOpen() || newG < nodes3D[iSucc].getG() || iPred == iSucc) {
+
+                // calculate H value
+                updateH(*nSucc, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
+
+                // if the successor is in the same cell but the C value is larger
+                if (iPred == iSucc && nSucc->getC() > nPred->getC() + Constants::tieBreaker) {
+                  delete nSucc;
+                  continue;
+                }
+                // if successor is in the same cell and the C value is lower, set predecessor to predecessor of predecessor
+                else if (iPred == iSucc && nSucc->getC() <= nPred->getC() + Constants::tieBreaker) {
+                  nSucc->setPred(nPred->getPred());
+                }
+
+                if (nSucc->getPred() == nSucc) {
+                  std::cout << "looping";
+                }
+
+                // put successor on open list
+                nSucc->open();
+                nodes3D[iSucc] = *nSucc;
+                O.push(&nodes3D[iSucc]);
+                delete nSucc;
+              } else { delete nSucc; }
+            } else { delete nSucc; }
+          } else { delete nSucc; }
+        }
+      }
+    }
+  }
+
+  if (O.empty()) {
+    return nullptr;
+  }
+
+  return nullptr;
+}
+
+//###################################################
+//                                        2D A*
+//###################################################
+float aStar(Node2D& start,
+            Node2D& goal,
+            Node2D* nodes2D,
+            int width,
+            int height,
+            CollisionDetection& configurationSpace,
+            Visualize& visualization) {
+
+  // PREDECESSOR AND SUCCESSOR INDEX
+  int iPred, iSucc;
+  float newG;
+
+  // reset the open and closed list
+  for (int i = 0; i < width * height; ++i) {
+    nodes2D[i].reset();
+  }
+
+  // VISUALIZATION DELAY
+  ros::Duration d(0.001);
+
+  boost::heap::binomial_heap<Node2D*,
+        boost::heap::compare<CompareNodes>> O;
+  // update h value
+  start.updateH(goal);
+  // mark start as open
+  start.open();
+  // push on priority queue
+  O.push(&start);
+  iPred = start.setIdx(width);
+  nodes2D[iPred] = start;
+
+  // NODE POINTER
+  Node2D* nPred;
+  Node2D* nSucc;
+
+  // continue until O empty
+  while (!O.empty()) {
+    // pop node with lowest cost from priority queue
+    nPred = O.top();
+    // set index
+    iPred = nPred->setIdx(width);
+
+    // _____________________________
+    // LAZY DELETION of rewired node
+    // if there exists a pointer this node has already been expanded
+    if (nodes2D[iPred].isClosed()) {
+      // pop node from the open list and start with a fresh node
+      O.pop();
+      continue;
+    }
+    // _________________
+    // EXPANSION OF NODE
+    else if (nodes2D[iPred].isOpen()) {
+      // add node to closed list
+      nodes2D[iPred].close();
+      nodes2D[iPred].discover();
+
+      // RViz visualization
+      if (Constants::visualization2D) {
+        visualization.publishNode2DPoses(*nPred);
+        visualization.publishNode2DPose(*nPred);
+        //        d.sleep();
+      }
+
+      // remove node from open list
+      O.pop();
+
+      // _________
+      // GOAL TEST
+      if (*nPred == goal) {
+        return nPred->getG();
+      }
+      // ____________________
+      // CONTINUE WITH SEARCH
+      else {
+        // _______________________________
+        // CREATE POSSIBLE SUCCESSOR NODES
+        for (int i = 0; i < Node2D::dir; i++) {
+          // create possible successor
+          nSucc = nPred->createSuccessor(i);
+          // set index of the successor
+          iSucc = nSucc->setIdx(width);
+
+          // ensure successor is on grid ROW MAJOR
+          // ensure successor is not blocked by obstacle
+          // ensure successor is not on closed list
+          if (nSucc->isOnGrid(width, height) &&  configurationSpace.isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
+            // calculate new G value
+            nSucc->updateG();
+            newG = nSucc->getG();
+
+            // if successor not on open list or g value lower than before put it on open list
+            if (!nodes2D[iSucc].isOpen() || newG < nodes2D[iSucc].getG()) {
+              // calculate the H value
+              nSucc->updateH(goal);
+              // put successor on open list
+              nSucc->open();
+              nodes2D[iSucc] = *nSucc;
+              O.push(&nodes2D[iSucc]);
+              delete nSucc;
+            } else { delete nSucc; }
+          } else { delete nSucc; }
+        }
+      }
+    }
+  }
+
+  // return large number to guide search away
+  return 1000;
+}
+
+//###################################################
+//                                         COST TO GO
+//###################################################
+void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization) {
+  float dubinsCost = 0;
+  float reedsSheppCost = 0;
+  float twoDCost = 0;
+  float twoDoffset = 0;
+
+  // if dubins heuristic is activated calculate the shortest path
+  // constrained without obstacles
+  if (Constants::dubins) {
+
+    // ONLY FOR dubinsLookup
+    //    int uX = std::abs((int)goal.getX() - (int)start.getX());
+    //    int uY = std::abs((int)goal.getY() - (int)start.getY());
+    //    // if the lookup table flag is set and the vehicle is in the lookup area
+    //    if (Constants::dubinsLookup && uX < Constants::dubinsWidth - 1 && uY < Constants::dubinsWidth - 1) {
+    //      int X = (int)goal.getX() - (int)start.getX();
+    //      int Y = (int)goal.getY() - (int)start.getY();
+    //      int h0;
+    //      int h1;
+
+    //      // mirror on x axis
+    //      if (X >= 0 && Y <= 0) {
+    //        h0 = (int)(helper::normalizeHeadingRad(M_PI_2 - t) / Constants::deltaHeadingRad);
+    //        h1 = (int)(helper::normalizeHeadingRad(M_PI_2 - goal.getT()) / Constants::deltaHeadingRad);
+    //      }
+    //      // mirror on y axis
+    //      else if (X <= 0 && Y >= 0) {
+    //        h0 = (int)(helper::normalizeHeadingRad(M_PI_2 - t) / Constants::deltaHeadingRad);
+    //        h1 = (int)(helper::normalizeHeadingRad(M_PI_2 - goal.getT()) / Constants::deltaHeadingRad);
+
+    //      }
+    //      // mirror on xy axis
+    //      else if (X <= 0 && Y <= 0) {
+    //        h0 = (int)(helper::normalizeHeadingRad(M_PI - t) / Constants::deltaHeadingRad);
+    //        h1 = (int)(helper::normalizeHeadingRad(M_PI - goal.getT()) / Constants::deltaHeadingRad);
+
+    //      } else {
+    //        h0 = (int)(t / Constants::deltaHeadingRad);
+    //        h1 = (int)(goal.getT() / Constants::deltaHeadingRad);
+    //      }
+
+    //      dubinsCost = dubinsLookup[uX * Constants::dubinsWidth * Constants::headings * Constants::headings
+    //                                + uY *  Constants::headings * Constants::headings
+    //                                + h0 * Constants::headings
+    //                                + h1];
+    //    } else {
+
+    /*if (Constants::dubinsShot && std::abs(start.getX() - goal.getX()) >= 10 && std::abs(start.getY() - goal.getY()) >= 10)*/
+    //      // start
+    //      double q0[] = { start.getX(), start.getY(), start.getT()};
+    //      // goal
+    //      double q1[] = { goal.getX(), goal.getY(), goal.getT()};
+    //      DubinsPath dubinsPath;
+    //      dubins_init(q0, q1, Constants::r, &dubinsPath);
+    //      dubinsCost = dubins_path_length(&dubinsPath);
+
+    ompl::base::DubinsStateSpace dubinsPath(Constants::r);
+    State* dbStart = (State*)dubinsPath.allocState();
+    State* dbEnd = (State*)dubinsPath.allocState();
+    dbStart->setXY(start.getX(), start.getY());
+    dbStart->setYaw(start.getT());
+    dbEnd->setXY(goal.getX(), goal.getY());
+    dbEnd->setYaw(goal.getT());
+    dubinsCost = dubinsPath.distance(dbStart, dbEnd);
+  }
+
+  // if reversing is active use a
+  if (Constants::reverse && !Constants::dubins) {
+    //    ros::Time t0 = ros::Time::now();
+    ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);
+    State* rsStart = (State*)reedsSheppPath.allocState();
+    State* rsEnd = (State*)reedsSheppPath.allocState();
+    rsStart->setXY(start.getX(), start.getY());
+    rsStart->setYaw(start.getT());
+    rsEnd->setXY(goal.getX(), goal.getY());
+    rsEnd->setYaw(goal.getT());
+    reedsSheppCost = reedsSheppPath.distance(rsStart, rsEnd);
+    //    ros::Time t1 = ros::Time::now();
+    //    ros::Duration d(t1 - t0);
+    //    std::cout << "calculated Reed-Sheep Heuristic in ms: " << d * 1000 << std::endl;
+  }
+
+  // if twoD heuristic is activated determine shortest path
+  // unconstrained with obstacles
+  if (Constants::twoD && !nodes2D[(int)start.getY() * width + (int)start.getX()].isDiscovered()) {
+    //    ros::Time t0 = ros::Time::now();
+    // create a 2d start node
+    Node2D start2d(start.getX(), start.getY(), 0, 0, nullptr);
+    // create a 2d goal node
+    Node2D goal2d(goal.getX(), goal.getY(), 0, 0, nullptr);
+    // run 2d astar and return the cost of the cheapest path for that node
+    nodes2D[(int)start.getY() * width + (int)start.getX()].setG(aStar(goal2d, start2d, nodes2D, width, height, configurationSpace, visualization));
+    //    ros::Time t1 = ros::Time::now();
+    //    ros::Duration d(t1 - t0);
+    //    std::cout << "calculated 2D Heuristic in ms: " << d * 1000 << std::endl;
+  }
+
+  if (Constants::twoD) {
+    // offset for same node in cell
+    twoDoffset = sqrt(((start.getX() - (long)start.getX()) - (goal.getX() - (long)goal.getX())) * ((start.getX() - (long)start.getX()) - (goal.getX() - (long)goal.getX())) +
+                      ((start.getY() - (long)start.getY()) - (goal.getY() - (long)goal.getY())) * ((start.getY() - (long)start.getY()) - (goal.getY() - (long)goal.getY())));
+    twoDCost = nodes2D[(int)start.getY() * width + (int)start.getX()].getG() - twoDoffset;
+
+  }
+
+  // return the maximum of the heuristics, making the heuristic admissable
+  start.setH(std::max(reedsSheppCost, std::max(dubinsCost, twoDCost)));
+}
+
+//###################################################
+//                                        DUBINS SHOT
+//###################################################
+Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace) {
+  // start
+  double q0[] = { start.getX(), start.getY(), start.getT() };
+  // goal
+  double q1[] = { goal.getX(), goal.getY(), goal.getT() };
+  // initialize the path
+  DubinsPath path;
+  // calculate the path
+  dubins_init(q0, q1, Constants::r, &path);
+
+  int i = 0;
+  float x = 0.f;
+  float length = dubins_path_length(&path);
+
+  Node3D* dubinsNodes = new Node3D [(int)(length / Constants::dubinsStepSize) + 1];
+
+  // avoid duplicate waypoint
+  x += Constants::dubinsStepSize;
+  while (x <  length) {
+    double q[3];
+    dubins_path_sample(&path, x, q);
+    dubinsNodes[i].setX(q[0]);
+    dubinsNodes[i].setY(q[1]);
+    dubinsNodes[i].setT(Helper::normalizeHeadingRad(q[2]));
+
+    // collision check
+    if (configurationSpace.isTraversable(&dubinsNodes[i])) {
+
+      // set the predecessor to the previous step
+      if (i > 0) {
+        dubinsNodes[i].setPred(&dubinsNodes[i - 1]);
+      } else {
+        dubinsNodes[i].setPred(&start);
+      }
+
+      if (&dubinsNodes[i] == dubinsNodes[i].getPred()) {
+        std::cout << "looping shot";
+      }
+
+      x += Constants::dubinsStepSize;
+      i++;
+    } else {
+      //      std::cout << "Dubins shot collided, discarding the path" << "\n";
+      // delete all nodes
+      delete [] dubinsNodes;
+      return nullptr;
+    }
+  }
+
+  //  std::cout << "Dubins shot connected, returning the path" << "\n";
+  return &dubinsNodes[i - 1];
+}
+
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+下面这份代码文件是 bucketedqueue.cpp 的内容,这份CPP文件不带.h文件
+
+----------------------------------------------------------------------------------------------------
+#include "bucketedqueue.h"
+
+#include "limits.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+using namespace HybridAStar;
+
+std::vector<int> BucketPrioQueue::sqrIndices;
+int BucketPrioQueue::numBuckets;
+
+
+BucketPrioQueue::BucketPrioQueue() {
+  // make sure the index array is created
+  if (sqrIndices.size()==0) initSqrIndices();
+  nextBucket = INT_MAX;
+    
+  // now create the buckets
+  //    buckets = std::vector<MyQueue2<INTPOINT> >(numBuckets);
+  buckets = std::vector<std::queue<INTPOINT> >(numBuckets);
+
+  // reset element counter 
+  count = 0;
+}
+
+bool BucketPrioQueue::empty() const {
+  return (count==0);
+}
+
+
+void BucketPrioQueue::push(int prio, INTPOINT t) {
+  if (prio>=(int)sqrIndices.size()) {
+    fprintf(stderr, "error: priority %d is not a valid squared distance x*x+y*y, or x>MAXDIST or y>MAXDIST.\n", prio);
+    exit(-1);
+  }
+  int id = sqrIndices[prio];
+  if (id<0) {
+    fprintf(stderr, "error: priority %d is not a valid squared distance x*x+y*y, or x>MAXDIST or y>MAXDIST.\n", prio);
+    exit(-1);
+  }
+  buckets[id].push(t);
+  //    printf("pushing %d with prio %d into %d. Next: %d\n", t.x, prio, id, nextBucket);
+  if (id<nextBucket) nextBucket = id;
+  //    printf("push new next is %d\n", nextBucket);
+  count++;
+}
+
+INTPOINT BucketPrioQueue::pop() {
+  int i;
+  assert(count>0);
+  //    printf("next: %d\n", nextBucket);
+  for (i = nextBucket; i<(int)buckets.size(); i++) {
+    if (!buckets[i].empty()) break;	
+  }
+  assert(i<(int)buckets.size());
+  nextBucket = i;
+  //    printf("pop new next %d\n", nextBucket);
+  count--;
+  INTPOINT p = buckets[i].front();
+  buckets[i].pop();
+  return p;
+}
+
+
+void BucketPrioQueue::initSqrIndices() {
+  //    std::cout << "BUCKETQUEUE Starting to build the index array...\n";
+  //  std::set<int> sqrNumbers;
+
+  sqrIndices = std::vector<int>(2*MAXDIST*MAXDIST+1, -1);
+
+  int count=0;
+  for (int x=0; x<=MAXDIST; x++) {
+    for (int y=0; y<=x; y++) {
+      int sqr = x*x+y*y;
+      sqrIndices[sqr] = count++;
+    }
+  }
+  numBuckets = count;
+  //    std::cout << "BUCKETQUEUE Done with building the index arrays.\n";
+}
+
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+下面这份代码文件是 collisiondetection.cpp 的内容,这份CPP文件不带.h文件
+
+----------------------------------------------------------------------------------------------------
+#include "collisiondetection.h"
+
+using namespace HybridAStar;
+
+CollisionDetection::CollisionDetection() {
+  this->grid = nullptr;
+  Lookup::collisionLookup(collisionLookup);
+}
+
+bool CollisionDetection::configurationTest(float x, float y, float t) const {
+  int X = (int)x;
+  int Y = (int)y;
+  int iX = (int)((x - (long)x) * Constants::positionResolution);
+  iX = iX > 0 ? iX : 0;
+  int iY = (int)((y - (long)y) * Constants::positionResolution);
+  iY = iY > 0 ? iY : 0;
+  int iT = (int)(t / Constants::deltaHeadingRad);
+  int idx = iY * Constants::positionResolution * Constants::headings + iX * Constants::headings + iT;
+  int cX;
+  int cY;
+
+  for (int i = 0; i < collisionLookup[idx].length; ++i) {
+    cX = (X + collisionLookup[idx].pos[i].x);
+    cY = (Y + collisionLookup[idx].pos[i].y);
+
+    // make sure the configuration coordinates are actually on the grid
+    if (cX >= 0 && (unsigned int)cX < grid->info.width && cY >= 0 && (unsigned int)cY < grid->info.height) {
+      if (grid->data[cY * grid->info.width + cX]) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+下面这份代码文件是 dubins.cpp 的内容,这份CPP文件不带.h文件
+
+----------------------------------------------------------------------------------------------------
+// Copyright (c) 2008-2014, Andrew Walker
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+#ifndef DUBINS_CPP
+#define DUBINS_CPP
+
+#include "dubins.h"
+#define _USE_MATH_DEFINES // for C++
+#include <math.h>
+#include <assert.h>
+
+#define EPSILON (10e-10)
+
+#define LSL (0)
+#define LSR (1)
+#define RSL (2)
+#define RSR (3)
+#define RLR (4)
+#define LRL (5)
+
+// The three segment types a path can be made up of
+#define L_SEG (0)
+#define S_SEG (1)
+#define R_SEG (2)
+
+namespace HybridAStar{
+
+// The segment types for each of the Path types
+const int DIRDATA[][3] = {
+    { L_SEG, S_SEG, L_SEG },
+    { L_SEG, S_SEG, R_SEG },
+    { R_SEG, S_SEG, L_SEG },
+    { R_SEG, S_SEG, R_SEG },
+    { R_SEG, L_SEG, R_SEG },
+    { L_SEG, R_SEG, L_SEG }
+};
+
+DubinsWord dubins_words[] = {
+    dubins_LSL,
+    dubins_LSR,
+    dubins_RSL,
+    dubins_RSR,
+    dubins_RLR,
+    dubins_LRL,
+};
+
+#define UNPACK_INPUTS(alpha, beta)     \
+    double sa = sin(alpha);            \
+    double sb = sin(beta);             \
+    double ca = cos(alpha);            \
+    double cb = cos(beta);             \
+    double c_ab = cos(alpha - beta);   \
+
+#define PACK_OUTPUTS(outputs)       \
+    outputs[0]  = t;                \
+    outputs[1]  = p;                \
+    outputs[2]  = q;
+
+/**
+ * Floating point modulus suitable for rings
+ *
+ * fmod doesn't behave correctly for angular quantities, this function does
+ */
+double fmodr( double x, double y)
+{
+    return x - y*floor(x/y);
+}
+
+double mod2pi( double theta )
+{
+    return fmodr( theta, 2 * M_PI );
+}
+
+int dubins_init_normalised( double alpha, double beta, double d, DubinsPath* path)
+{
+    double best_cost = INFINITY;
+    int    best_word;
+    int    i;
+
+    best_word = -1;
+    for( i = 0; i < 6; i++ ) {
+        double params[3];
+        int err = dubins_words[i](alpha, beta, d, params);
+        if(err == EDUBOK) {
+            double cost = params[0] + params[1] + params[2];
+            if(cost < best_cost) {
+                best_word = i;
+                best_cost = cost;
+                path->param[0] = params[0];
+                path->param[1] = params[1];
+                path->param[2] = params[2];
+                path->type = i;
+            }
+        }
+    }
+
+    if(best_word == -1) {
+        return EDUBNOPATH;
+    }
+    path->type = best_word;
+    return EDUBOK;
+}
+
+int dubins_init( double q0[3], double q1[3], double rho, DubinsPath* path )
+{
+    int i;
+    double dx = q1[0] - q0[0];
+    double dy = q1[1] - q0[1];
+    double D = sqrt( dx * dx + dy * dy );
+    double d = D / rho;
+    if( rho <= 0. ) {
+        return EDUBBADRHO;
+    }
+    double theta = mod2pi(atan2( dy, dx ));
+    double alpha = mod2pi(q0[2] - theta);
+    double beta  = mod2pi(q1[2] - theta);
+    for( i = 0; i < 3; i ++ ) {
+        path->qi[i] = q0[i];
+    }
+    path->rho = rho;
+
+    return dubins_init_normalised( alpha, beta, d, path );
+}
+
+int dubins_LSL( double alpha, double beta, double d, double* outputs )
+{
+    UNPACK_INPUTS(alpha, beta);
+    double tmp0 = d+sa-sb;
+    double p_squared = 2 + (d*d) -(2*c_ab) + (2*d*(sa - sb));
+    if( p_squared < 0 ) {
+        return EDUBNOPATH;
+    }
+    double tmp1 = atan2( (cb-ca), tmp0 );
+    double t = mod2pi(-alpha + tmp1 );
+    double p = sqrt( p_squared );
+    double q = mod2pi(beta - tmp1 );
+    PACK_OUTPUTS(outputs);
+    return EDUBOK;
+}
+
+int dubins_RSR( double alpha, double beta, double d, double* outputs )
+{
+    UNPACK_INPUTS(alpha, beta);
+    double tmp0 = d-sa+sb;
+    double p_squared = 2 + (d*d) -(2*c_ab) + (2*d*(sb-sa));
+    if( p_squared < 0 ) {
+        return EDUBNOPATH;
+    }
+    double tmp1 = atan2( (ca-cb), tmp0 );
+    double t = mod2pi( alpha - tmp1 );
+    double p = sqrt( p_squared );
+    double q = mod2pi( -beta + tmp1 );
+    PACK_OUTPUTS(outputs);
+    return EDUBOK;
+}
+
+int dubins_LSR( double alpha, double beta, double d, double* outputs )
+{
+    UNPACK_INPUTS(alpha, beta);
+    double p_squared = -2 + (d*d) + (2*c_ab) + (2*d*(sa+sb));
+    if( p_squared < 0 ) {
+        return EDUBNOPATH;
+    }
+    double p    = sqrt( p_squared );
+    double tmp2 = atan2( (-ca-cb), (d+sa+sb) ) - atan2(-2.0, p);
+    double t    = mod2pi(-alpha + tmp2);
+    double q    = mod2pi( -mod2pi(beta) + tmp2 );
+    PACK_OUTPUTS(outputs);
+    return EDUBOK;
+}
+
+int dubins_RSL( double alpha, double beta, double d, double* outputs )
+{
+    UNPACK_INPUTS(alpha, beta);
+    double p_squared = (d*d) -2 + (2*c_ab) - (2*d*(sa+sb));
+    if( p_squared< 0 ) {
+        return EDUBNOPATH;
+    }
+    double p    = sqrt( p_squared );
+    double tmp2 = atan2( (ca+cb), (d-sa-sb) ) - atan2(2.0, p);
+    double t    = mod2pi(alpha - tmp2);
+    double q    = mod2pi(beta - tmp2);
+    PACK_OUTPUTS(outputs);
+    return EDUBOK;
+}
+
+int dubins_RLR( double alpha, double beta, double d, double* outputs )
+{
+    UNPACK_INPUTS(alpha, beta);
+    double tmp_rlr = (6. - d*d + 2*c_ab + 2*d*(sa-sb)) / 8.;
+    if( fabs(tmp_rlr) > 1) {
+        return EDUBNOPATH;
+    }
+    double p = mod2pi( 2*M_PI - acos( tmp_rlr ) );
+    double t = mod2pi(alpha - atan2( ca-cb, d-sa+sb ) + mod2pi(p/2.));
+    double q = mod2pi(alpha - beta - t + mod2pi(p));
+    PACK_OUTPUTS( outputs );
+    return EDUBOK;
+}
+
+int dubins_LRL( double alpha, double beta, double d, double* outputs )
+{
+    UNPACK_INPUTS(alpha, beta);
+    double tmp_lrl = (6. - d*d + 2*c_ab + 2*d*(- sa + sb)) / 8.;
+    if( fabs(tmp_lrl) > 1) {
+        return EDUBNOPATH;
+    }
+    double p = mod2pi( 2*M_PI - acos( tmp_lrl ) );
+    double t = mod2pi(-alpha - atan2( ca-cb, d+sa-sb ) + p/2.);
+    double q = mod2pi(mod2pi(beta) - alpha -t + mod2pi(p));
+    PACK_OUTPUTS( outputs );
+    return EDUBOK;
+}
+
+double dubins_path_length( DubinsPath* path )
+{
+    double length = 0.;
+    length += path->param[0];
+    length += path->param[1];
+    length += path->param[2];
+    length = length * path->rho;
+    return length;
+}
+
+int dubins_path_type( DubinsPath* path ) {
+    return path->type;
+}
+
+void dubins_segment( double t, double qi[3], double qt[3], int type)
+{
+    assert( type == L_SEG || type == S_SEG || type == R_SEG );
+
+    if( type == L_SEG ) {
+        qt[0] = qi[0] + sin(qi[2]+t) - sin(qi[2]);
+        qt[1] = qi[1] - cos(qi[2]+t) + cos(qi[2]);
+        qt[2] = qi[2] + t;
+    }
+    else if( type == R_SEG ) {
+        qt[0] = qi[0] - sin(qi[2]-t) + sin(qi[2]);
+        qt[1] = qi[1] + cos(qi[2]-t) - cos(qi[2]);
+        qt[2] = qi[2] - t;
+    }
+    else if( type == S_SEG ) {
+        qt[0] = qi[0] + cos(qi[2]) * t;
+        qt[1] = qi[1] + sin(qi[2]) * t;
+        qt[2] = qi[2];
+    }
+}
+
+int dubins_path_sample( DubinsPath* path, double t, double q[3] )
+{
+    if( t < 0 || t >= dubins_path_length(path) ) {
+        // error, parameter out of bounds
+        return EDUBPARAM;
+    }
+
+    // tprime is the normalised variant of the parameter t
+    double tprime = t / path->rho;
+
+    // In order to take rho != 1 into account this function needs to be more complex
+    // than it would be otherwise. The transformation is done in five stages.
+    //
+    // 1. translate the components of the initial configuration to the origin
+    // 2. generate the target configuration
+    // 3. transform the target configuration
+    //      scale the target configuration
+    //      translate the target configration back to the original starting point
+    //      normalise the target configurations angular component
+
+    // The translated initial configuration
+    double qi[3] = { 0, 0, path->qi[2] };
+
+    // Generate the target configuration
+    const int* types = DIRDATA[path->type];
+    double p1 = path->param[0];
+    double p2 = path->param[1];
+    double q1[3]; // end-of segment 1
+    double q2[3]; // end-of segment 2
+    dubins_segment( p1,      qi,    q1, types[0] );
+    dubins_segment( p2,      q1,    q2, types[1] );
+    if( tprime < p1 ) {
+        dubins_segment( tprime, qi, q, types[0] );
+    }
+    else if( tprime < (p1+p2) ) {
+        dubins_segment( tprime-p1, q1, q,  types[1] );
+    }
+    else {
+        dubins_segment( tprime-p1-p2, q2, q,  types[2] );
+    }
+
+    // scale the target configuration, translate back to the original starting point
+    q[0] = q[0] * path->rho + path->qi[0];
+    q[1] = q[1] * path->rho + path->qi[1];
+    q[2] = mod2pi(q[2]);
+
+    return 0;
+}
+
+int dubins_path_sample_many( DubinsPath* path, DubinsPathSamplingCallback cb, double stepSize, void* user_data )
+{
+    double x = 0.0;
+    double length = dubins_path_length(path);
+    while( x <  length ) {
+        double q[3];
+        dubins_path_sample( path, x, q );
+        int retcode = cb(q, x, user_data);
+        if( retcode != 0 ) {
+            return retcode;
+        }
+        x += stepSize;
+    }
+    return 0;
+}
+
+int dubins_path_endpoint( DubinsPath* path, double q[3] )
+{
+    // TODO - introduce a new constant rather than just using EPSILON
+    return dubins_path_sample( path, dubins_path_length(path) - EPSILON, q );
+}
+
+int dubins_extract_subpath( DubinsPath* path, double t, DubinsPath* newpath )
+{
+    // calculate the true parameter
+    double tprime = t / path->rho;
+
+    // copy most of the data
+    newpath->qi[0] = path->qi[0];
+    newpath->qi[1] = path->qi[1];
+    newpath->qi[2] = path->qi[2];
+    newpath->rho   = path->rho;
+    newpath->type  = path->type;
+
+    // fix the parameters
+    newpath->param[0] = fmin( path->param[0], tprime );
+    newpath->param[1] = fmin( path->param[1], tprime - newpath->param[0]);
+    newpath->param[2] = fmin( path->param[2], tprime - newpath->param[0] - newpath->param[1]);
+    return 0;
+}
+}
+#endif
+
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+下面这份代码文件是 dynamicvoronoi.cpp 的内容,这份CPP文件不带.h文件
+
+----------------------------------------------------------------------------------------------------
+#include "dynamicvoronoi.h"
+
+#include <math.h>
+#include <iostream>
+
+using namespace HybridAStar;
+
+DynamicVoronoi::DynamicVoronoi() {
+  sqrt2 = sqrt(2.0);
+  data = NULL;
+  gridMap = NULL;
+}
+
+DynamicVoronoi::~DynamicVoronoi() {
+  if (data) {
+    for (int x=0; x<sizeX; x++) delete[] data[x];
+    delete[] data;
+  }
+  if (gridMap) {
+    for (int x=0; x<sizeX; x++) delete[] gridMap[x];
+    delete[] gridMap;
+  }
+}
+
+void DynamicVoronoi::initializeEmpty(int _sizeX, int _sizeY, bool initGridMap) {
+  sizeX = _sizeX;
+  sizeY = _sizeY;
+  if (data) {
+    for (int x=0; x<sizeX; x++) delete[] data[x];
+    delete[] data;
+  }
+  data = new dataCell*[sizeX];
+  for (int x=0; x<sizeX; x++) data[x] = new dataCell[sizeY];
+
+  if (initGridMap) {
+    if (gridMap) {
+      for (int x=0; x<sizeX; x++) delete[] gridMap[x];
+      delete[] gridMap;
+    }
+    gridMap = new bool*[sizeX];
+    for (int x=0; x<sizeX; x++) gridMap[x] = new bool[sizeY];
+  }
+  
+  dataCell c;
+  c.dist = INFINITY;
+  c.sqdist = INT_MAX;
+  c.obstX = invalidObstData;
+  c.obstY = invalidObstData;
+  c.voronoi = free;
+  c.queueing = fwNotQueued;
+  c.needsRaise = false;
+
+  for (int x=0; x<sizeX; x++)
+    for (int y=0; y<sizeY; y++) data[x][y] = c;
+
+  if (initGridMap) {
+    for (int x=0; x<sizeX; x++) 
+      for (int y=0; y<sizeY; y++) gridMap[x][y] = 0;
+  }
+}
+
+void DynamicVoronoi::initializeMap(int _sizeX, int _sizeY, bool** _gridMap) {
+  gridMap = _gridMap;
+  initializeEmpty(_sizeX, _sizeY, false);
+
+  for (int x=0; x<sizeX; x++) {
+    for (int y=0; y<sizeY; y++) {
+      if (gridMap[x][y]) {
+        dataCell c = data[x][y];
+        if (!isOccupied(x,y,c)) {
+          
+          bool isSurrounded = true;
+          for (int dx=-1; dx<=1; dx++) {
+            int nx = x+dx;
+            if (nx<=0 || nx>=sizeX-1) continue;
+            for (int dy=-1; dy<=1; dy++) {
+              if (dx==0 && dy==0) continue;
+              int ny = y+dy;
+              if (ny<=0 || ny>=sizeY-1) continue;
+
+              if (!gridMap[nx][ny]) {
+                isSurrounded = false;
+                break;
+              }
+            }
+          }
+          if (isSurrounded) {
+            c.obstX = x;
+            c.obstY = y;
+            c.sqdist = 0;
+            c.dist=0;
+            c.voronoi=occupied;
+            c.queueing = fwProcessed;
+            data[x][y] = c;
+          } else setObstacle(x,y);
+        }
+      }
+    }
+  }
+}
+
+void DynamicVoronoi::occupyCell(int x, int y) {
+  gridMap[x][y] = 1;
+  setObstacle(x,y);
+}
+void DynamicVoronoi::clearCell(int x, int y) {
+  gridMap[x][y] = 0;
+  removeObstacle(x,y);
+}
+
+void DynamicVoronoi::setObstacle(int x, int y) {
+  dataCell c = data[x][y];
+  if(isOccupied(x,y,c)) return;
+  
+  addList.push_back(INTPOINT(x,y));
+  c.obstX = x;
+  c.obstY = y;
+  data[x][y] = c;
+}
+
+void DynamicVoronoi::removeObstacle(int x, int y) {
+  dataCell c = data[x][y];
+  if(isOccupied(x,y,c) == false) return;
+
+  removeList.push_back(INTPOINT(x,y));
+  c.obstX = invalidObstData;
+  c.obstY  = invalidObstData;    
+  c.queueing = bwQueued;
+  data[x][y] = c;
+}
+
+void DynamicVoronoi::exchangeObstacles(const std::vector<INTPOINT>& points) {
+
+  for (unsigned int i=0; i<lastObstacles.size(); i++) {
+    int x = lastObstacles[i].x;
+    int y = lastObstacles[i].y;
+
+    bool v = gridMap[x][y];
+    if (v) continue;
+    removeObstacle(x,y);
+  }  
+
+  lastObstacles.clear();
+  lastObstacles.reserve(points.size());
+
+  for (unsigned int i=0; i<points.size(); i++) {
+    int x = points[i].x;
+    int y = points[i].y;
+    bool v = gridMap[x][y];
+    if (v) continue;
+    setObstacle(x,y);
+    lastObstacles.push_back(points[i]);
+  }  
+}
+
+void DynamicVoronoi::update(bool updateRealDist) {
+
+  commitAndColorize(updateRealDist);
+
+  while (!open.empty()) {
+    INTPOINT p = open.pop();
+    int x = p.x;
+    int y = p.y;
+    dataCell c = data[x][y];
+
+    if(c.queueing==fwProcessed) continue; 
+
+    if (c.needsRaise) {
+      // RAISE
+      for (int dx=-1; dx<=1; dx++) {
+        int nx = x+dx;
+        if (nx<=0 || nx>=sizeX-1) continue;
+        for (int dy=-1; dy<=1; dy++) {
+          if (dx==0 && dy==0) continue;
+          int ny = y+dy;
+          if (ny<=0 || ny>=sizeY-1) continue;
+          dataCell nc = data[nx][ny];
+          if (nc.obstX!=invalidObstData && !nc.needsRaise) {
+            if(!isOccupied(nc.obstX,nc.obstY,data[nc.obstX][nc.obstY])) {
+              open.push(nc.sqdist, INTPOINT(nx,ny));
+              nc.queueing = fwQueued;
+              nc.needsRaise = true;
+              nc.obstX = invalidObstData;
+              nc.obstY = invalidObstData;
+              if (updateRealDist) nc.dist = INFINITY;
+              nc.sqdist = INT_MAX;
+              data[nx][ny] = nc;
+            } else {
+              if(nc.queueing != fwQueued){
+                open.push(nc.sqdist, INTPOINT(nx,ny));
+                nc.queueing = fwQueued;
+                data[nx][ny] = nc;
+              }
+            }      
+          }
+        }
+      }
+      c.needsRaise = false;
+      c.queueing = bwProcessed;
+      data[x][y] = c;
+    }
+    else if (c.obstX != invalidObstData && isOccupied(c.obstX,c.obstY,data[c.obstX][c.obstY])) {
+
+      // LOWER
+      c.queueing = fwProcessed;
+      c.voronoi = occupied;
+
+      for (int dx=-1; dx<=1; dx++) {
+        int nx = x+dx;
+        if (nx<=0 || nx>=sizeX-1) continue;
+        for (int dy=-1; dy<=1; dy++) {
+          if (dx==0 && dy==0) continue;
+          int ny = y+dy;
+          if (ny<=0 || ny>=sizeY-1) continue;
+          dataCell nc = data[nx][ny];
+          if(!nc.needsRaise) {
+            int distx = nx-c.obstX;
+            int disty = ny-c.obstY;
+            int newSqDistance = distx*distx + disty*disty;		
+            bool overwrite =  (newSqDistance < nc.sqdist);
+            if(!overwrite && newSqDistance==nc.sqdist) { 
+              if (nc.obstX == invalidObstData || isOccupied(nc.obstX,nc.obstY,data[nc.obstX][nc.obstY])==false) overwrite = true;
+            }
+            if (overwrite) {
+              open.push(newSqDistance, INTPOINT(nx,ny));
+              nc.queueing = fwQueued;
+              if (updateRealDist) {
+                nc.dist = sqrt((double) newSqDistance);
+              }
+              nc.sqdist = newSqDistance;
+              nc.obstX = c.obstX;
+              nc.obstY = c.obstY;
+            } else { 
+              checkVoro(x,y,nx,ny,c,nc);
+            }
+            data[nx][ny] = nc;
+          }
+        }
+      }
+    }
+    data[x][y] = c;
+  }
+}
+
+float DynamicVoronoi::getDistance( int x, int y ) const {
+  if( (x>0) && (x<sizeX) && (y>0) && (y<sizeY)) return data[x][y].dist; 
+  else return -INFINITY;
+}
+
+bool DynamicVoronoi::isVoronoi( int x, int y ) const {
+  dataCell c = data[x][y];
+  return (c.voronoi==free || c.voronoi==voronoiKeep);
+}
+
+
+void DynamicVoronoi::commitAndColorize(bool updateRealDist) {
+  // ADD NEW OBSTACLES
+  for (unsigned int i=0; i<addList.size(); i++) {
+    INTPOINT p = addList[i];
+    int x = p.x;
+    int y = p.y;
+    dataCell c = data[x][y];
+
+    if(c.queueing != fwQueued){
+      if (updateRealDist) c.dist = 0;
+      c.sqdist = 0;
+      c.obstX = x;
+      c.obstY = y;
+      c.queueing = fwQueued;
+      c.voronoi = occupied;
+      data[x][y] = c;
+      open.push(0, INTPOINT(x,y));
+    }
+  }
+
+  // REMOVE OLD OBSTACLES
+  for (unsigned int i=0; i<removeList.size(); i++) {
+    INTPOINT p = removeList[i];
+    int x = p.x;
+    int y = p.y;
+    dataCell c = data[x][y];
+
+    if (isOccupied(x,y,c)==true) continue; // obstacle was removed and reinserted
+    open.push(0, INTPOINT(x,y));
+    if (updateRealDist) c.dist  = INFINITY;
+    c.sqdist = INT_MAX;
+    c.needsRaise = true;
+    data[x][y] = c;
+  }
+  removeList.clear();
+  addList.clear();
+}
+
+
+void DynamicVoronoi::checkVoro(int x, int y, int nx, int ny, dataCell& c, dataCell& nc) {
+
+  if ((c.sqdist>1 || nc.sqdist>1) && nc.obstX!=invalidObstData) { 
+    if (abs(c.obstX-nc.obstX) > 1 || abs(c.obstY-nc.obstY) > 1) {
+      //compute dist from x,y to obstacle of nx,ny	 
+      int dxy_x = x-nc.obstX;
+      int dxy_y = y-nc.obstY;
+      int sqdxy = dxy_x*dxy_x + dxy_y*dxy_y;
+      int stability_xy = sqdxy - c.sqdist;
+      if (sqdxy - c.sqdist<0) return;
+
+      //compute dist from nx,ny to obstacle of x,y
+      int dnxy_x = nx - c.obstX;
+      int dnxy_y = ny - c.obstY;
+      int sqdnxy = dnxy_x*dnxy_x + dnxy_y*dnxy_y;
+      int stability_nxy = sqdnxy - nc.sqdist;
+      if (sqdnxy - nc.sqdist <0) return;
+
+      //which cell is added to the Voronoi diagram?
+      if(stability_xy <= stability_nxy && c.sqdist>2) {
+        if (c.voronoi != free) {
+          c.voronoi = free;
+          reviveVoroNeighbors(x,y);
+          pruneQueue.push(INTPOINT(x,y));
+        }
+      }
+      if(stability_nxy <= stability_xy && nc.sqdist>2) {
+        if (nc.voronoi != free) {
+          nc.voronoi = free;
+          reviveVoroNeighbors(nx,ny);
+          pruneQueue.push(INTPOINT(nx,ny));
+        }
+      }
+    }
+  }
+}
+
+
+void DynamicVoronoi::reviveVoroNeighbors(int &x, int &y) {
+  for (int dx=-1; dx<=1; dx++) {
+    int nx = x+dx;
+    if (nx<=0 || nx>=sizeX-1) continue;
+    for (int dy=-1; dy<=1; dy++) {
+      if (dx==0 && dy==0) continue;
+      int ny = y+dy;
+      if (ny<=0 || ny>=sizeY-1) continue;
+      dataCell nc = data[nx][ny];
+      if (nc.sqdist != INT_MAX && !nc.needsRaise && (nc.voronoi == voronoiKeep || nc.voronoi == voronoiPrune)) {
+        nc.voronoi = free;
+        data[nx][ny] = nc;
+        pruneQueue.push(INTPOINT(nx,ny));
+      }
+    }
+  }
+}
+
+
+bool DynamicVoronoi::isOccupied(int x, int y) const {
+  dataCell c = data[x][y];
+  return (c.obstX==x && c.obstY==y);
+}
+
+bool DynamicVoronoi::isOccupied(int &x, int &y, dataCell &c) { 
+  return (c.obstX==x && c.obstY==y);
+}
+
+void DynamicVoronoi::visualize(const char *filename) {
+  // write pgm files
+
+  FILE* F = fopen(filename, "w");
+  if (!F) {
+    std::cerr << "could not open 'result.pgm' for writing!\n";
+    return;
+  }
+  fprintf(F, "P6\n");
+  fprintf(F, "%d %d 255\n", sizeX, sizeY);
+
+  for(int y = sizeY-1; y >=0; y--){      
+    for(int x = 0; x<sizeX; x++){	
+      unsigned char c = 0;
+      if (isVoronoi(x,y)) {
+        fputc( 255, F );
+        fputc( 0, F );
+        fputc( 0, F );
+      } else if (data[x][y].sqdist==0) {
+        fputc( 0, F );
+        fputc( 0, F );
+        fputc( 0, F );
+      } else {
+        float f = 80+(data[x][y].dist*5);
+        if (f>255) f=255;
+        if (f<0) f=0;
+        c = (unsigned char)f;
+        fputc( c, F );
+        fputc( c, F );
+        fputc( c, F );
+      }
+    }
+  }
+  fclose(F);
+}
+
+
+void DynamicVoronoi::prune() {
+  // filler
+  while(!pruneQueue.empty()) {
+    INTPOINT p = pruneQueue.front();
+    pruneQueue.pop();
+    int x = p.x;
+    int y = p.y;
+
+    if (data[x][y].voronoi==occupied) continue;
+    if (data[x][y].voronoi==freeQueued) continue;
+
+    data[x][y].voronoi = freeQueued;
+    open.push(data[x][y].sqdist, p);
+
+    /* tl t tr
+       l c r
+       bl b br */
+
+    dataCell tr,tl,br,bl;
+    tr = data[x+1][y+1];
+    tl = data[x-1][y+1];
+    br = data[x+1][y-1];
+    bl = data[x-1][y-1];
+
+    dataCell r,b,t,l;
+    r = data[x+1][y];
+    l = data[x-1][y];
+    t = data[x][y+1];
+    b = data[x][y-1];
+
+    if (x+2<sizeX && r.voronoi==occupied) { 
+      // fill to the right
+      if (tr.voronoi!=occupied && br.voronoi!=occupied && data[x+2][y].voronoi!=occupied) {
+        r.voronoi = freeQueued;
+        open.push(r.sqdist, INTPOINT(x+1,y));
+        data[x+1][y] = r;
+      }
+    } 
+    if (x-2>=0 && l.voronoi==occupied) { 
+      // fill to the left
+      if (tl.voronoi!=occupied && bl.voronoi!=occupied && data[x-2][y].voronoi!=occupied) {
+        l.voronoi = freeQueued;
+        open.push(l.sqdist, INTPOINT(x-1,y));
+        data[x-1][y] = l;
+      }
+    } 
+    if (y+2<sizeY && t.voronoi==occupied) { 
+      // fill to the top
+      if (tr.voronoi!=occupied && tl.voronoi!=occupied && data[x][y+2].voronoi!=occupied) {
+        t.voronoi = freeQueued;
+        open.push(t.sqdist, INTPOINT(x,y+1));
+        data[x][y+1] = t;
+      }
+    } 
+    if (y-2>=0 && b.voronoi==occupied) { 
+      // fill to the bottom
+      if (br.voronoi!=occupied && bl.voronoi!=occupied && data[x][y-2].voronoi!=occupied) {
+        b.voronoi = freeQueued;
+        open.push(b.sqdist, INTPOINT(x,y-1));
+        data[x][y-1] = b;
+      }
+    } 
+  }
+
+
+  while(!open.empty()) {
+    INTPOINT p = open.pop();
+    dataCell c = data[p.x][p.y];
+    int v = c.voronoi;
+    if (v!=freeQueued && v!=voronoiRetry) { // || v>free || v==voronoiPrune || v==voronoiKeep) {
+      //      assert(v!=retry);
+      continue;
+    }
+
+    markerMatchResult r = markerMatch(p.x,p.y);
+    if (r==pruned) c.voronoi = voronoiPrune;
+    else if (r==keep) c.voronoi = voronoiKeep;
+    else { // r==retry
+      c.voronoi = voronoiRetry;
+      //      printf("RETRY %d %d\n", x, sizeY-1-y);
+      pruneQueue.push(p);
+    }
+    data[p.x][p.y] = c;
+
+    if (open.empty()) {
+      while (!pruneQueue.empty()) {
+        INTPOINT p = pruneQueue.front();
+        pruneQueue.pop();
+        open.push(data[p.x][p.y].sqdist, p);
+      }
+    }
+  }
+  //  printf("match: %d\nnomat: %d\n", matchCount, noMatchCount);
+}
+
+
+DynamicVoronoi::markerMatchResult DynamicVoronoi::markerMatch(int x, int y) {
+  // implementation of connectivity patterns
+  bool f[8];
+
+  int nx, ny;
+  int dx, dy;
+
+  int i=0;
+  int count=0;
+  //  int obstacleCount=0;
+  int voroCount=0;
+  int voroCountFour=0;
+
+  for (dy=1; dy>=-1; dy--) {
+    ny = y+dy;
+    for (dx=-1; dx<=1; dx++) {
+      if (dx || dy) {
+        nx = x+dx;
+        dataCell nc = data[nx][ny];
+        int v = nc.voronoi;
+        bool b = (v<=free && v!=voronoiPrune); 
+        //	if (v==occupied) obstacleCount++;
+        f[i] = b;
+        if (b) {
+          voroCount++;
+          if (!(dx && dy)) voroCountFour++;
+        }
+        if (b && !(dx && dy) ) count++;
+        //	if (v<=free && !(dx && dy)) voroCount++;
+        i++;
+      }
+    }
+  }
+  if (voroCount<3 && voroCountFour==1 && (f[1] || f[3] || f[4] || f[6])) {
+    //    assert(voroCount<2);
+    //    if (voroCount>=2) printf("voro>2 %d %d\n", x, y);
+    return keep;
+  }
+
+  // 4-connected
+  if ((!f[0] && f[1] && f[3]) || (!f[2] && f[1] && f[4]) || (!f[5] && f[3] && f[6]) || (!f[7] && f[6] && f[4])) return keep;
+  if ((f[3] && f[4] && !f[1] && !f[6]) || (f[1] && f[6] && !f[3] && !f[4])) return keep;
+  
+
+
+  // keep voro cells inside of blocks and retry later
+  if (voroCount>=5 && voroCountFour>=3 && data[x][y].voronoi!=voronoiRetry) {
+    return retry;
+  }
+
+  return pruned;
+}
+
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+下面这份代码文件是 main.cpp 的内容,这份CPP文件不带.h文件
+
+----------------------------------------------------------------------------------------------------
+/**
+   \file main.cpp
+   \brief Main entry point of the program, starts an instance of Planner
+*/
+
+//###################################################
+//                      HYBRID A* ALGORITHM
+//  AUTHOR:   Karl Kurzer
+//  WRITTEN:  2015-03-02
+//###################################################
+
+#include <cstring>
+#include <iostream>
+#include <ros/ros.h>
+
+#include "constants.h"
+#include "planner.h"
+
+//###################################################
+//                              COUT STANDARD MESSAGE
+//###################################################
+/**
+   \fn message(const T& msg, T1 val = T1())
+   \brief Convenience method to display text
+*/
+template<typename T, typename T1>
+void message(const T& msg, T1 val = T1()) {
+  if (!val) {
+    std::cout << "### " << msg << std::endl;
+  } else {
+    std::cout << "### " << msg << val << std::endl;
+  }
+}
+
+//###################################################
+//                                               MAIN
+//###################################################
+/**
+   \fn main(int argc, char** argv)
+   \brief Starting the program
+   \param argc The standard main argument count
+   \param argv The standard main argument value
+   \return 0
+*/
+int main(int argc, char** argv) {
+
+  message<string, int>("Hybrid A* Search\nA pathfinding algorithm on grids, by Karl Kurzer");
+
+  message("cell size: ", HybridAStar::Constants::cellSize);
+
+  if (HybridAStar::Constants::manual) {
+    message("mode: ", "manual");
+  } else {
+    message("mode: ", "auto");
+  }
+
+  ros::init(argc, argv, "a_star");
+
+  HybridAStar::Planner hy;
+  hy.plan(); 
+
+  ros::spin();
+  return 0;
+}
+
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+下面这份代码文件是 node2d.cpp 的内容,这份CPP文件不带.h文件
+
+----------------------------------------------------------------------------------------------------
+#include "node2d.h"
+
+using namespace HybridAStar;
+
+// possible directions
+const int Node2D::dir = 8;
+// possible movements
+const int Node2D::dx[] = { -1, -1, 0, 1, 1, 1, 0, -1 };
+const int Node2D::dy[] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+
+//###################################################
+//                                         IS ON GRID
+//###################################################
+bool Node2D::isOnGrid(const int width, const int height) const {
+  return  x >= 0 && x < width && y >= 0 && y < height;
+}
+
+//###################################################
+//                                   CREATE SUCCESSOR
+//###################################################
+Node2D* Node2D::createSuccessor(const int i) {
+  int xSucc = x + Node2D::dx[i];
+  int ySucc = y + Node2D::dy[i];
+  return new Node2D(xSucc, ySucc, g, 0, this);
+}
+
+//###################################################
+//                                 2D NODE COMPARISON
+//###################################################
+bool Node2D::operator == (const Node2D& rhs) const {
+  return x == rhs.x && y == rhs.y;
+}
+
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+下面这份代码文件是 node3d.cpp 的内容,这份CPP文件不带.h文件
+
+----------------------------------------------------------------------------------------------------
+#include "node3d.h"
+
+using namespace HybridAStar;
+
+// CONSTANT VALUES
+// possible directions
+const int Node3D::dir = 3;
+// possible movements
+//const float Node3D::dy[] = { 0,        -0.032869,  0.032869};
+//const float Node3D::dx[] = { 0.62832,   0.62717,   0.62717};
+//const float Node3D::dt[] = { 0,         0.10472,   -0.10472};
+
+// R = 6, 6.75 DEG
+const float Node3D::dy[] = { 0,        -0.0415893,  0.0415893};
+const float Node3D::dx[] = { 0.7068582,   0.705224,   0.705224};
+const float Node3D::dt[] = { 0,         0.1178097,   -0.1178097};
+
+// R = 3, 6.75 DEG
+//const float Node3D::dy[] = { 0,        -0.0207946, 0.0207946};
+//const float Node3D::dx[] = { 0.35342917352,   0.352612,  0.352612};
+//const float Node3D::dt[] = { 0,         0.11780972451,   -0.11780972451};
+
+//const float Node3D::dy[] = { 0,       -0.16578, 0.16578};
+//const float Node3D::dx[] = { 1.41372, 1.40067, 1.40067};
+//const float Node3D::dt[] = { 0,       0.2356194,   -0.2356194};
+
+//###################################################
+//                                         IS ON GRID
+//###################################################
+bool Node3D::isOnGrid(const int width, const int height) const {
+  return x >= 0 && x < width && y >= 0 && y < height && (int)(t / Constants::deltaHeadingRad) >= 0 && (int)(t / Constants::deltaHeadingRad) < Constants::headings;
+}
+
+
+//###################################################
+//                                        IS IN RANGE
+//###################################################
+bool Node3D::isInRange(const Node3D& goal) const {
+  int random = rand() % 10 + 1;
+  float dx = std::abs(x - goal.x) / random;
+  float dy = std::abs(y - goal.y) / random;
+  return (dx * dx) + (dy * dy) < Constants::dubinsShotDistance;
+}
+
+//###################################################
+//                                   CREATE SUCCESSOR
+//###################################################
+Node3D* Node3D::createSuccessor(const int i) {
+  float xSucc;
+  float ySucc;
+  float tSucc;
+
+  // calculate successor positions forward
+  if (i < 3) {
+    xSucc = x + dx[i] * cos(t) - dy[i] * sin(t);
+    ySucc = y + dx[i] * sin(t) + dy[i] * cos(t);
+    tSucc = Helper::normalizeHeadingRad(t + dt[i]);
+  }
+  // backwards
+  else {
+    xSucc = x - dx[i - 3] * cos(t) - dy[i - 3] * sin(t);
+    ySucc = y - dx[i - 3] * sin(t) + dy[i - 3] * cos(t);
+    tSucc = Helper::normalizeHeadingRad(t - dt[i - 3]);
+  }
+
+  return new Node3D(xSucc, ySucc, tSucc, g, 0, this, i);
+}
+
+
+//###################################################
+//                                      MOVEMENT COST
+//###################################################
+void Node3D::updateG() {
+  // forward driving
+  if (prim < 3) {
+    // penalize turning
+    if (pred->prim != prim) {
+      // penalize change of direction
+      if (pred->prim > 2) {
+        g += dx[0] * Constants::penaltyTurning * Constants::penaltyCOD;
+      } else {
+        g += dx[0] * Constants::penaltyTurning;
+      }
+    } else {
+      g += dx[0];
+    }
+  }
+  // reverse driving
+  else {
+    // penalize turning and reversing
+    if (pred->prim != prim) {
+      // penalize change of direction
+      if (pred->prim < 3) {
+        g += dx[0] * Constants::penaltyTurning * Constants::penaltyReversing * Constants::penaltyCOD;
+      } else {
+        g += dx[0] * Constants::penaltyTurning * Constants::penaltyReversing;
+      }
+    } else {
+      g += dx[0] * Constants::penaltyReversing;
+    }
+  }
+}
+
+
+////###################################################
+////                                         COST TO GO
+////###################################################
+//void Node3D::updateH(const Node3D& goal, const nav_msgs::OccupancyGrid::ConstPtr& grid, Node2D* nodes2D, float* dubinsLookup, Visualize& visualization) {
+//  float dubinsCost = 0;
+//  float reedsSheppCost = 0;
+//  float twoDCost = 0;
+//  float twoDoffset = 0;
+
+//  // if dubins heuristic is activated calculate the shortest path
+//  // constrained without obstacles
+//  if (Constants::dubins) {
+
+//// ONLY FOR dubinsLookup
+////    int uX = std::abs((int)goal.x - (int)x);
+////    int uY = std::abs((int)goal.y - (int)y);
+////    // if the lookup table flag is set and the vehicle is in the lookup area
+////    if (Constants::dubinsLookup && uX < Constants::dubinsWidth - 1 && uY < Constants::dubinsWidth - 1) {
+////      int X = (int)goal.x - (int)x;
+////      int Y = (int)goal.y - (int)y;
+////      int h0;
+////      int h1;
+
+////      // mirror on x axis
+////      if (X >= 0 && Y <= 0) {
+////        h0 = (int)(helper::normalizeHeadingRad(M_PI_2 - t) / Constants::deltaHeadingRad);
+////        h1 = (int)(helper::normalizeHeadingRad(M_PI_2 - goal.t) / Constants::deltaHeadingRad);
+////      }
+////      // mirror on y axis
+////      else if (X <= 0 && Y >= 0) {
+////        h0 = (int)(helper::normalizeHeadingRad(M_PI_2 - t) / Constants::deltaHeadingRad);
+////        h1 = (int)(helper::normalizeHeadingRad(M_PI_2 - goal.t) / Constants::deltaHeadingRad);
+
+////      }
+////      // mirror on xy axis
+////      else if (X <= 0 && Y <= 0) {
+////        h0 = (int)(helper::normalizeHeadingRad(M_PI - t) / Constants::deltaHeadingRad);
+////        h1 = (int)(helper::normalizeHeadingRad(M_PI - goal.t) / Constants::deltaHeadingRad);
+
+////      } else {
+////        h0 = (int)(t / Constants::deltaHeadingRad);
+////        h1 = (int)(goal.t / Constants::deltaHeadingRad);
+////      }
+
+////      dubinsCost = dubinsLookup[uX * Constants::dubinsWidth * Constants::headings * Constants::headings
+////                                + uY *  Constants::headings * Constants::headings
+////                                + h0 * Constants::headings
+////                                + h1];
+////    } else {
+
+//        /*if (Constants::dubinsShot && std::abs(x - goal.x) >= 10 && std::abs(y - goal.y) >= 10)*/
+////      // start
+////      double q0[] = { x, y, t};
+////      // goal
+////      double q1[] = { goal.x, goal.y, goal.t};
+////      DubinsPath dubinsPath;
+////      dubins_init(q0, q1, Constants::r, &dubinsPath);
+////      dubinsCost = dubins_path_length(&dubinsPath);
+
+//      ompl::base::DubinsStateSpace dubinsPath(Constants::r);
+//      State* dbStart = (State*)dubinsPath.allocState();
+//      State* dbEnd = (State*)dubinsPath.allocState();
+//      dbStart->setXY(x, y);
+//      dbStart->setYaw(t);
+//      dbEnd->setXY(goal.x, goal.y);
+//      dbEnd->setYaw(goal.t);
+//      dubinsCost = dubinsPath.distance(dbStart, dbEnd);
+//  }
+
+//  // if reversing is active use a
+//  if (Constants::reverse && !Constants::dubins) {
+//    ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);
+//    State* rsStart = (State*)reedsSheppPath.allocState();
+//    State* rsEnd = (State*)reedsSheppPath.allocState();
+//    rsStart->setXY(x, y);
+//    rsStart->setYaw(t);
+//    rsEnd->setXY(goal.x, goal.y);
+//    rsEnd->setYaw(goal.t);
+//    reedsSheppCost = reedsSheppPath.distance(rsStart, rsEnd);
+//  }
+
+//  // if twoD heuristic is activated determine shortest path
+//  // unconstrained with obstacles
+//  if (Constants::twoD && !nodes2D[(int)y * grid->info.width + (int)x].isDiscovered()) {
+//    // create a 2d start node
+//    Node2D start2d(x, y, 0, 0, nullptr);
+//    // create a 2d goal node
+//    Node2D goal2d(goal.x, goal.y, 0, 0, nullptr);
+//    // run 2d astar and return the cost of the cheapest path for that node
+//    nodes2D[(int)y * grid->info.width + (int)x].setG(Algorithm::aStar(goal2d, start2d, grid, nodes2D, visualization));
+//  }
+
+//  if (Constants::twoD) {
+//    // offset for same node in cell
+//    twoDoffset = sqrt(((x - (long)x) - (goal.x - (long)goal.x)) * ((x - (long)x) - (goal.x - (long)goal.x)) +
+//                      ((y - (long)y) - (goal.y - (long)goal.y)) * ((y - (long)y) - (goal.y - (long)goal.y)));
+//    twoDCost = nodes2D[(int)y * grid->info.width + (int)x].getG() - twoDoffset;
+
+//  }
+
+//  // return the maximum of the heuristics, making the heuristic admissable
+//  h = std::max(reedsSheppCost, std::max(dubinsCost, twoDCost));
+//}
+
+////###################################################
+////                                 COLLISION CHECKING
+////###################################################
+//bool Node3D::isTraversable(const nav_msgs::OccupancyGrid::ConstPtr& grid, Constants::config* collisionLookup) const {
+//  int X = (int)x;
+//  int Y = (int)y;
+//  int iX = (int)((x - (long)x) * Constants::positionResolution);
+//  iX = iX > 0 ? iX : 0;
+//  int iY = (int)((y - (long)y) * Constants::positionResolution);
+//  iY = iY > 0 ? iY : 0;
+//  int iT = (int)(t / Constants::deltaHeadingRad);
+//  int idx = iY * Constants::positionResolution * Constants::headings + iX * Constants::headings + iT;
+//  int cX;
+//  int cY;
+
+//  for (int i = 0; i < collisionLookup[idx].length; ++i) {
+//    cX = (X + collisionLookup[idx].pos[i].x);
+//    cY = (Y + collisionLookup[idx].pos[i].y);
+
+//    // make sure the configuration coordinates are actually on the grid
+//    if (cX >= 0 && (unsigned int)cX < grid->info.width && cY >= 0 && (unsigned int)cY < grid->info.height) {
+//      if (grid->data[cY * grid->info.width + cX]) {
+//        return false;
+//      }
+//    }
+//  }
+
+//  return true;
+//}
+
+
+////###################################################
+////                                        DUBINS SHOT
+////###################################################
+//Node3D* Node3D::dubinsShot(const Node3D& goal, const nav_msgs::OccupancyGrid::ConstPtr& grid, Constants::config* collisionLookup) const {
+//  // start
+//  double q0[] = { x, y, t };
+//  // goal
+//  double q1[] = { goal.x, goal.y, goal.t };
+//  // initialize the path
+//  DubinsPath path;
+//  // calculate the path
+//  dubins_init(q0, q1, Constants::r, &path);
+
+//  int i = 0;
+//  float x = 0.f;
+//  float length = dubins_path_length(&path);
+
+//  Node3D* dubinsNodes = new Node3D [(int)(length / Constants::dubinsStepSize) + 1];
+
+//  while (x <  length) {
+//    double q[3];
+//    dubins_path_sample(&path, x, q);
+//    dubinsNodes[i].setX(q[0]);
+//    dubinsNodes[i].setY(q[1]);
+//    dubinsNodes[i].setT(helper::normalizeHeadingRad(q[2]));
+
+//    // collision check
+//    if (dubinsNodes[i].isTraversable(grid, collisionLookup)) {
+
+//      // set the predecessor to the previous step
+//      if (i > 0) {
+//        dubinsNodes[i].setPred(&dubinsNodes[i - 1]);
+//      } else {
+//        dubinsNodes[i].setPred(this);
+//      }
+
+//      if (&dubinsNodes[i] == dubinsNodes[i].pred) {
+//        std::cout << "looping shot";
+//      }
+
+//      x += Constants::dubinsStepSize;
+//      i++;
+//    } else {
+//      //      std::cout << "Dubins shot collided, discarding the path" << "\n";
+//      // delete all nodes
+//      delete [] dubinsNodes;
+//      return nullptr;
+//    }
+//  }
+
+//  //  std::cout << "Dubins shot connected, returning the path" << "\n";
+//  return &dubinsNodes[i - 1];
+//}
+
+//###################################################
+//                                 3D NODE COMPARISON
+//###################################################
+bool Node3D::operator == (const Node3D& rhs) const {
+  return (int)x == (int)rhs.x &&
+         (int)y == (int)rhs.y &&
+         (std::abs(t - rhs.t) <= Constants::deltaHeadingRad ||
+          std::abs(t - rhs.t) >= Constants::deltaHeadingNegRad);
+}
+
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+下面这份代码文件是 path.cpp 的内容,这份CPP文件不带.h文件
+
+----------------------------------------------------------------------------------------------------
+#include "path.h"
+
+using namespace HybridAStar;
+
+
+//###################################################
+//                                         CLEAR PATH
+//###################################################
+
+void Path::clear() {
+  Node3D node;
+  path.poses.clear();
+  pathNodes.markers.clear();
+  pathVehicles.markers.clear();
+  addNode(node, 0);
+  addVehicle(node, 1);
+  publishPath();
+  publishPathNodes();
+  publishPathVehicles();
+}
+
+////###################################################
+////                                         TRACE PATH
+////###################################################
+//// __________
+//// TRACE PATH
+//void Path::tracePath(const Node3D* node, int i) {
+//  if (i == 0) {
+//    path.header.stamp = ros::Time::now();
+//  }
+
+//  if (node == nullptr) { return; }
+
+//  addSegment(node);
+//  addNode(node, i);
+//  i++;
+//  addVehicle(node, i);
+//  i++;
+
+//  tracePath(node->getPred(), i);
+//}
+
+//###################################################
+//                                         TRACE PATH
+//###################################################
+// __________
+// TRACE PATH
+void Path::updatePath(const std::vector<Node3D>& nodePath) {
+  path.header.stamp = ros::Time::now();
+  int k = 0;
+
+  for (size_t i = 0; i < nodePath.size(); ++i) {
+    addSegment(nodePath[i]);
+    addNode(nodePath[i], k);
+    k++;
+    addVehicle(nodePath[i], k);
+    k++;
+  }
+
+  return;
+}
+// ___________
+// ADD SEGMENT
+void Path::addSegment(const Node3D& node) {
+  geometry_msgs::PoseStamped vertex;
+  vertex.pose.position.x = node.getX() * Constants::cellSize;
+  vertex.pose.position.y = node.getY() * Constants::cellSize;
+  vertex.pose.position.z = 0;
+  vertex.pose.orientation.x = 0;
+  vertex.pose.orientation.y = 0;
+  vertex.pose.orientation.z = 0;
+  vertex.pose.orientation.w = 0;
+  path.poses.push_back(vertex);
+}
+
+// ________
+// ADD NODE
+void Path::addNode(const Node3D& node, int i) {
+  visualization_msgs::Marker pathNode;
+
+  // delete all previous markers
+  if (i == 0) {
+    pathNode.action = 3;
+  }
+
+  pathNode.header.frame_id = "path";
+  pathNode.header.stamp = ros::Time(0);
+  pathNode.id = i;
+  pathNode.type = visualization_msgs::Marker::SPHERE;
+  pathNode.scale.x = 0.1;
+  pathNode.scale.y = 0.1;
+  pathNode.scale.z = 0.1;
+  pathNode.color.a = 1.0;
+
+  if (smoothed) {
+    pathNode.color.r = Constants::pink.red;
+    pathNode.color.g = Constants::pink.green;
+    pathNode.color.b = Constants::pink.blue;
+  } else {
+    pathNode.color.r = Constants::purple.red;
+    pathNode.color.g = Constants::purple.green;
+    pathNode.color.b = Constants::purple.blue;
+  }
+
+  pathNode.pose.position.x = node.getX() * Constants::cellSize;
+  pathNode.pose.position.y = node.getY() * Constants::cellSize;
+  pathNodes.markers.push_back(pathNode);
+}
+
+void Path::addVehicle(const Node3D& node, int i) {
+  visualization_msgs::Marker pathVehicle;
+
+  // delete all previous markersg
+  if (i == 1) {
+    pathVehicle.action = 3;
+  }
+
+  pathVehicle.header.frame_id = "path";
+  pathVehicle.header.stamp = ros::Time(0);
+  pathVehicle.id = i;
+  pathVehicle.type = visualization_msgs::Marker::CUBE;
+  pathVehicle.scale.x = Constants::length - Constants::bloating * 2;
+  pathVehicle.scale.y = Constants::width - Constants::bloating * 2;
+  pathVehicle.scale.z = 1;
+  pathVehicle.color.a = 0.1;
+
+  if (smoothed) {
+    pathVehicle.color.r = Constants::orange.red;
+    pathVehicle.color.g = Constants::orange.green;
+    pathVehicle.color.b = Constants::orange.blue;
+  } else {
+    pathVehicle.color.r = Constants::teal.red;
+    pathVehicle.color.g = Constants::teal.green;
+    pathVehicle.color.b = Constants::teal.blue;
+  }
+
+  pathVehicle.pose.position.x = node.getX() * Constants::cellSize;
+  pathVehicle.pose.position.y = node.getY() * Constants::cellSize;
+  pathVehicle.pose.orientation = tf::createQuaternionMsgFromYaw(node.getT());
+  pathVehicles.markers.push_back(pathVehicle);
+}
+
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+下面这份代码文件是 planner.cpp 的内容,这份CPP文件不带.h文件
+
+----------------------------------------------------------------------------------------------------
+#include "planner.h"
+
+using namespace HybridAStar;
+//###################################################
+//                                        CONSTRUCTOR
+//###################################################
+Planner::Planner() {
+  // _____
+  // TODOS
+  //    initializeLookups();
+  // Lookup::collisionLookup(collisionLookup);
+  // ___________________
+  // COLLISION DETECTION
+  //    CollisionDetection configurationSpace;
+  // _________________
+  // TOPICS TO PUBLISH
+  pubStart = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/start", 1);
+
+  // ___________________
+  // TOPICS TO SUBSCRIBE
+  if (Constants::manual) {
+    subMap = n.subscribe("/map", 1, &Planner::setMap, this);
+  } else {
+    subMap = n.subscribe("/occ_map", 1, &Planner::setMap, this);
+  }
+
+  subGoal = n.subscribe("/move_base_simple/goal", 1, &Planner::setGoal, this);
+  subStart = n.subscribe("/initialpose", 1, &Planner::setStart, this);
+};
+
+//###################################################
+//                                       LOOKUPTABLES
+//###################################################
+void Planner::initializeLookups() {
+  if (Constants::dubinsLookup) {
+    Lookup::dubinsLookup(dubinsLookup);
+  }
+
+  Lookup::collisionLookup(collisionLookup);
+}
+
+//###################################################
+//                                                MAP
+//###################################################
+void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map) {
+  if (Constants::coutDEBUG) {
+    std::cout << "I am seeing the map..." << std::endl;
+  }
+
+  grid = map;
+  //update the configuration space with the current map
+  configurationSpace.updateGrid(map);
+  //create array for Voronoi diagram
+//  ros::Time t0 = ros::Time::now();
+  int height = map->info.height;
+  int width = map->info.width;
+  bool** binMap;
+  binMap = new bool*[width];
+
+  for (int x = 0; x < width; x++) { binMap[x] = new bool[height]; }
+
+  for (int x = 0; x < width; ++x) {
+    for (int y = 0; y < height; ++y) {
+      binMap[x][y] = map->data[y * width + x] ? true : false;
+    }
+  }
+
+  voronoiDiagram.initializeMap(width, height, binMap);
+  voronoiDiagram.update();
+  voronoiDiagram.visualize();
+//  ros::Time t1 = ros::Time::now();
+//  ros::Duration d(t1 - t0);
+//  std::cout << "created Voronoi Diagram in ms: " << d * 1000 << std::endl;
+
+  // plan if the switch is not set to manual and a transform is available
+  if (!Constants::manual && listener.canTransform("/map", ros::Time(0), "/base_link", ros::Time(0), "/map", nullptr)) {
+
+    listener.lookupTransform("/map", "/base_link", ros::Time(0), transform);
+
+    // assign the values to start from base_link
+    start.pose.pose.position.x = transform.getOrigin().x();
+    start.pose.pose.position.y = transform.getOrigin().y();
+    tf::quaternionTFToMsg(transform.getRotation(), start.pose.pose.orientation);
+
+    if (grid->info.height >= start.pose.pose.position.y && start.pose.pose.position.y >= 0 &&
+        grid->info.width >= start.pose.pose.position.x && start.pose.pose.position.x >= 0) {
+      // set the start as valid and plan
+      validStart = true;
+    } else  {
+      validStart = false;
+    }
+
+    plan();
+  }
+}
+
+//###################################################
+//                                   INITIALIZE START
+//###################################################
+void Planner::setStart(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& initial) {
+  float x = initial->pose.pose.position.x / Constants::cellSize;
+  float y = initial->pose.pose.position.y / Constants::cellSize;
+  float t = tf::getYaw(initial->pose.pose.orientation);
+  // publish the start without covariance for rviz
+  geometry_msgs::PoseStamped startN;
+  startN.pose.position = initial->pose.pose.position;
+  startN.pose.orientation = initial->pose.pose.orientation;
+  startN.header.frame_id = "map";
+  startN.header.stamp = ros::Time::now();
+
+  std::cout << "I am seeing a new start x:" << x << " y:" << y << " t:" << Helper::toDeg(t) << std::endl;
+
+  if (grid->info.height >= y && y >= 0 && grid->info.width >= x && x >= 0) {
+    validStart = true;
+    start = *initial;
+
+    if (Constants::manual) { plan();}
+
+    // publish start for RViz
+    pubStart.publish(startN);
+  } else {
+    std::cout << "invalid start x:" << x << " y:" << y << " t:" << Helper::toDeg(t) << std::endl;
+  }
+}
+
+//###################################################
+//                                    INITIALIZE GOAL
+//###################################################
+void Planner::setGoal(const geometry_msgs::PoseStamped::ConstPtr& end) {
+  // retrieving goal position
+  float x = end->pose.position.x / Constants::cellSize;
+  float y = end->pose.position.y / Constants::cellSize;
+  float t = tf::getYaw(end->pose.orientation);
+
+  std::cout << "I am seeing a new goal x:" << x << " y:" << y << " t:" << Helper::toDeg(t) << std::endl;
+
+  if (grid->info.height >= y && y >= 0 && grid->info.width >= x && x >= 0) {
+    validGoal = true;
+    goal = *end;
+
+    if (Constants::manual) { plan();}
+
+  } else {
+    std::cout << "invalid goal x:" << x << " y:" << y << " t:" << Helper::toDeg(t) << std::endl;
+  }
+}
+
+//###################################################
+//                                      PLAN THE PATH
+//###################################################
+void Planner::plan() {
+  // if a start as well as goal are defined go ahead and plan
+  if (validStart && validGoal) {
+
+    // ___________________________
+    // LISTS ALLOWCATED ROW MAJOR ORDER
+    int width = grid->info.width;
+    int height = grid->info.height;
+    int depth = Constants::headings;
+    int length = width * height * depth;
+    // define list pointers and initialize lists
+    Node3D* nodes3D = new Node3D[length]();
+    Node2D* nodes2D = new Node2D[width * height]();
+
+    // ________________________
+    // retrieving goal position
+    float x = goal.pose.position.x / Constants::cellSize;
+    float y = goal.pose.position.y / Constants::cellSize;
+    float t = tf::getYaw(goal.pose.orientation);
+    // set theta to a value (0,2PI]
+    t = Helper::normalizeHeadingRad(t);
+    const Node3D nGoal(x, y, t, 0, 0, nullptr);
+    // __________
+    // DEBUG GOAL
+    //    const Node3D nGoal(155.349, 36.1969, 0.7615936, 0, 0, nullptr);
+
+
+    // _________________________
+    // retrieving start position
+    x = start.pose.pose.position.x / Constants::cellSize;
+    y = start.pose.pose.position.y / Constants::cellSize;
+    t = tf::getYaw(start.pose.pose.orientation);
+    // set theta to a value (0,2PI]
+    t = Helper::normalizeHeadingRad(t);
+    Node3D nStart(x, y, t, 0, 0, nullptr);
+    // ___________
+    // DEBUG START
+    //    Node3D nStart(108.291, 30.1081, 0, 0, 0, nullptr);
+
+
+    // ___________________________
+    // START AND TIME THE PLANNING
+    ros::Time t0 = ros::Time::now();
+
+    // CLEAR THE VISUALIZATION
+    visualization.clear();
+    // CLEAR THE PATH
+    path.clear();
+    smoothedPath.clear();
+    // FIND THE PATH
+    Node3D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
+    // TRACE THE PATH
+    smoother.tracePath(nSolution);
+    // CREATE THE UPDATED PATH
+    path.updatePath(smoother.getPath());
+    // SMOOTH THE PATH
+    smoother.smoothPath(voronoiDiagram);
+    // CREATE THE UPDATED PATH
+    smoothedPath.updatePath(smoother.getPath());
+    ros::Time t1 = ros::Time::now();
+    ros::Duration d(t1 - t0);
+    std::cout << "TIME in ms: " << d * 1000 << std::endl;
+
+    // _________________________________
+    // PUBLISH THE RESULTS OF THE SEARCH
+    path.publishPath();
+    path.publishPathNodes();
+    path.publishPathVehicles();
+    smoothedPath.publishPath();
+    smoothedPath.publishPathNodes();
+    smoothedPath.publishPathVehicles();
+    visualization.publishNode3DCosts(nodes3D, width, height, depth);
+    visualization.publishNode2DCosts(nodes2D, width, height);
+
+
+
+    delete [] nodes3D;
+    delete [] nodes2D;
+
+  } else {
+    std::cout << "missing goal or start" << std::endl;
+  }
+}
+
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+下面这份代码文件是 smoother.cpp 的内容,这份CPP文件不带.h文件
+
+----------------------------------------------------------------------------------------------------
+#include "smoother.h"
+using namespace HybridAStar;
+//###################################################
+//                                     CUSP DETECTION
+//###################################################
+inline bool isCusp(const std::vector<Node3D>& path, int i) {
+  bool revim2 = path[i - 2].getPrim() > 3 ;
+  bool revim1 = path[i - 1].getPrim() > 3 ;
+  bool revi   = path[i].getPrim() > 3 ;
+  bool revip1 = path[i + 1].getPrim() > 3 ;
+  //  bool revip2 = path[i + 2].getPrim() > 3 ;
+
+  return (revim2 != revim1 || revim1 != revi || revi != revip1);
+}
+//###################################################
+//                                SMOOTHING ALGORITHM
+//###################################################
+void Smoother::smoothPath(DynamicVoronoi& voronoi) {
+  // load the current voronoi diagram into the smoother
+  this->voronoi = voronoi;
+  this->width = voronoi.getSizeX();
+  this->height = voronoi.getSizeY();
+  // current number of iterations of the gradient descent smoother
+  int iterations = 0;
+  // the maximum iterations for the gd smoother
+  int maxIterations = 500;
+  // the lenght of the path in number of nodes
+  int pathLength = 0;
+
+  // path objects with all nodes oldPath the original, newPath the resulting smoothed path
+  pathLength = path.size();
+  std::vector<Node3D> newPath = path;
+
+  // descent along the gradient untill the maximum number of iterations has been reached
+  float totalWeight = wSmoothness + wCurvature + wVoronoi + wObstacle;
+
+  while (iterations < maxIterations) {
+
+    // choose the first three nodes of the path
+    for (int i = 2; i < pathLength - 2; ++i) {
+
+      Vector2D xim2(newPath[i - 2].getX(), newPath[i - 2].getY());
+      Vector2D xim1(newPath[i - 1].getX(), newPath[i - 1].getY());
+      Vector2D xi(newPath[i].getX(), newPath[i].getY());
+      Vector2D xip1(newPath[i + 1].getX(), newPath[i + 1].getY());
+      Vector2D xip2(newPath[i + 2].getX(), newPath[i + 2].getY());
+      Vector2D correction;
+
+
+      // the following points shall not be smoothed
+      // keep these points fixed if they are a cusp point or adjacent to one
+      if (isCusp(newPath, i)) { continue; }
+
+      correction = correction - obstacleTerm(xi);
+      if (!isOnGrid(xi + correction)) { continue; }
+
+      //todo not implemented yet
+      // voronoiTerm(); 
+
+      // ensure that it is on the grid
+      correction = correction - smoothnessTerm(xim2, xim1, xi, xip1, xip2);
+      if (!isOnGrid(xi + correction)) { continue; }
+
+      // ensure that it is on the grid
+      correction = correction - curvatureTerm(xim2, xim1, xi, xip1, xip2);
+      if (!isOnGrid(xi + correction)) { continue; }
+
+      // ensure that it is on the grid
+
+      xi = xi + alpha * correction/totalWeight;
+      newPath[i].setX(xi.getX());
+      newPath[i].setY(xi.getY());
+      Vector2D Dxi = xi - xim1;
+      newPath[i - 1].setT(std::atan2(Dxi.getY(), Dxi.getX()));
+
+    }
+
+    iterations++;
+  }
+
+  path = newPath;
+}
+
+void Smoother::tracePath(const Node3D* node, int i, std::vector<Node3D> path) {
+  if (node == nullptr) {
+    this->path = path;
+    return;
+  }
+
+  i++;
+  path.push_back(*node);
+  tracePath(node->getPred(), i, path);
+}
+
+//###################################################
+//                                      OBSTACLE TERM
+//###################################################
+Vector2D Smoother::obstacleTerm(Vector2D xi) {
+  Vector2D gradient;
+  // the distance to the closest obstacle from the current node
+  float obsDst = voronoi.getDistance(xi.getX(), xi.getY());
+  // the vector determining where the obstacle is
+  int x = (int)xi.getX();
+  int y = (int)xi.getY();
+  // if the node is within the map
+  if (x < width && x >= 0 && y < height && y >= 0) {
+    Vector2D obsVct(xi.getX() - voronoi.data[(int)xi.getX()][(int)xi.getY()].obstX,
+                    xi.getY() - voronoi.data[(int)xi.getX()][(int)xi.getY()].obstY);
+
+    // the closest obstacle is closer than desired correct the path for that
+    if (obsDst < obsDMax) {
+      return gradient = wObstacle * 2 * (obsDst - obsDMax) * obsVct / obsDst;
+    }
+  }
+  return gradient;
+}
+
+//###################################################
+//                                       VORONOI TERM
+//###################################################
+// Vector2D Smoother::voronoiTerm(Vector2D xi) {
+//   Vector2D gradient;
+//   //    alpha > 0 = falloff rate
+//   //    dObs(x,y) = distance to nearest obstacle
+//   //    dEge(x,y) = distance to nearest edge of the GVD
+//   //    dObsMax   = maximum distance for the cost to be applicable
+//   // distance to the closest obstacle
+//   float obsDst = voronoi.getDistance(xi.getX(), xi.getY());
+//   // distance to the closest voronoi edge
+//   float edgDst; //todo
+//   // the vector determining where the obstacle is
+//   Vector2D obsVct(xi.getX() - voronoi.data[(int)xi.getX()][(int)xi.getY()].obstX,
+//                     xi.getY() - voronoi.data[(int)xi.getX()][(int)xi.getY()].obstY);
+//   // the vector determining where the voronoi edge is
+//   Vector2D edgVct; //todo
+//   //calculate the distance to the closest obstacle from the current node
+//   //obsDist =  voronoiDiagram.getDistance(node->getX(),node->getY())
+
+//   if (obsDst < vorObsDMax) {
+//     //calculate the distance to the closest GVD edge from the current node
+//     // the node is away from the optimal free space area
+//     if (edgDst > 0) {
+//       float PobsDst_Pxi; //todo = obsVct / obsDst;
+//       float PedgDst_Pxi; //todo = edgVct / edgDst;
+//       float PvorPtn_PedgDst = alpha * obsDst * std::pow(obsDst - vorObsDMax, 2) / (std::pow(vorObsDMax, 2)
+//                               * (obsDst + alpha) * std::pow(edgDst + obsDst, 2));
+
+//       float PvorPtn_PobsDst = (alpha * edgDst * (obsDst - vorObsDMax) * ((edgDst + 2 * vorObsDMax + alpha)
+//                                * obsDst + (vorObsDMax + 2 * alpha) * edgDst + alpha * vorObsDMax))
+//                               / (std::pow(vorObsDMax, 2) * std::pow(obsDst + alpha, 2) * std::pow(obsDst + edgDst, 2));
+//       gradient = wVoronoi * PvorPtn_PobsDst * PobsDst_Pxi + PvorPtn_PedgDst * PedgDst_Pxi;
+
+//       return gradient;
+//     }
+//       return gradient;
+//   }
+//     return gradient;
+// }
+
+//###################################################
+//                                     CURVATURE TERM
+//###################################################
+Vector2D Smoother::curvatureTerm(Vector2D x_im2, Vector2D x_im1, Vector2D x_i, Vector2D x_ip1, Vector2D x_ip2) {
+  Vector2D gradient;
+  // the vectors between the nodes
+  const Vector2D& delta_x_im1 = x_im1 - x_im2;
+  const Vector2D& delta_x_i = x_i - x_im1;
+  const Vector2D& delta_x_ip1 = x_ip1 - x_i;
+  const Vector2D& delta_x_ip2 = x_ip2 - x_ip1;
+
+  // ensure that the absolute values are not null
+  if (delta_x_im1.length() > 0 && delta_x_i.length() > 0 && delta_x_ip1.length() > 0 && delta_x_ip2.length() > 0) {
+    // the angular change at the node
+    auto compute_kappa = [](const Vector2D& delta_x_0, const Vector2D& delta_x_1, float& delta_phi, float& kappa) {
+        delta_phi = std::acos(Helper::clamp(delta_x_0.dot(delta_x_1) / (delta_x_0.length() * delta_x_1.length()), -1, 1));
+        kappa = delta_phi / delta_x_0.length();
+    };
+    float delta_phi_im1, kappa_im1;
+    compute_kappa(delta_x_im1, delta_x_i, delta_phi_im1, kappa_im1);
+    float delta_phi_i, kappa_i;
+    compute_kappa(delta_x_i, delta_x_ip1, delta_phi_i, kappa_i);
+    float delta_phi_ip1, kappa_ip1;
+    compute_kappa(delta_x_ip1, delta_x_ip2, delta_phi_ip1, kappa_ip1);
+
+    // if the curvature is smaller then the maximum do nothing
+    if (kappa_i <= kappaMax) {
+      Vector2D zeros;
+      return zeros;
+    } else {
+      auto compute_d_delta_phi = [](const float delta_phi){
+          return -1. / std::sqrt(1. - std::pow(std::cos(delta_phi), 2));
+      };
+
+      const float& d_delta_phi_im1 = compute_d_delta_phi(delta_phi_im1);
+      const Vector2D& d_cos_delta_phi_im1 = delta_x_im1.ort(delta_x_i) / (delta_x_im1.length() * delta_x_i.length());
+      const Vector2D& d_kappa_im1 = 1. / delta_x_im1.length() * d_delta_phi_im1 * d_cos_delta_phi_im1;
+      const Vector2D& kim1 = 2. * (kappa_im1 - kappaMax) * d_kappa_im1;
+
+      const float& d_delta_phi_i = compute_d_delta_phi(delta_phi_i);
+      const Vector2D& d_cos_delta_phi_i = delta_x_ip1.ort(delta_x_i) / (delta_x_ip1.length() * delta_x_i.length()) -
+                                          delta_x_i.ort(delta_x_ip1) / (delta_x_i.length() * delta_x_ip1.length());
+      const Vector2D& d_kappa_i = 1. / delta_x_i.length() * d_delta_phi_i * d_cos_delta_phi_i -
+                                  delta_phi_i / std::pow(delta_x_i.length(), 3) * delta_x_i;
+      const Vector2D& ki = 2. * (kappa_i - kappaMax) * d_kappa_i;
+
+      const float& d_delta_phi_ip1 = compute_d_delta_phi(delta_phi_ip1);
+      const Vector2D& d_cos_delta_phi_ip1 = -delta_x_ip2.ort(delta_x_ip1) / (delta_x_ip2.length() * delta_x_ip1.length());
+      const Vector2D& d_kappa_ip1 = 1. / delta_x_ip1.length() * d_delta_phi_ip1 * d_cos_delta_phi_ip1 +
+                                    delta_phi_ip1 / std::pow(delta_x_ip1.length(), 3) * delta_x_ip1;
+      const Vector2D& kip1 = 2. * (kappa_ip1 - kappaMax) * d_kappa_ip1;
+
+      // calculate the gradient
+      gradient = wCurvature * (0.25 * kim1 + 0.5 * ki + 0.25 * kip1);
+
+      if (std::isnan(gradient.getX()) || std::isnan(gradient.getY())) {
+        std::cout << "nan values in curvature term" << std::endl;
+        Vector2D zeros;
+        return zeros;
+      }
+      // return gradient of 0
+      else {
+        return gradient;
+      }
+    }
+  }
+  // return gradient of 0
+  else {
+    std::cout << "abs values not larger than 0" << std::endl;
+    Vector2D zeros;
+    return zeros;
+  }
+}
+
+//###################################################
+//                                    SMOOTHNESS TERM
+//###################################################
+Vector2D Smoother::smoothnessTerm(Vector2D xim2, Vector2D xim1, Vector2D xi, Vector2D xip1, Vector2D xip2) {
+  return wSmoothness * (xim2 - 4 * xim1 + 6 * xi - 4 * xip1 + xip2);
+}
+
+
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+下面这份代码文件是 tf_broadcaster.cpp 的内容,这份CPP文件不带.h文件
+
+----------------------------------------------------------------------------------------------------
+//###################################################
+//                        TF MODULE FOR THE HYBRID A*
+//###################################################
+#include <ros/ros.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
+#include <nav_msgs/OccupancyGrid.h>
+
+// map pointer
+nav_msgs::OccupancyGridPtr grid;
+
+// map callback
+void setMap(const nav_msgs::OccupancyGrid::Ptr map) {
+  std::cout << "Creating transform for map..." << std::endl;
+  grid = map;
+}
+
+int main(int argc, char** argv) {
+  // initiate the broadcaster
+  ros::init(argc, argv, "tf_broadcaster");
+  ros::NodeHandle n;
+
+  // subscribe to map updates
+  ros::Subscriber sub_map = n.subscribe("/occ_map", 1, setMap);
+  tf::Pose tfPose;
+
+
+  ros::Rate r(100);
+  tf::TransformBroadcaster broadcaster;
+
+  while (ros::ok()) {
+    // transform from geometry msg to TF
+    if (grid != nullptr) {
+      tf::poseMsgToTF(grid->info.origin, tfPose);
+    }
+
+    // odom to map
+    broadcaster.sendTransform(
+      tf::StampedTransform(
+        tf::Transform(tf::Quaternion(0, 0, 0, 1), tfPose.getOrigin()),
+        ros::Time::now(), "odom", "map"));
+
+    // map to path
+    broadcaster.sendTransform(
+      tf::StampedTransform(
+        tf::Transform(tf::Quaternion(0, 0, 0, 1), tf::Vector3(0, 0, 0)),
+        ros::Time::now(), "map", "path"));
+    ros::spinOnce();
+    r.sleep();
+  }
+}
+
+----------------------------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+下面这份代码文件是 visualize.cpp 的内容,这份CPP文件不带.h文件
+
+----------------------------------------------------------------------------------------------------
+#include "visualize.h"
+using namespace HybridAStar;
+//###################################################
+//                                CLEAR VISUALIZATION
+//###################################################
+void Visualize::clear() {
+  poses3D.poses.clear();
+  poses3Dreverse.poses.clear();
+  poses2D.poses.clear();
+
+  // 3D COSTS
+  visualization_msgs::MarkerArray costCubes3D;
+  visualization_msgs::Marker costCube3D;
+  // CLEAR THE COST HEATMAP
+  costCube3D.header.frame_id = "path";
+  costCube3D.header.stamp = ros::Time::now();
+  costCube3D.id = 0;
+  costCube3D.action = 3;
+  costCubes3D.markers.push_back(costCube3D);
+  pubNodes3DCosts.publish(costCubes3D);
+
+  // 2D COSTS
+  visualization_msgs::MarkerArray costCubes2D;
+  visualization_msgs::Marker costCube2D;
+  // CLEAR THE COST HEATMAP
+  costCube2D.header.frame_id = "path";
+  costCube2D.header.stamp = ros::Time::now();
+  costCube2D.id = 0;
+  costCube2D.action = 3;
+  costCubes2D.markers.push_back(costCube2D);
+  pubNodes2DCosts.publish(costCubes2D);
+}
+
+//###################################################
+//                                    CURRENT 3D NODE
+//###################################################
+void Visualize::publishNode3DPose(Node3D& node) {
+  geometry_msgs::PoseStamped pose;
+  pose.header.frame_id = "path";
+  pose.header.stamp = ros::Time::now();
+  pose.header.seq = 0;
+  pose.pose.position.x = node.getX() * Constants::cellSize;
+  pose.pose.position.y = node.getY() * Constants::cellSize;
+
+  //FORWARD
+  if (node.getPrim() < 3) {
+    pose.pose.orientation = tf::createQuaternionMsgFromYaw(node.getT());
+  }
+  //REVERSE
+  else {
+    pose.pose.orientation = tf::createQuaternionMsgFromYaw(node.getT() + M_PI);
+  }
+
+  // PUBLISH THE POSE
+  pubNode3D.publish(pose);
+}
+
+//###################################################
+//                              ALL EXPANDED 3D NODES
+//###################################################
+void Visualize::publishNode3DPoses(Node3D& node) {
+  geometry_msgs::Pose pose;
+  pose.position.x = node.getX() * Constants::cellSize;
+  pose.position.y = node.getY() * Constants::cellSize;
+
+  //FORWARD
+  if (node.getPrim() < 3) {
+    pose.orientation = tf::createQuaternionMsgFromYaw(node.getT());
+    poses3D.poses.push_back(pose);
+    poses3D.header.stamp = ros::Time::now();
+    // PUBLISH THE POSEARRAY
+    pubNodes3D.publish(poses3D);
+  }
+  //REVERSE
+  else {
+    pose.orientation = tf::createQuaternionMsgFromYaw(node.getT() + M_PI);
+    poses3Dreverse.poses.push_back(pose);
+    poses3Dreverse.header.stamp = ros::Time::now();
+    // PUBLISH THE POSEARRAY
+    pubNodes3Dreverse.publish(poses3Dreverse);
+  }
+
+}
+
+//###################################################
+//                                    CURRENT 2D NODE
+//###################################################
+void Visualize::publishNode2DPose(Node2D& node) {
+  geometry_msgs::PoseStamped pose;
+  pose.header.frame_id = "path";
+  pose.header.stamp = ros::Time::now();
+  pose.header.seq = 0;
+  pose.pose.position.x = (node.getX() + 0.5) * Constants::cellSize;
+  pose.pose.position.y = (node.getY() + 0.5) * Constants::cellSize;
+  pose.pose.orientation = tf::createQuaternionMsgFromYaw(0);
+
+  // PUBLISH THE POSE
+  pubNode2D.publish(pose);
+}
+
+//###################################################
+//                              ALL EXPANDED 2D NODES
+//###################################################
+void Visualize::publishNode2DPoses(Node2D& node) {
+  if (node.isDiscovered()) {
+    geometry_msgs::Pose pose;
+    pose.position.x = (node.getX() + 0.5) * Constants::cellSize;
+    pose.position.y = (node.getY() + 0.5) * Constants::cellSize;
+    pose.orientation = tf::createQuaternionMsgFromYaw(0);
+
+    poses2D.poses.push_back(pose);
+    poses2D.header.stamp = ros::Time::now();
+    // PUBLISH THE POSEARRAY
+    pubNodes2D.publish(poses2D);
+
+  }
+}
+
+//###################################################
+//                                    COST HEATMAP 3D
+//###################################################
+void Visualize::publishNode3DCosts(Node3D* nodes, int width, int height, int depth) {
+  visualization_msgs::MarkerArray costCubes;
+  visualization_msgs::Marker costCube;
+
+  float min = 1000;
+  float max = 0;
+  int idx;
+  bool once = true;
+  float red = 0;
+  float green = 0;
+  float blue = 0;
+  int count = 0;
+
+  ColorGradient heatMapGradient;
+  heatMapGradient.createDefaultHeatMapGradient();
+
+  float values[width * height];
+
+  // ________________________________
+  // DETERMINE THE MAX AND MIN VALUES
+  for (int i = 0; i < width * height; ++i) {
+    values[i] = 1000;
+
+    // iterate over all headings
+    for (int k = 0; k < depth; ++k) {
+      idx = k * width * height + i;
+
+      // set the minimum for the cell
+      if (nodes[idx].isClosed() || nodes[idx].isOpen()) {
+        values[i] = nodes[idx].getC();
+      }
+    }
+
+    // set a new minimum
+    if (values[i] > 0 && values[i] < min) {
+      min = values[i];
+    }
+
+    // set a new maximum
+    if (values[i] > 0 && values[i] > max && values[i] != 1000) {
+      max = values[i];
+    }
+  }
+
+  // _______________
+  // PAINT THE CUBES
+  for (int i = 0; i < width * height; ++i) {
+    // if a value exists continue
+    if (values[i] != 1000) {
+      count++;
+
+      // delete all previous markers
+      if (once) {
+        costCube.action = 3;
+        once = false;
+      } else {
+        costCube.action = 0;
+      }
+
+
+      costCube.header.frame_id = "path";
+      costCube.header.stamp = ros::Time::now();
+      costCube.id = i;
+      costCube.type = visualization_msgs::Marker::CUBE;
+      values[i] = (values[i] - min) / (max - min);
+      costCube.scale.x = Constants::cellSize;
+      costCube.scale.y = Constants::cellSize;
+      costCube.scale.z = 0.1;
+      costCube.color.a = 0.5;
+      heatMapGradient.getColorAtValue(values[i], red, green, blue);
+      costCube.color.r = red;
+      costCube.color.g = green;
+      costCube.color.b = blue;
+      // center in cell +0.5
+      costCube.pose.position.x = (i % width + 0.5) * Constants::cellSize;
+      costCube.pose.position.y = ((i / width) % height + 0.5) * Constants::cellSize;
+      costCubes.markers.push_back(costCube);
+    }
+  }
+
+  if (Constants::coutDEBUG) {
+    std::cout << "3D min cost: " << min << " | max cost: " << max << std::endl;
+    std::cout << count << " 3D nodes expanded " << std::endl;
+  }
+
+  // PUBLISH THE COSTCUBES
+  pubNodes3DCosts.publish(costCubes);
+}
+
+//###################################################
+//                                    COST HEATMAP 2D
+//###################################################
+void Visualize::publishNode2DCosts(Node2D* nodes, int width, int height) {
+  visualization_msgs::MarkerArray costCubes;
+  visualization_msgs::Marker costCube;
+
+  float min = 1000;
+  float max = 0;
+  bool once = true;
+  float red = 0;
+  float green = 0;
+  float blue = 0;
+  int count = 0;
+
+  ColorGradient heatMapGradient;
+  heatMapGradient.createDefaultHeatMapGradient();
+
+  float values[width * height];
+
+  // ________________________________
+  // DETERMINE THE MAX AND MIN VALUES
+  for (int i = 0; i < width * height; ++i) {
+    values[i] = 1000;
+
+    // set the minimum for the cell
+    if (nodes[i].isDiscovered()) {
+      values[i] = nodes[i].getG();
+
+      // set a new minimum
+      if (values[i] > 0 && values[i] < min) { min = values[i]; }
+
+      // set a new maximum
+      if (values[i] > 0 && values[i] > max) { max = values[i]; }
+    }
+  }
+
+  // _______________
+  // PAINT THE CUBES
+  for (int i = 0; i < width * height; ++i) {
+    // if a value exists continue
+    if (nodes[i].isDiscovered()) {
+      count++;
+
+      // delete all previous markers
+      if (once) {
+        costCube.action = 3;
+        once = false;
+      } else {
+        costCube.action = 0;
+      }
+
+
+      costCube.header.frame_id = "path";
+      costCube.header.stamp = ros::Time::now();
+      costCube.id = i;
+      costCube.type = visualization_msgs::Marker::CUBE;
+      values[i] = (values[i] - min) / (max - min);
+      costCube.scale.x = Constants::cellSize;
+      costCube.scale.y = Constants::cellSize;
+      costCube.scale.z = 0.1;
+      costCube.color.a = 0.5;
+      heatMapGradient.getColorAtValue(values[i], red, green, blue);
+      costCube.color.r = red;
+      costCube.color.g = green;
+      costCube.color.b = blue;
+      // center in cell +0.5
+      costCube.pose.position.x = (i % width + 0.5) * Constants::cellSize;
+      costCube.pose.position.y = ((i / width) % height + 0.5) * Constants::cellSize;
+      costCubes.markers.push_back(costCube);
+    }
+  }
+
+  if (Constants::coutDEBUG) {
+    std::cout << "2D min cost: " << min << " | max cost: " << max << std::endl;
+    std::cout << count << " 2D nodes expanded " << std::endl;
+  }
+
+  // PUBLISH THE COSTCUBES
+  pubNodes2DCosts.publish(costCubes);
+}
+
+----------------------------------------------------------------------------------------------------
