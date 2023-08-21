@@ -97,7 +97,7 @@ int dubins_init_normalised( double alpha, double beta, double d, DubinsPath* pat
     best_word = -1;
     for( i = 0; i < 6; i++ ) {
         double params[3];
-        int err = dubins_words[i](alpha, beta, d, params);
+        int err = dubins_words[i](alpha, beta, d, params);  //函数指针型数组
         if(err == EDUBOK) {
             double cost = params[0] + params[1] + params[2];
             if(cost < best_cost) {
@@ -118,7 +118,7 @@ int dubins_init_normalised( double alpha, double beta, double d, DubinsPath* pat
     return EDUBOK;
 }
 
-int dubins_init( double q0[3], double q1[3], double rho, DubinsPath* path )  // 在这里设置转弯半径
+int dubins_init( double q0[3], double q1[3], double rho, DubinsPath* path )  // 这里的Q0和Q1是起点和终点
 {
     int i;
     double dx = q1[0] - q0[0];

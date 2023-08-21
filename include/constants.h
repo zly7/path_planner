@@ -34,7 +34,7 @@ static const bool coutDEBUG = false;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
 static const bool manual = true;
 /// A flag for the visualization of 3D nodes (true = on; false = off)
-static const bool visualization = false && manual;
+static const bool visualization = true && manual;
 /// A flag for the visualization of 2D nodes (true = on; false = off)
 static const bool visualization2D = false && manual;
 /// A flag to toggle reversing (true = on; false = off)
@@ -81,7 +81,7 @@ static const float cellSize = 1;
 
   As the cost-so-far are bigger than the cost-to-come it is reasonbale to believe that the algorithm would prefer the predecessor rather than the successor.
   This would lead to the fact that the successor would never be placed and the the one cell could only expand one node. The tieBreaker artificially increases the cost of the predecessor
-  to allow the successor being placed in the same cell.
+  to allow the successor being placed in the same cell. 
 */
 static const float tieBreaker = 0.01;
 
