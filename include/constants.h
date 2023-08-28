@@ -36,7 +36,7 @@ static const bool manual = true;
 /// A flag for the visualization of 3D nodes (true = on; false = off)
 static const bool visualization = true && manual;
 /// A flag for the visualization of 2D nodes (true = on; false = off)
-static const bool visualization2D = false && manual;
+static const bool visualization2D = true && manual;
 /// A flag to toggle reversing (true = on; false = off)
 static const bool reverse = true;
 /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
@@ -60,11 +60,11 @@ static const int iterations = 30000;
 /// [m] --- Uniformly adds a padding around the vehicle
 static const double bloating = 0;
 /// [m] --- The width of the vehicle
-static const double width = 1.5 + 2 * bloating;
+static const double width = 1.25 + 2 * bloating;
 /// [m] --- The length of the vehicle
 static const double length = 2 + 2 * bloating;
 /// [m] --- The minimum turning radius of the vehicle
-static const float r = 0.75; 
+static const float r = 0.5; 
 /// [m] --- The number of discretizations in heading
 static const int headings = 72;
 /// [°] --- The discretization value of the heading (goal condition)
