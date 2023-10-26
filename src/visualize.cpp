@@ -32,7 +32,7 @@ void Visualize::clear() {
 }
 
 //###################################################
-//                                    CURRENT 3D NODE
+//                                    CURRENT 3D NODE  这一块暂时没太看懂2个函数的区别在哪里
 //###################################################
 void Visualize::publishNode3DPose(Node3D& node) {
   geometry_msgs::PoseStamped pose;

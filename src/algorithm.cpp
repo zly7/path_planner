@@ -62,7 +62,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
   start.open();
   // push on priority queue aka open list
   O.push(&start);
-  iPred = start.setIdx(width, height);
+  iPred = start.setIdx(width, height); //这里的3D指的是带有xyt的节点，最后一个t是yaw角，
   nodes3D[iPred] = start;
 
   // NODE POINTER
@@ -123,7 +123,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
     //      pre = succ;
     //    }
 
-    // pop node with lowest cost from priority queue
+    // pop node with lowest cost from priority queue pop出堆的第一步
     nPred = O.top();
     // set index
     iPred = nPred->setIdx(width, height);
@@ -167,7 +167,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
         if (Constants::dubinsShot && nPred->isInRange(goal) && nPred->getPrim() < 3) {
           nSucc = dubinsShot(*nPred, goal, configurationSpace);
 
-          if (nSucc != nullptr && *nSucc == goal) {
+          if (nSucc != nullptr && *nSucc == goal) {  // 这里的相等就很妙，就是整数相等，整数映射空间
             //DEBUG
             // std::cout << "max diff " << max << std::endl;
             return nSucc;
@@ -176,7 +176,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
 
         // ______________________________
         // SEARCH WITH FORWARD SIMULATION
-        for (int i = 0; i < dir; i++) {
+        for (int i = 0; i < dir; i++) {  //dir 就是一个int，然后3 or 6
           // create possible successor
           nSucc = nPred->createSuccessor(i);
           // set index of the successor
@@ -196,7 +196,7 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
               if (!nodes3D[iSucc].isOpen() || newG < nodes3D[iSucc].getG() || iPred == iSucc) {
 
                 // calculate H value
-                updateH(*nSucc, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
+                updateH(*nSucc, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);  //计算真实的花费
 
                 // if the successor is in the same cell but the C value is larger
                 if (iPred == iSucc && nSucc->getC() > nPred->getC() + Constants::tieBreaker) {
@@ -695,7 +695,7 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
     dubinsCost = dubinsPath.distance(dbStart, dbEnd);
   }
 
-  // if reversing is active use a
+  // if reversing is active use a  一般用这个reedsShepp，可以倒车
   if (Constants::reverse && !Constants::dubins) {
     //    ros::Time t0 = ros::Time::now();
     ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);

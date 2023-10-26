@@ -3,7 +3,7 @@
 using namespace HybridAStar;
 
 CollisionDetection::CollisionDetection() {
-  this->grid = nullptr;
+  this->grid = nullptr; 
   Lookup::collisionLookup(collisionLookup);
 }
 
@@ -15,7 +15,7 @@ bool CollisionDetection::configurationTest(float x, float y, float t) const {
   int iY = (int)((y - (long)y) * Constants::positionResolution);
   iY = iY > 0 ? iY : 0;
   int iT = (int)(t / Constants::deltaHeadingRad);
-  int idx = iY * Constants::positionResolution * Constants::headings + iX * Constants::headings + iT;
+  int idx = iY * Constants::positionResolution * Constants::headings + iX * Constants::headings + iT;  //但凡是3D的碰撞检测都会具体到3维坐标的某个点的某个朝向的检测
   int cX;
   int cY;
 
@@ -23,7 +23,7 @@ bool CollisionDetection::configurationTest(float x, float y, float t) const {
     cX = (X + collisionLookup[idx].pos[i].x);
     cY = (Y + collisionLookup[idx].pos[i].y);
 
-    // make sure the configuration coordinates are actually on the grid
+    // make sure the configuration coordinates are actually on the grid  // 这里显然是做一个遍历
     if (cX >= 0 && (unsigned int)cX < grid->info.width && cY >= 0 && (unsigned int)cY < grid->info.height) {
       if (grid->data[cY * grid->info.width + cX]) {
         return false;

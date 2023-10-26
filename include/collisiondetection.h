@@ -65,7 +65,7 @@ class CollisionDetection {
   }
 
   /*!
-     \brief Calculates the cost of the robot taking a specific configuration q int the World W
+     \brief Calculates the cost of the robot taking a specific configuration q int the World W  这个函数显然还没有完成
      \param x the x position
      \param y the y position
      \param t the theta angle

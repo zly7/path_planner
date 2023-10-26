@@ -34,9 +34,9 @@ static const bool coutDEBUG = false;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
 static const bool manual = true;
 /// A flag for the visualization of 3D nodes (true = on; false = off)
-static const bool visualization = false && manual;
+static const bool visualization = true && manual;
 /// A flag for the visualization of 2D nodes (true = on; false = off)
-static const bool visualization2D = false && manual;
+static const bool visualization2D = true && manual;
 /// A flag to toggle reversing (true = on; false = off)
 static const bool reverse = true;
 /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
@@ -60,11 +60,11 @@ static const int iterations = 30000;
 /// [m] --- Uniformly adds a padding around the vehicle
 static const double bloating = 0;
 /// [m] --- The width of the vehicle
-static const double width = 1.75 + 2 * bloating;
+static const double width = 1.25 + 2 * bloating;
 /// [m] --- The length of the vehicle
-static const double length = 2.65 + 2 * bloating;
+static const double length = 2 + 2 * bloating;
 /// [m] --- The minimum turning radius of the vehicle
-static const float r = 6;
+static const float r = 0.5; 
 /// [m] --- The number of discretizations in heading
 static const int headings = 72;
 /// [°] --- The discretization value of the heading (goal condition)
@@ -81,7 +81,7 @@ static const float cellSize = 1;
 
   As the cost-so-far are bigger than the cost-to-come it is reasonbale to believe that the algorithm would prefer the predecessor rather than the successor.
   This would lead to the fact that the successor would never be placed and the the one cell could only expand one node. The tieBreaker artificially increases the cost of the predecessor
-  to allow the successor being placed in the same cell.
+  to allow the successor being placed in the same cell. 
 */
 static const float tieBreaker = 0.01;
 
