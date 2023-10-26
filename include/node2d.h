@@ -26,12 +26,18 @@ class Node2D {
     this->c = false;
     this->d = false;
     this->idx = -1;
+    this->up = 0;
+    this->down = 0;
+    this->left = 0;
+    this->right = 0;
+    this->ix = x;
+    this->iy = y;
   }
   // GETTER METHODS
   /// get the x position
-  int getX() const { return x; }
+  float getX() const { return ix; }
   /// get the y position
-  int getY() const { return y; }
+  float getY() const { return iy; }
   /// get the cost-so-far (real value)
   float getG() const { return g; }
   /// get the cost-to-come (heuristic value)
@@ -48,6 +54,13 @@ class Node2D {
   bool  isDiscovered() const { return d; }
   /// get a pointer to the predecessor
   Node2D* getPred() const { return pred; }
+
+  float getUp() const { return up;}
+  float getDown() const { return down;}
+  float getLeft() const { return left;}
+  float getRight() const { return right;}
+  int getIntX() const { return x;}
+  int getIntY() const { return y;}
 
   // SETTER METHODS
   /// set the x position
@@ -71,6 +84,12 @@ class Node2D {
   /// set a pointer to the predecessor of the node
   void setPred(Node2D* pred) { this->pred = pred; }
 
+  void setUp(const float& up) { this->up = up; }
+  void setDown(const float& down) { this->down = down; }
+  void setLeft(const float& left) { this->left = left; }
+  void setRight(const float& right) { this->right = right; }
+  void setIx(const float& ix) { this->ix = ix; }
+  void setIy(const float& iy) { this->iy = iy; }
   // UPDATE METHODS
   /// Updates the cost-so-far for the node x' coming from its predecessor. It also discovers the node.
   void updateG() { g += movementCost(*pred); d = true; }
@@ -118,6 +137,14 @@ class Node2D {
   bool d;
   /// the predecessor pointer
   Node2D* pred;
+
+  float up;
+  float down;
+  float left;
+  float right;
+
+  float ix;
+  float iy;
 };
 }
 #endif // NODE2D_H
