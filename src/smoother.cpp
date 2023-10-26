@@ -92,6 +92,17 @@ void Smoother::tracePath(const Node3D* node, int i, std::vector<Node3D> path) {
   tracePath(node->getPred(), i, path);
 }
 
+void Smoother::tracePath2D(const Node2D* node, int i, std::vector<Node2D> path2D) {
+  if (node == nullptr) {
+    this->path2D = path2D;
+    return;
+  }
+
+  i++;
+  path2D.push_back(*node);
+  tracePath2D(node->getPred(), i, path2D);
+}
+
 //###################################################
 //                                      OBSTACLE TERM
 //###################################################

@@ -6,6 +6,7 @@
 
 #include "dynamicvoronoi.h"
 #include "node3d.h"
+#include "node2d.h"
 #include "vector2d.h"
 #include "helper.h"
 #include "constants.h"
@@ -37,8 +38,12 @@ class Smoother {
   */
   void tracePath(const Node3D* node, int i = 0, std::vector<Node3D> path = std::vector<Node3D>());
 
+  void tracePath2D(const Node2D* node, int i = 0, std::vector<Node2D> path = std::vector<Node2D>());
+
   /// returns the path of the smoother object
   const std::vector<Node3D>& getPath() {return path;}
+
+  const std::vector<Node2D>& getPath2D() {return path2D;}
 
   /// obstacleCost - pushes the path away from obstacles
   Vector2D obstacleTerm(Vector2D xi);
@@ -86,6 +91,8 @@ class Smoother {
   int height;
   /// path to be smoothed
   std::vector<Node3D> path;
+  // path 2d primary
+  std::vector<Node2D> path2D;
 };
 }
 #endif // SMOOTHER_H
