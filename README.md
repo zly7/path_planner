@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ### Hybrid A* Path Planner for the KTH Research Concept Vehicle [![Build Status](https://app.travis-ci.com/karlkurzer/path_planner.svg?branch=master)](https://travis-ci.org/karlkurzer/path_planner)
 
 This repository contains the implementation of a Hybrid A* Path Planner for autonomous vehicles, specifically developed for the KTH Research Concept Vehicle. The Hybrid A* algorithm is a powerful path planning approach that combines the benefits of A* search in continuous space with a discretized set of headings. It enables the generation of efficient and smooth paths for nonholonomic vehicles navigating complex environments.
@@ -114,3 +115,6 @@ I would appreciate if you cite my work, in case you are using it for your work. 
 - J. Krook, L. Svensson, Y. Li, L. Feng, M. Fabian, ‘Design and formal verification of a safe stop supervisor for an automated vehicle’, 2019 International Conference on Robotics and Automation (ICRA), 2019.
 - D. Nemec, M. Gregor, E. Bubenikova, M. Hruboš, R. Pirník, ‘Improving the Hybrid A* method for a non-holonomic wheeled robot’, International Journal of Advanced Robotic Systems, 2019.
 - S. Zhang, Y. Chen, S. Chen, N. Zheng, ‘Hybrid A*-based curvature continuous path planning in complex dynamic environments’, 2019 IEEE Intelligent Transportation Systems Conference (ITSC), 2019.
+=======
+# planner1
+>>>>>>> c8866a897400f91acaba15012e088124caa89a0a
