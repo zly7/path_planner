@@ -10,7 +10,7 @@ Planner::Planner() {
   //    initializeLookups();
   // Lookup::collisionLookup(collisionLookup);
   // ___________________
-  // COLLISION DETECTION
+  // COLLISION DETECTION 
   //    CollisionDetection configurationSpace;
   // _________________
   // TOPICS TO PUBLISH
@@ -170,6 +170,7 @@ void Planner::plan() {
     // set theta to a value (0,2PI]
     t = Helper::normalizeHeadingRad(t);
     const Node3D nGoal(x, y, t, 0, 0, nullptr);
+    const Node2D nGoal2D(x, y, 0, 0, nullptr);
     // __________
     // DEBUG GOAL
     //    const Node3D nGoal(155.349, 36.1969, 0.7615936, 0, 0, nullptr);
@@ -183,6 +184,7 @@ void Planner::plan() {
     // set theta to a value (0,2PI]
     t = Helper::normalizeHeadingRad(t);
     Node3D nStart(x, y, t, 0, 0, nullptr);
+    Node2D nStart2D(x, y, 0, 0, nullptr);
     // ___________
     // DEBUG START
     //    Node3D nStart(108.291, 30.1081, 0, 0, 0, nullptr);
@@ -197,13 +199,29 @@ void Planner::plan() {
     // CLEAR THE PATH
     path.clear();
     smoothedPath.clear();
-    // FIND THE PATH
-    Node3D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
-    // TRACE THE PATH
-    smoother.tracePath(nSolution);
-    // CREATE THE UPDATED PATH
-    path.updatePath(smoother.getPath());
-    // SMOOTH THE PATH
+    Node2D* nSolution2D = Algorithm::aStar2D(nStart2D, nGoal2D, nodes2D, width, height, configurationSpace, visualization);
+    smoother.tracePath2D(nSolution2D);
+    
+    std::vector<Node2D> path2D=smoother.getPath2D();
+    float deltaL=0.3;
+    Algorithm::node2DToBox(path2D,width,height,configurationSpace,deltaL);
+    float threshold=15;
+    std::vector<Node3D> nodeBou=Algorithm::findBou(nStart,nGoal,path2D,threshold);
+    std::cout<<"findBou"<<std::endl;
+
+    for(size_t i = 1; i < nodeBou.size(); ++i){
+      Node3D* nSolution = Algorithm::hybridAStar(nodeBou[i-1], nodeBou[i], nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
+      // TRACE THE PATH
+      smoother.tracePath(nSolution);
+      // CREATE THE UPDATED PATH
+      path.updatePath(smoother.getPath());
+    }
+    // Node3D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
+    // // TRACE THE PATH
+    // smoother.tracePath(nSolution);
+    // // CREATE THE UPDATED PATH
+    // path.updatePath(smoother.getPath());
+    // // SMOOTH THE PATH
     smoother.smoothPath(voronoiDiagram);
     // CREATE THE UPDATED PATH
     smoothedPath.updatePath(smoother.getPath());

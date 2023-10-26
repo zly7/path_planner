@@ -101,6 +101,12 @@ static const float dubinsShotDistance = 100;
 /// [m] --- The step size for the analytical solution (Dubin's shot) primarily relevant for collision checking
 static const float dubinsStepSize = 1;
 
+static const float deltaL1 = 1;
+
+static const float deltaL2 = 0.1;
+
+static const float deltaLTest = 0.3;
+
 
 // ______________________
 // DUBINS LOOKUP SPECIFIC

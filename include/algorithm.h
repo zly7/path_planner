@@ -12,6 +12,7 @@ typedef ompl::base::SE2StateSpace::StateType State;
 #include "node2d.h"
 #include "visualize.h"
 #include "collisiondetection.h"
+#include <cmath>
 
 namespace HybridAStar {
 class Node3D;
@@ -50,6 +51,25 @@ class Algorithm {
                              CollisionDetection& configurationSpace,
                              float* dubinsLookup,
                              Visualize& visualization);
+
+  static Node2D* aStar2D(Node2D& start,
+                              const Node2D& goal,
+                              Node2D* nodes2D,
+                              int width,
+                              int height,
+                              CollisionDetection& configurationSpace,
+                              Visualize& visualization);
+
+  static void node2DToBox(std::vector<Node2D> &path2D,
+                              int width,
+                              int height,
+                              CollisionDetection& configurationSpace,
+                              float deltaL);
+
+  static std::vector<Node3D> findBou(Node3D& start,
+                              const Node3D& goal,
+                              std::vector<Node2D> &path2D,
+                              float threshold);
 
 };
 }

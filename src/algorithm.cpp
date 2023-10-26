@@ -7,6 +7,7 @@ using namespace HybridAStar;
 float aStar(Node2D& start, Node2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
 void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
 Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
+void getBouNode(Node2D& box1, Node2D& box2, std::vector<Node3D> nodeBou);
 
 //###################################################
 //                                    NODE COMPARISON
@@ -345,6 +346,286 @@ float aStar(Node2D& start,
   return 1000;
 }
 
+Node2D* Algorithm::aStar2D(Node2D& start,
+            const Node2D& goal,
+            Node2D* nodes2D,
+            int width,
+            int height,
+            CollisionDetection& configurationSpace,
+            Visualize& visualization) {
+
+  // PREDECESSOR AND SUCCESSOR INDEX
+  int iPred, iSucc;
+  float newG;
+
+  // reset the open and closed list
+  for (int i = 0; i < width * height; ++i) {
+    nodes2D[i].reset();
+  }
+
+  // VISUALIZATION DELAY
+  ros::Duration d(0.001);
+
+  boost::heap::binomial_heap<Node2D*,
+        boost::heap::compare<CompareNodes>> O;
+  // update h value
+  start.updateH(goal);
+  // mark start as open
+  start.open();
+  // push on priority queue
+  O.push(&start);
+  iPred = start.setIdx(width);
+  nodes2D[iPred] = start;
+
+  // NODE POINTER
+  Node2D* nPred;
+  Node2D* nSucc;
+
+  // continue until O empty
+  while (!O.empty()) {
+    // pop node with lowest cost from priority queue
+    nPred = O.top();
+    // set index
+    iPred = nPred->setIdx(width);
+
+    // _____________________________
+    // LAZY DELETION of rewired node
+    // if there exists a pointer this node has already been expanded
+    if (nodes2D[iPred].isClosed()) {
+      // pop node from the open list and start with a fresh node
+      O.pop();
+      continue;
+    }
+    // _________________
+    // EXPANSION OF NODE
+    else if (nodes2D[iPred].isOpen()) {
+      // add node to closed list
+      nodes2D[iPred].close();
+      nodes2D[iPred].discover();
+
+      // RViz visualization
+      if (Constants::visualization2D) {
+        visualization.publishNode2DPoses(*nPred);
+        visualization.publishNode2DPose(*nPred);
+        //        d.sleep();
+      }
+
+      // remove node from open list
+      O.pop();
+
+      // _________
+      // GOAL TEST
+      if (*nPred == goal) {
+        return nPred;
+      }
+      // ____________________
+      // CONTINUE WITH SEARCH
+      else {
+        // _______________________________
+        // CREATE POSSIBLE SUCCESSOR NODES
+        for (int i = 0; i < Node2D::dir; i++) {
+          // create possible successor
+          nSucc = nPred->createSuccessor(i);
+          // set index of the successor
+          iSucc = nSucc->setIdx(width);
+
+          // ensure successor is on grid ROW MAJOR
+          // ensure successor is not blocked by obstacle
+          // ensure successor is not on closed list
+          if (nSucc->isOnGrid(width, height) &&  configurationSpace.isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
+            // calculate new G value
+            nSucc->updateG();
+            newG = nSucc->getG();
+
+            // if successor not on open list or g value lower than before put it on open list
+            if (!nodes2D[iSucc].isOpen() || newG < nodes2D[iSucc].getG()) {
+              // calculate the H value
+              nSucc->updateH(goal);
+              // put successor on open list
+              nSucc->open();
+              nodes2D[iSucc] = *nSucc;
+              O.push(&nodes2D[iSucc]);
+              delete nSucc;
+            } else { delete nSucc; }
+          } else { delete nSucc; }
+        }
+      }
+    }
+  }
+
+  return nullptr;
+}
+
+void Algorithm::node2DToBox(std::vector<Node2D> &path2D, 
+                  int width, 
+                  int height, 
+                  CollisionDetection& configurationSpace, 
+                  float deltaL){
+  for (Node2D& node2d : path2D) {
+    float x = static_cast<float>(node2d.getIntX());
+    float y = static_cast<float>(node2d.getIntY());
+    while(true){
+      float up = node2d.getUp();
+      float down = node2d.getDown();
+      float left = node2d.getLeft();
+      float right = node2d.getRight();
+      bool upFlag = true; 
+      bool downFlag = true; 
+      bool leftFlag = true; 
+      bool rightFlag = true;
+      float nx=0;
+      float ny=0;
+      ny=y+up+deltaL;
+      if (ny<=height){
+        for(nx=x-left;nx<=x+right;nx+=deltaL){
+          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
+          nNode.setIx(nx);
+          nNode.setIy(ny);
+          if(!configurationSpace.isTraversable(&nNode)){
+            upFlag = false;
+            break;
+          }
+        }
+      }else upFlag = false;
+      ny=y-down-deltaL;
+      if (ny>=0){
+        for(nx=x-left;nx<=x+right;nx+=deltaL){
+          Node3D nNode =  Node3D(nx,ny, 0, 0, 0, nullptr);
+          if(!configurationSpace.isTraversable(&nNode)){
+            downFlag = false;
+            break;
+          }
+        }
+      }else downFlag = false;
+      nx=x-left-deltaL;
+      if (nx>=0){
+        for(ny=x-down;nx<=x+up;nx+=deltaL){
+          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
+          nNode.setIx(nx);
+          nNode.setIy(ny);
+          if(!configurationSpace.isTraversable(&nNode)){
+            leftFlag = false;
+            break;
+          }
+        }
+        if(upFlag&&leftFlag){
+          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
+          nNode.setIx(nx);
+          nNode.setIy(y+up+deltaL);
+          if(!configurationSpace.isTraversable(&nNode)){
+            upFlag = false;
+            leftFlag = false;
+          }
+        }
+        if(downFlag&&leftFlag){
+          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
+          nNode.setIx(nx);
+          nNode.setIy(y-down-deltaL);
+          if(!configurationSpace.isTraversable(&nNode)){
+            downFlag = false;
+            leftFlag = false;
+          }
+        }
+      }else leftFlag = false;
+      nx=x+right+deltaL;
+      if (nx<=width){
+        for(ny=x-down;nx<=x+up;nx+=deltaL){
+          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
+          nNode.setIx(nx);
+          nNode.setIy(ny);
+          if(!configurationSpace.isTraversable(&nNode)){
+            rightFlag = false;
+            break;
+          }
+        }
+        if(upFlag&&rightFlag){
+          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
+          nNode.setIx(nx);
+          nNode.setIy(y+up+deltaL);
+          if(!configurationSpace.isTraversable(&nNode)){
+            upFlag = false;
+            rightFlag = false;
+          }
+        }
+        if(downFlag&&rightFlag){
+          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
+          nNode.setIx(nx);
+          nNode.setIy(y-down-deltaL);
+          if(!configurationSpace.isTraversable(&nNode)){
+            downFlag = false;
+            rightFlag = false;
+          }
+        }
+      }else rightFlag = false;
+      if((!upFlag)&&(!downFlag)&&(!rightFlag)&&(!leftFlag)){
+        break;
+      }
+      node2d.setUp(up+upFlag*deltaL);
+      node2d.setDown(down+downFlag*deltaL);
+      node2d.setLeft(left+leftFlag*deltaL);
+      node2d.setRight(right+rightFlag*deltaL);
+    }
+  }
+}
+
+std::vector<Node3D> Algorithm::findBou(Node3D& start,
+                  const Node3D& goal,
+                  std::vector<Node2D> &path2D,
+                  float threshold){
+  std::vector<Node2D> nodeSeq;
+  std::vector<Node3D> nodeBou;
+  nodeBou.push_back(start);
+  bool narrowFlag = false;
+  bool wideFlag = false;
+  for (size_t i = 0; i < path2D.size(); ++i) {
+    float up = path2D[i].getUp();
+    float down = path2D[i].getDown();
+    float left = path2D[i].getLeft();
+    float right = path2D[i].getRight();
+    if(up+down>=threshold&&left+right>=threshold){
+      wideFlag=true;
+      if(narrowFlag){
+        narrowFlag=false;
+        nodeSeq.push_back(path2D[i-1]);
+        nodeSeq.push_back(path2D[i]);
+        getBouNode(path2D[i-1],path2D[i],nodeBou);
+      }
+    }else{
+      narrowFlag=true;
+      if(wideFlag){
+        wideFlag=false;
+        nodeSeq.push_back(path2D[i-1]);
+        nodeSeq.push_back(path2D[i]);
+        getBouNode(path2D[i-1],path2D[i],nodeBou);
+      }
+    }
+  }
+  nodeBou.push_back(goal);
+  for (size_t i = 1; i < nodeBou.size(); ++i) {
+    float nt=atanf((nodeBou[i].getY()-nodeBou[i-1].getY())/(nodeBou[i].getX()-nodeBou[i-1].getX()));
+    nodeBou[i].setT(nt);
+    std::cout << i << " " << nodeBou[i].getX() << " "  << nodeBou[i].getY() << " "  << nodeBou[i].getT() << std::endl;
+  }
+  return nodeBou;
+}
+
+void getBouNode(Node2D& box1, Node2D& box2, std::vector<Node3D> nodeBou){
+  float nx;
+  float ny;
+  if(box1.getIntX()<box2.getIntX()){
+    nx=box2.getIntX()-box2.getLeft();
+  }else{
+    nx=box2.getIntX()+box2.getRight();
+  }
+  if(box1.getY()<box2.getIntY()){
+    ny=box2.getIntY()-box2.getDown();
+  }else{
+    ny=box2.getIntY()+box2.getUp();
+  }
+  Node3D node3d(nx, ny, 0, 0, 0, nullptr);
+  nodeBou.push_back(node3d);
+}
+
 //###################################################
 //                                         COST TO GO
 //###################################################
@@ -357,7 +638,7 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
   // if dubins heuristic is activated calculate the shortest path
   // constrained without obstacles
   if (Constants::dubins) {
-
+ 
     // ONLY FOR dubinsLookup
     //    int uX = std::abs((int)goal.getX() - (int)start.getX());
     //    int uY = std::abs((int)goal.getY() - (int)start.getY());
