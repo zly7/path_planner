@@ -205,26 +205,31 @@ void Planner::plan() {
     std::vector<Node2D> path2D=smoother.getPath2D();
     float deltaL=0.3;
     Algorithm::node2DToBox(path2D,width,height,configurationSpace,deltaL);
-    float threshold=15;
+    float threshold=45;
     std::vector<Node3D> nodeBou=Algorithm::findBou(nStart,nGoal,path2D,threshold);
     std::cout<<"findBou"<<std::endl;
 
-    for(size_t i = 1; i < nodeBou.size(); ++i){
+    for(size_t i = nodeBou.size()-1; i>0 ; i--){
+      std::cout << "start " << i << " " << nodeBou[i-1].getX() << " " << nodeBou[i-1].getY() <<std::endl;
+      std::cout << "end   " << i << " " << nodeBou[i].getX() << " " << nodeBou[i].getY() <<std::endl;
       Node3D* nSolution = Algorithm::hybridAStar(nodeBou[i-1], nodeBou[i], nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
       // TRACE THE PATH
       smoother.tracePath(nSolution);
       // CREATE THE UPDATED PATH
+      std::cout << "3D path number" << smoother.getPath().size() << std::endl;
       path.updatePath(smoother.getPath());
+      smoother.smoothPath(voronoiDiagram);
+      // CREATE THE UPDATED PATH
+      smoothedPath.updatePath(smoother.getPath());
     }
+    
     // Node3D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
     // // TRACE THE PATH
     // smoother.tracePath(nSolution);
     // // CREATE THE UPDATED PATH
     // path.updatePath(smoother.getPath());
     // // SMOOTH THE PATH
-    smoother.smoothPath(voronoiDiagram);
-    // CREATE THE UPDATED PATH
-    smoothedPath.updatePath(smoother.getPath());
+    
     ros::Time t1 = ros::Time::now();
     ros::Duration d(t1 - t0);
     std::cout << "TIME in ms: " << d * 1000 << std::endl;

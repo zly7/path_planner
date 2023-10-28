@@ -50,6 +50,7 @@ void Path::updatePath(const std::vector<Node3D>& nodePath) {
   int k = 0;
 
   for (size_t i = 0; i < nodePath.size(); ++i) {
+    std::cout << "add path " << i << " " << nodePath[i].getX() << " " << nodePath[i].getY() << std::endl;
     addSegment(nodePath[i]);
     addNode(nodePath[i], k);
     k++;
@@ -107,7 +108,7 @@ void Path::addNode(const Node3D& node, int i) {
   pathNodes.markers.push_back(pathNode);
 }
 
-void Path::addVehicle(const Node3D& node, int i) {
+void Path::`addVehicle(const Node3D& node, int i) {
   visualization_msgs::Marker pathVehicle;
 
   // delete all previous markersg

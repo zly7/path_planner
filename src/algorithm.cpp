@@ -7,7 +7,7 @@ using namespace HybridAStar;
 float aStar(Node2D& start, Node2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
 void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
 Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
-void getBouNode(Node2D& box1, Node2D& box2, std::vector<Node3D> nodeBou);
+void getBouNode(Node2D& box1, Node2D& box2, std::vector<Node3D>& nodeBou);
 
 //###################################################
 //                                    NODE COMPARISON
@@ -464,6 +464,7 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
   for (Node2D& node2d : path2D) {
     float x = static_cast<float>(node2d.getIntX());
     float y = static_cast<float>(node2d.getIntY());
+    std::cout << "path2D " << x << " " << y <<std::endl;
     while(true){
       float up = node2d.getUp();
       float down = node2d.getDown();
@@ -577,18 +578,23 @@ std::vector<Node3D> Algorithm::findBou(Node3D& start,
   nodeBou.push_back(start);
   bool narrowFlag = false;
   bool wideFlag = false;
+  std::cout<<"path2D "<< path2D.size() <<std::endl;
+  
   for (size_t i = 0; i < path2D.size(); ++i) {
     float up = path2D[i].getUp();
     float down = path2D[i].getDown();
     float left = path2D[i].getLeft();
     float right = path2D[i].getRight();
+    std::cout<< i << " " << up+down << " " << left+right <<std::endl;
     if(up+down>=threshold&&left+right>=threshold){
       wideFlag=true;
       if(narrowFlag){
         narrowFlag=false;
         nodeSeq.push_back(path2D[i-1]);
         nodeSeq.push_back(path2D[i]);
-        getBouNode(path2D[i-1],path2D[i],nodeBou);
+        getBouNode(path2D[i],path2D[i-1],nodeBou);
+        std::cout << "bouBox" << " " << i-1  << " " << path2D[i-1].getUp()+path2D[i-1].getDown()  << " " << path2D[i-1].getLeft()+path2D[i-1].getRight()  << " " << path2D[i-1].getIntX()  << " " <<path2D[i-1].getIntY() << std::endl;
+        std::cout << "bouBox" << " " << i  << " " << up+down  << " " << left+right  << " " << path2D[i].getIntX()  << " " <<path2D[i].getIntY() << std::endl;
       }
     }else{
       narrowFlag=true;
@@ -597,11 +603,14 @@ std::vector<Node3D> Algorithm::findBou(Node3D& start,
         nodeSeq.push_back(path2D[i-1]);
         nodeSeq.push_back(path2D[i]);
         getBouNode(path2D[i-1],path2D[i],nodeBou);
+        std::cout << "bouBox" << " " << i-1  << " " << path2D[i-1].getUp()+path2D[i-1].getDown()  << " " << path2D[i-1].getLeft()+path2D[i-1].getRight()  << " " << path2D[i-1].getIntX()  << " " <<path2D[i-1].getIntY() << std::endl;
+        std::cout << "bouBox" << " " << i  << " " << up+down  << " " << left+right  << " " << path2D[i].getIntX()  << " " <<path2D[i].getIntY() << std::endl;
       }
     }
   }
   nodeBou.push_back(goal);
-  for (size_t i = 1; i < nodeBou.size(); ++i) {
+  std::cout << "nodeBou number" << nodeBou.size() << std::endl;
+  for (size_t i = 1; i < nodeBou.size()-1; ++i) {
     float nt=atanf((nodeBou[i].getY()-nodeBou[i-1].getY())/(nodeBou[i].getX()-nodeBou[i-1].getX()));
     nodeBou[i].setT(nt);
     std::cout << i << " " << nodeBou[i].getX() << " "  << nodeBou[i].getY() << " "  << nodeBou[i].getT() << std::endl;
@@ -609,7 +618,7 @@ std::vector<Node3D> Algorithm::findBou(Node3D& start,
   return nodeBou;
 }
 
-void getBouNode(Node2D& box1, Node2D& box2, std::vector<Node3D> nodeBou){
+void getBouNode(Node2D& box1, Node2D& box2, std::vector<Node3D>& nodeBou){
   float nx;
   float ny;
   if(box1.getIntX()<box2.getIntX()){
