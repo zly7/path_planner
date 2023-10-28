@@ -108,7 +108,7 @@ void Path::addNode(const Node3D& node, int i) {
   pathNodes.markers.push_back(pathNode);
 }
 
-void Path::`addVehicle(const Node3D& node, int i) {
+void Path::addVehicle(const Node3D& node, int i) {
   visualization_msgs::Marker pathVehicle;
 
   // delete all previous markersg

@@ -172,7 +172,7 @@ static constexpr color pink = {249.f / 255.f, 38.f / 255.f, 114.f / 255.f};
 /// A definition for a color used for visualization
 static constexpr color purple = {174.f / 255.f, 129.f / 255.f, 255.f / 255.f};
 /// A definition for a color used for visualization
-static constexpr color green = {139.f / 255.f, 240.f / 255.f, 103.f / 255.f};
+static constexpr color cyan = {139.f / 255.f, 240.f / 255.f, 103.f / 255.f};
 /// A definition for a color used for visualization
 static constexpr color brown = {139.f / 255.f, 69.f / 255.f, 19.f / 255.f};
 
