@@ -12,11 +12,13 @@ void Path::clear() {
   path.poses.clear();
   pathNodes.markers.clear();
   pathVehicles.markers.clear();
+  path2DNodes.markers.clear();
   addNode(node, 0);
   addVehicle(node, 1);
   publishPath();
   publishPathNodes();
   publishPathVehicles();
+  publishPath2DNodes();
 }
 
 ////###################################################
@@ -55,6 +57,19 @@ void Path::updatePath(const std::vector<Node3D>& nodePath) {
     addNode(nodePath[i], k);
     k++;
     addVehicle(nodePath[i], k);
+    k++;
+  }
+
+  return;
+}
+
+void Path::update2DPath(const std::vector<Node2D>& nodePath) {
+  path.header.stamp = ros::Time::now();
+  int k = 0;
+
+  for (size_t i = 0; i < nodePath.size(); ++i) {
+    std::cout << "add 2D path " << i << " " << nodePath[i].getX() << " " << nodePath[i].getY() << std::endl;
+    add2DNode(nodePath[i], k);
     k++;
   }
 
@@ -106,6 +121,44 @@ void Path::addNode(const Node3D& node, int i) {
   pathNode.pose.position.x = node.getX() * Constants::cellSize;
   pathNode.pose.position.y = node.getY() * Constants::cellSize;
   pathNodes.markers.push_back(pathNode);
+}
+
+void Path::add2DNode(const Node2D& node, int i) {
+  visualization_msgs::Marker pathNode;
+
+  // delete all previous markers
+  if (i == 0) {
+    pathNode.action = 3;
+  }
+
+  pathNode.header.frame_id = "path";
+  pathNode.header.stamp = ros::Time(0);
+  pathNode.id = i;
+  pathNode.type = visualization_msgs::Marker::SPHERE;
+  pathNode.action = visualization_msgs::Marker::ADD;
+  pathNode.scale.x = 0.5;
+  pathNode.scale.y = 0.5;
+  pathNode.scale.z = 0.5;
+  pathNode.color.a = 1.0;
+
+  if (smoothed) {
+    pathNode.color.r = Constants::black.red;
+    pathNode.color.g = Constants::black.green;
+    pathNode.color.b = Constants::black.blue;
+  } else {
+    pathNode.color.r = Constants::black.red;
+    pathNode.color.g = Constants::black.green;
+    pathNode.color.b = Constants::black.blue;
+  }
+
+  pathNode.pose.position.x = node.getX() * Constants::cellSize;
+  pathNode.pose.position.y = node.getY() * Constants::cellSize;
+  pathNode.pose.position.z = 0;
+  pathNode.pose.orientation.x = 0;
+  pathNode.pose.orientation.y = 0;
+  pathNode.pose.orientation.z = 0;
+  pathNode.pose.orientation.w = 1;
+  path2DNodes.markers.push_back(pathNode);
 }
 
 void Path::addVehicle(const Node3D& node, int i) {

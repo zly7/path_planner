@@ -122,6 +122,14 @@ Visualization Manager:
       Queue Size: 100
       Value: false
     - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /path2DNodes
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
       Enabled: false
       Marker Topic: /pathVehicle
       Name: MarkerArray
@@ -155,6 +163,14 @@ Visualization Manager:
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /sPathNodes
+      Name: MarkerArray
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /sPath2DNodes
       Name: MarkerArray
       Namespaces:
         "": true

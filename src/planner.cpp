@@ -203,6 +203,7 @@ void Planner::plan() {
     smoother.tracePath2D(nSolution2D);
     
     std::vector<Node2D> path2D=smoother.getPath2D();
+    path.update2DPath(smoother.getPath2D());
     float deltaL=0.3;
     Algorithm::node2DToBox(path2D,width,height,configurationSpace,deltaL);
     float threshold=45;
@@ -239,8 +240,10 @@ void Planner::plan() {
     path.publishPath();
     path.publishPathNodes();
     path.publishPathVehicles();
+    path.publishPath2DNodes();
     smoothedPath.publishPath();
     smoothedPath.publishPathNodes();
+    smoothedPath.publishPath2DNodes();
     smoothedPath.publishPathVehicles();
     visualization.publishNode3DCosts(nodes3D, width, height, depth);
     visualization.publishNode2DCosts(nodes2D, width, height);

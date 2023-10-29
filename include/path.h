@@ -13,6 +13,7 @@
 #include <visualization_msgs/MarkerArray.h>
 
 #include "node3d.h"
+#include "node2d.h"
 #include "constants.h"
 #include "helper.h"
 namespace HybridAStar {
@@ -26,11 +27,13 @@ class Path {
     std::string pathTopic = "/path";
     std::string pathNodesTopic = "/pathNodes";
     std::string pathVehicleTopic = "/pathVehicle";
+    std::string path2DNodesTopic = "/path2DNodes";
 
     if (smoothed) {
       pathTopic = "/sPath";
       pathNodesTopic = "/sPathNodes";
       pathVehicleTopic = "/sPathVehicle";
+      path2DNodesTopic = "/sPath2DNodes";
       this->smoothed = smoothed;
     }
 
@@ -39,6 +42,7 @@ class Path {
     pubPath = n.advertise<nav_msgs::Path>(pathTopic, 1);
     pubPathNodes = n.advertise<visualization_msgs::MarkerArray>(pathNodesTopic, 1);
     pubPathVehicles = n.advertise<visualization_msgs::MarkerArray>(pathVehicleTopic, 1);
+    pubPath2DNodes = n.advertise<visualization_msgs::MarkerArray>(path2DNodesTopic, 1);
 
     // CONFIGURE THE CONTAINER
     path.header.frame_id = "path";
@@ -58,6 +62,7 @@ class Path {
      \param i a parameter for counting the number of nodes
   */
   void updatePath(const std::vector<Node3D> &nodePath);
+  void update2DPath(const std::vector<Node2D> &nodePath);
   /*!
      \brief Adds a segment to the path
      \param node a 3D node
@@ -69,6 +74,12 @@ class Path {
      \param i a parameter for counting the number of nodes
   */
   void addNode(const Node3D& node, int i);
+  /*!
+     \brief Adds a node to the path
+     \param node a 3D node
+     \param i a parameter for counting the number of nodes
+  */
+  void add2DNode(const Node2D& node, int i);
   /*!
      \brief Adds a vehicle shape to the path
      \param node a 3D node
@@ -87,6 +98,8 @@ class Path {
   void publishPathNodes() { pubPathNodes.publish(pathNodes); }
   /// Publishes the vehicle along the path
   void publishPathVehicles() { pubPathVehicles.publish(pathVehicles); }
+  /// Publishes the nodes of the 2D path
+  void publishPath2DNodes() { pubPath2DNodes.publish(path2DNodes); }
 
  private:
   /// A handle to the ROS node
@@ -97,12 +110,16 @@ class Path {
   ros::Publisher pubPathNodes;
   /// Publisher for the vehicle along the path
   ros::Publisher pubPathVehicles;
+  /// Publisher for the nodes on the 2D path
+  ros::Publisher pubPath2DNodes;
   /// Path data structure for visualization
   nav_msgs::Path path;
   /// Nodes data structure for visualization
   visualization_msgs::MarkerArray pathNodes;
   /// Vehicle data structure for visualization
   visualization_msgs::MarkerArray pathVehicles;
+  /// Nodes data structure for visualization
+  visualization_msgs::MarkerArray path2DNodes;
   /// Value that indicates that the path is smoothed/post processed
   bool smoothed = false;
 };
