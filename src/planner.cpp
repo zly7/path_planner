@@ -214,6 +214,8 @@ void Planner::plan() {
       std::cout << "start " << i << " " << nodeBou[i-1].getX() << " " << nodeBou[i-1].getY() <<std::endl;
       std::cout << "end   " << i << " " << nodeBou[i].getX() << " " << nodeBou[i].getY() <<std::endl;
       Node3D* nSolution = Algorithm::hybridAStar(nodeBou[i-1], nodeBou[i], nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
+      std::cout<<" nSolusion "<<nSolution->getX()<<" "<<nSolution->getY()<<std::endl;
+      std::cout<<" nSolusion end "<<nodeBou[i].getX()<<" "<<nodeBou[i].getY()<<std::endl;
       // TRACE THE PATH
       smoother.tracePath(nSolution);
       // CREATE THE UPDATED PATH

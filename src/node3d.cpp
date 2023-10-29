@@ -295,6 +295,13 @@ void Node3D::updateG() {
 //                                 3D NODE COMPARISON
 //###################################################
 bool Node3D::operator == (const Node3D& rhs) const {
+  if((int)x == (int)rhs.x &&
+         (int)y == (int)rhs.y &&
+         (std::abs(t - rhs.t) <= Constants::deltaHeadingRad ||
+          std::abs(t - rhs.t) >= Constants::deltaHeadingNegRad)){
+  std::cout<<(int)x <<" "<<(int)rhs.x <<std::endl;
+  std::cout<<(int)y <<" "<<(int)rhs.y <<std::endl;
+  std::cout<<std::abs(t - rhs.t)<<" "<<Constants::deltaHeadingRad<<" "<<Constants::deltaHeadingNegRad;}
   return (int)x == (int)rhs.x &&
          (int)y == (int)rhs.y &&
          (std::abs(t - rhs.t) <= Constants::deltaHeadingRad ||

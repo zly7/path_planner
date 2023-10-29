@@ -5,6 +5,8 @@
 
 #include "constants.h"
 #include "helper.h"
+#include <iostream>
+
 namespace HybridAStar {
 /*!
    \brief A three dimensional node class that is at the heart of the algorithm.

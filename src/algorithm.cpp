@@ -156,6 +156,9 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
       // GOAL TEST
       if (*nPred == goal || iterations > Constants::iterations) {
         // DEBUG
+        std::cout<< iterations<<std::endl;
+        std::cout<<"npred "<<nPred->getX()<<" "<<nPred->getY()<<std::endl;
+        std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
         return nPred;
       }
 
@@ -170,6 +173,8 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
           if (nSucc != nullptr && *nSucc == goal) {  // 这里的相等就很妙，就是整数相等，整数映射空间
             //DEBUG
             // std::cout << "max diff " << max << std::endl;
+            std::cout<<"nSucc "<<nSucc->getX()<<" "<<nSucc->getY()<<std::endl;
+            std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
             return nSucc;
           }
         }

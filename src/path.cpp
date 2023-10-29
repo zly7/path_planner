@@ -177,11 +177,36 @@ void Path::add2DBox(const Node2D& node, int i){
   pathBox.header.frame_id = "path";
   pathBox.header.stamp = ros::Time(0);
   pathBox.id = i;
-  pathBox.type = visualization_msgs::Marker::CUBE;
-  pathBox.scale.x = node.getLeft()+node.getRight();
-  pathBox.scale.y = node.getUp()+node.getDown();
-  pathBox.scale.z = 0.01;
-  pathBox.color.a = 0.01;
+  pathBox.type = visualization_msgs::Marker::LINE_LIST;
+  pathBox.scale.x = 0.1;
+  pathBox.color.a = 1.0;
+  // Define the points for the rectangle's corners (assuming a 2D rectangle)
+  geometry_msgs::Point point1, point2, point3, point4;
+  point1.x = node.getIntX()-node.getLeft();  // X-coordinate of the first corner
+  point1.y = node.getIntY()+node.getUp();  // Y-coordinate of the first corner
+  point1.z = 0.0;  // Z-coordinate of the first corner (set to 0 for 2D)
+
+  point2.x = node.getIntX()-node.getLeft();  // X-coordinate of the second corner
+  point2.y = node.getIntY()-node.getDown();  // Y-coordinate of the second corner
+  point2.z = 0.0;  // Z-coordinate of the second corner
+
+  point3.x = node.getIntX()+node.getRight();  // X-coordinate of the third corner
+  point3.y = node.getIntY()-node.getDown();  // Y-coordinate of the third corner
+  point3.z = 0.0;  // Z-coordinate of the third corner
+
+  point4.x = node.getIntX()+node.getRight();  // X-coordinate of the fourth corner
+  point4.y = node.getIntY()+node.getUp();  // Y-coordinate of the fourth corner
+  point4.z = 0.0;  // Z-coordinate of the fourth corner
+
+  // Add the points to the marker
+  pathBox.points.push_back(point1);
+  pathBox.points.push_back(point2);
+  pathBox.points.push_back(point2);
+  pathBox.points.push_back(point3);
+  pathBox.points.push_back(point3);
+  pathBox.points.push_back(point4);
+  pathBox.points.push_back(point4);
+  pathBox.points.push_back(point1);
 
   std::cout << "scale " << pathBox.scale.x << " " << pathBox.scale.y << std::endl;
 
@@ -195,9 +220,6 @@ void Path::add2DBox(const Node2D& node, int i){
     pathBox.color.b = Constants::green.blue;
   }
 
-  pathBox.pose.position.x = (node.getIntX()+(node.getRight()-node.getLeft())/2) * Constants::cellSize;
-  pathBox.pose.position.y = (node.getIntY()+(node.getUp()-node.getDown())/2) * Constants::cellSize;
-  pathBox.pose.orientation = tf::createQuaternionMsgFromYaw(0);
   pathBoxes.markers.push_back(pathBox);
 }
 
