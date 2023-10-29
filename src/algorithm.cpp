@@ -592,7 +592,8 @@ std::vector<Node3D> Algorithm::findBou(Node3D& start,
         narrowFlag=false;
         nodeSeq.push_back(path2D[i-1]);
         nodeSeq.push_back(path2D[i]);
-        getBouNode(path2D[i],path2D[i-1],nodeBou);
+        Node3D node3d(path2D[i].getIntX(), path2D[i].getIntY(), 0, 0, 0, nullptr);
+        nodeBou.push_back(node3d);
         std::cout << "bouBox" << " " << i-1  << " " << path2D[i-1].getUp()+path2D[i-1].getDown()  << " " << path2D[i-1].getLeft()+path2D[i-1].getRight()  << " " << path2D[i-1].getIntX()  << " " <<path2D[i-1].getIntY() << std::endl;
         std::cout << "bouBox" << " " << i  << " " << up+down  << " " << left+right  << " " << path2D[i].getIntX()  << " " <<path2D[i].getIntY() << std::endl;
       }
@@ -602,7 +603,8 @@ std::vector<Node3D> Algorithm::findBou(Node3D& start,
         wideFlag=false;
         nodeSeq.push_back(path2D[i-1]);
         nodeSeq.push_back(path2D[i]);
-        getBouNode(path2D[i-1],path2D[i],nodeBou);
+        Node3D node3d(path2D[i].getIntX(), path2D[i].getIntY(), 0, 0, 0, nullptr);
+        nodeBou.push_back(node3d);
         std::cout << "bouBox" << " " << i-1  << " " << path2D[i-1].getUp()+path2D[i-1].getDown()  << " " << path2D[i-1].getLeft()+path2D[i-1].getRight()  << " " << path2D[i-1].getIntX()  << " " <<path2D[i-1].getIntY() << std::endl;
         std::cout << "bouBox" << " " << i  << " " << up+down  << " " << left+right  << " " << path2D[i].getIntX()  << " " <<path2D[i].getIntY() << std::endl;
       }
