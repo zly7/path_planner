@@ -226,14 +226,13 @@ void Planner::plan() {
       smoothedPath.updatePath(smoother.getPath(),k);
       k++;
     }
-    
+ 
     // Node3D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
     // // TRACE THE PATH
     // smoother.tracePath(nSolution);
     // // CREATE THE UPDATED PATH
     // path.updatePath(smoother.getPath());
     // // SMOOTH THE PATH
-    
     ros::Time t1 = ros::Time::now();
     ros::Duration d(t1 - t0);
     std::cout << "TIME in ms: " << d * 1000 << std::endl;

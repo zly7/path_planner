@@ -1,8 +1,15 @@
 {
+    "python.autoComplete.extraPaths": [
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/opt/ros/noetic/lib/python3/dist-packages"
+    ],
     "files.associations": {
         "cctype": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
+        "csignal": "cpp",
         "cstdarg": "cpp",
         "cstddef": "cpp",
         "cstdio": "cpp",
@@ -26,6 +33,7 @@
         "map": "cpp",
         "set": "cpp",
         "unordered_map": "cpp",
+        "unordered_set": "cpp",
         "vector": "cpp",
         "exception": "cpp",
         "algorithm": "cpp",
@@ -43,6 +51,8 @@
         "tuple": "cpp",
         "type_traits": "cpp",
         "utility": "cpp",
+        "hash_map": "cpp",
+        "hash_set": "cpp",
         "fstream": "cpp",
         "initializer_list": "cpp",
         "iomanip": "cpp",
@@ -53,6 +63,7 @@
         "mutex": "cpp",
         "new": "cpp",
         "ostream": "cpp",
+        "shared_mutex": "cpp",
         "sstream": "cpp",
         "stdexcept": "cpp",
         "streambuf": "cpp",
