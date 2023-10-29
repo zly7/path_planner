@@ -32,6 +32,7 @@ class Node2D {
     this->right = 0;
     this->ix = x;
     this->iy = y;
+    this->wide = false;
   }
   // GETTER METHODS
   /// get the x position
@@ -61,6 +62,7 @@ class Node2D {
   float getRight() const { return right;}
   int getIntX() const { return x;}
   int getIntY() const { return y;}
+  bool getWide() const { return wide;}
 
   // SETTER METHODS
   /// set the x position
@@ -90,6 +92,7 @@ class Node2D {
   void setRight(const float& right) { this->right = right; }
   void setIx(const float& ix) { this->ix = ix; }
   void setIy(const float& iy) { this->iy = iy; }
+  void setWide(const bool& wide) { this->wide = wide; }
   // UPDATE METHODS
   /// Updates the cost-so-far for the node x' coming from its predecessor. It also discovers the node.
   void updateG() { g += movementCost(*pred); d = true; }
@@ -145,6 +148,8 @@ class Node2D {
 
   float ix;
   float iy;
+
+  bool wide;
 };
 }
 #endif // NODE2D_H

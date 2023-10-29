@@ -13,12 +13,14 @@ void Path::clear() {
   pathNodes.markers.clear();
   pathVehicles.markers.clear();
   path2DNodes.markers.clear();
+  pathBoxes.markers.clear();
   addNode(node, 0);
   addVehicle(node, 1);
   publishPath();
   publishPathNodes();
   publishPathVehicles();
   publishPath2DNodes();
+  publishPathBoxes();
 }
 
 ////###################################################
@@ -47,9 +49,9 @@ void Path::clear() {
 //###################################################
 // __________
 // TRACE PATH
-void Path::updatePath(const std::vector<Node3D>& nodePath) {
+void Path::updatePath(const std::vector<Node3D>& nodePath,int k) {
   path.header.stamp = ros::Time::now();
-  int k = 0;
+  // int k = 0;
 
   for (size_t i = 0; i < nodePath.size(); ++i) {
     std::cout << "add path " << i << " " << nodePath[i].getX() << " " << nodePath[i].getY() << std::endl;
@@ -70,6 +72,8 @@ void Path::update2DPath(const std::vector<Node2D>& nodePath) {
   for (size_t i = 0; i < nodePath.size(); ++i) {
     std::cout << "add 2D path " << i << " " << nodePath[i].getX() << " " << nodePath[i].getY() << std::endl;
     add2DNode(nodePath[i], k);
+    k++;
+    add2DBox(nodePath[i],k);
     k++;
   }
 
@@ -160,6 +164,43 @@ void Path::add2DNode(const Node2D& node, int i) {
   pathNode.pose.orientation.w = 1;
   path2DNodes.markers.push_back(pathNode);
 }
+
+void Path::add2DBox(const Node2D& node, int i){
+  visualization_msgs::Marker pathBox;
+
+  // delete all previous markersg
+  if (i == 1) {
+    pathBox.action = 3;
+  }
+
+  std::cout<<"  Box   " << node.getLeft() << " " << node.getRight() << " " << node.getUp() << " " << node.getDown() <<std::endl;
+  pathBox.header.frame_id = "path";
+  pathBox.header.stamp = ros::Time(0);
+  pathBox.id = i;
+  pathBox.type = visualization_msgs::Marker::CUBE;
+  pathBox.scale.x = node.getLeft()+node.getRight();
+  pathBox.scale.y = node.getUp()+node.getDown();
+  pathBox.scale.z = 0.01;
+  pathBox.color.a = 0.01;
+
+  std::cout << "scale " << pathBox.scale.x << " " << pathBox.scale.y << std::endl;
+
+  if (node.getWide()) {
+    pathBox.color.r = Constants::red.red;
+    pathBox.color.g = Constants::red.green;
+    pathBox.color.b = Constants::red.blue;
+  } else {
+    pathBox.color.r = Constants::green.red;
+    pathBox.color.g = Constants::green.green;
+    pathBox.color.b = Constants::green.blue;
+  }
+
+  pathBox.pose.position.x = (node.getIntX()+(node.getRight()-node.getLeft())/2) * Constants::cellSize;
+  pathBox.pose.position.y = (node.getIntY()+(node.getUp()-node.getDown())/2) * Constants::cellSize;
+  pathBox.pose.orientation = tf::createQuaternionMsgFromYaw(0);
+  pathBoxes.markers.push_back(pathBox);
+}
+
 
 void Path::addVehicle(const Node3D& node, int i) {
   visualization_msgs::Marker pathVehicle;

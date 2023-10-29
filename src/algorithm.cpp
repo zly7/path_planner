@@ -566,6 +566,7 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
       node2d.setLeft(left+leftFlag*deltaL);
       node2d.setRight(right+rightFlag*deltaL);
     }
+    std::cout << "path2D " << x << " " << y << " " << node2d.getLeft()+node2d.getRight() << " " << node2d.getUp()+node2d.getDown() <<std::endl;
   }
 }
 

@@ -177,6 +177,8 @@ static constexpr color cyan = {139.f / 255.f, 240.f / 255.f, 103.f / 255.f};
 static constexpr color brown = {139.f / 255.f, 69.f / 255.f, 19.f / 255.f};
 /// A definition for a color used for visualization
 static constexpr color black = {0.f / 255.f, 0.f / 255.f, 0.f / 255.f};
+/// A definition for a color used for visualization
+static constexpr color red = {255.f / 255.f, 0.f / 255.f, 0.f / 255.f};
 
 
 }
