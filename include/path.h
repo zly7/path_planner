@@ -105,7 +105,7 @@ class Path {
   void publishPathVehicles() { pubPathVehicles.publish(pathVehicles); }
   /// Publishes the nodes of the 2D path
   void publishPath2DNodes() { pubPath2DNodes.publish(path2DNodes); }
-  void publishPathBoxes() { pubPath2DNodes.publish(pathBoxes); }
+  void publishPathBoxes() { pubPathBoxes.publish(pathBoxes); }
 
  private:
   /// A handle to the ROS node

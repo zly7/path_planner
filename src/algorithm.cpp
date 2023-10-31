@@ -73,56 +73,6 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
 
   // continue until O empty
   while (!O.empty()) {
-
-    //    // DEBUG
-    //    Node3D* pre = nullptr;
-    //    Node3D* succ = nullptr;
-
-    //    std::cout << "\t--->>>" << std::endl;
-
-    //    for (priorityQueue::ordered_iterator it = O.ordered_begin(); it != O.ordered_end(); ++it) {
-    //      succ = (*it);
-    //      std::cout << "VAL"
-    //                << " | C:" << succ->getC()
-    //                << " | x:" << succ->getX()
-    //                << " | y:" << succ->getY()
-    //                << " | t:" << helper::toDeg(succ->getT())
-    //                << " | i:" << succ->getIdx()
-    //                << " | O:" << succ->isOpen()
-    //                << " | pred:" << succ->getPred()
-    //                << std::endl;
-
-    //      if (pre != nullptr) {
-
-    //        if (pre->getC() > succ->getC()) {
-    //          std::cout << "PRE"
-    //                    << " | C:" << pre->getC()
-    //                    << " | x:" << pre->getX()
-    //                    << " | y:" << pre->getY()
-    //                    << " | t:" << helper::toDeg(pre->getT())
-    //                    << " | i:" << pre->getIdx()
-    //                    << " | O:" << pre->isOpen()
-    //                    << " | pred:" << pre->getPred()
-    //                    << std::endl;
-    //          std::cout << "SCC"
-    //                    << " | C:" << succ->getC()
-    //                    << " | x:" << succ->getX()
-    //                    << " | y:" << succ->getY()
-    //                    << " | t:" << helper::toDeg(succ->getT())
-    //                    << " | i:" << succ->getIdx()
-    //                    << " | O:" << succ->isOpen()
-    //                    << " | pred:" << succ->getPred()
-    //                    << std::endl;
-
-    //          if (pre->getC() - succ->getC() > max) {
-    //            max = pre->getC() - succ->getC();
-    //          }
-    //        }
-    //      }
-
-    //      pre = succ;
-    //    }
-
     // pop node with lowest cost from priority queue pop出堆的第一步
     nPred = O.top();
     // set index
@@ -462,8 +412,8 @@ Node2D* Algorithm::aStar2D(Node2D& start,
 }
 
 void Algorithm::node2DToBox(std::vector<Node2D> &path2D, 
-                  int width, 
-                  int height, 
+                  int width,  // grid info
+                  int height, // grid info
                   CollisionDetection& configurationSpace, 
                   float deltaL){
   for (Node2D& node2d : path2D) {
@@ -474,7 +424,7 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
       float up = node2d.getUp();
       float down = node2d.getDown();
       float left = node2d.getLeft();
-      float right = node2d.getRight();
+      float right = node2d.getRight(); //current
       bool upFlag = true; 
       bool downFlag = true; 
       bool leftFlag = true; 
@@ -484,31 +434,31 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
       ny=y+up+deltaL;
       if (ny<=height){
         for(nx=x-left;nx<=x+right;nx+=deltaL){
-          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
-          nNode.setIx(nx);
-          nNode.setIy(ny);
+          Node2D nNode =  Node2D(nx, ny, 0, 0, nullptr);
           if(!configurationSpace.isTraversable(&nNode)){
             upFlag = false;
             break;
           }
         }
-      }else upFlag = false;
+      }else {upFlag = false;};
+
       ny=y-down-deltaL;
       if (ny>=0){
         for(nx=x-left;nx<=x+right;nx+=deltaL){
-          Node3D nNode =  Node3D(nx,ny, 0, 0, 0, nullptr);
+          Node2D nNode =  Node2D(nx,ny, 0, 0, nullptr);
           if(!configurationSpace.isTraversable(&nNode)){
             downFlag = false;
             break;
           }
         }
-      }else downFlag = false;
+      }else {downFlag = false;};
+
       nx=x-left-deltaL;
       if (nx>=0){
         for(ny=x-down;nx<=x+up;nx+=deltaL){
           Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
-          nNode.setIx(nx);
-          nNode.setIy(ny);
+          nNode.setFloatx(nx);
+          nNode.setFloaty(ny);
           if(!configurationSpace.isTraversable(&nNode)){
             leftFlag = false;
             break;
@@ -516,8 +466,8 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
         }
         if(upFlag&&leftFlag){
           Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
-          nNode.setIx(nx);
-          nNode.setIy(y+up+deltaL);
+          nNode.setFloatx(nx);
+          nNode.setFloaty(y+up+deltaL);
           if(!configurationSpace.isTraversable(&nNode)){
             upFlag = false;
             leftFlag = false;
@@ -525,20 +475,20 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
         }
         if(downFlag&&leftFlag){
           Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
-          nNode.setIx(nx);
-          nNode.setIy(y-down-deltaL);
+          nNode.setFloatx(nx);
+          nNode.setFloaty(y-down-deltaL);
           if(!configurationSpace.isTraversable(&nNode)){
             downFlag = false;
             leftFlag = false;
           }
         }
-      }else leftFlag = false;
+      }else {leftFlag = false;};
       nx=x+right+deltaL;
       if (nx<=width){
         for(ny=x-down;nx<=x+up;nx+=deltaL){
           Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
-          nNode.setIx(nx);
-          nNode.setIy(ny);
+          nNode.setFloatx(nx);
+          nNode.setFloaty(ny);
           if(!configurationSpace.isTraversable(&nNode)){
             rightFlag = false;
             break;
@@ -546,8 +496,8 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
         }
         if(upFlag&&rightFlag){
           Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
-          nNode.setIx(nx);
-          nNode.setIy(y+up+deltaL);
+          nNode.setFloatx(nx);
+          nNode.setFloaty(y+up+deltaL);
           if(!configurationSpace.isTraversable(&nNode)){
             upFlag = false;
             rightFlag = false;
@@ -555,21 +505,24 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
         }
         if(downFlag&&rightFlag){
           Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
-          nNode.setIx(nx);
-          nNode.setIy(y-down-deltaL);
+          nNode.setFloatx(nx);
+          nNode.setFloaty(y-down-deltaL);
           if(!configurationSpace.isTraversable(&nNode)){
             downFlag = false;
             rightFlag = false;
           }
         }
-      }else rightFlag = false;
-      if((!upFlag)&&(!downFlag)&&(!rightFlag)&&(!leftFlag)){
-        break;
-      }
+      }else {rightFlag = false;};
+
       node2d.setUp(up+upFlag*deltaL);
       node2d.setDown(down+downFlag*deltaL);
       node2d.setLeft(left+leftFlag*deltaL);
       node2d.setRight(right+rightFlag*deltaL);
+
+      if((!upFlag)&&(!downFlag)&&(!rightFlag)&&(!leftFlag)){
+        break;
+      }
+
     }
     std::cout << "path2D " << x << " " << y << " " << node2d.getLeft()+node2d.getRight() << " " << node2d.getUp()+node2d.getDown() <<std::endl;
   }

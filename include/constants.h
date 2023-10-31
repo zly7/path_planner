@@ -30,7 +30,7 @@ namespace Constants {
 // CONFIG FLAGS
 
 /// A flag for additional debugging output via `std::cout`
-static const bool coutDEBUG = false;
+static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
 static const bool manual = true;
 /// A flag for the visualization of 3D nodes (true = on; false = off)

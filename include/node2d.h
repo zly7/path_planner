@@ -17,8 +17,25 @@ class Node2D {
   Node2D(): Node2D(0, 0, 0, 0, nullptr) {}
   /// Constructor for a node with the given arguments
   Node2D(int x, int y, float g, float h, Node2D* pred) {
+    this->whether_store_float = false;
     this->x = x;
     this->y = y;
+    this->g = g;
+    this->h = h;
+    this->pred = pred;
+    this->o = false;
+    this->c = false;
+    this->d = false;
+    this->idx = -1;
+    this->float_x = -1;
+    this->float_y = -1;
+    this->wide = 0;
+  }
+
+  Node2D(float x, float y, float g, float h, Node2D* pred) {
+    this->whether_store_float = true;
+    this->x = -1;
+    this->y = -1;
     this->g = g;
     this->h = h;
     this->pred = pred;
@@ -30,15 +47,15 @@ class Node2D {
     this->down = 0;
     this->left = 0;
     this->right = 0;
-    this->ix = x;
-    this->iy = y;
+    this->float_x = x;
+    this->float_y = y;
     this->wide = false;
   }
   // GETTER METHODS
   /// get the x position
-  float getX() const { return ix; }
+  int getX() const { return x; }
   /// get the y position
-  float getY() const { return iy; }
+  int getY() const { return y; }
   /// get the cost-so-far (real value)
   float getG() const { return g; }
   /// get the cost-to-come (heuristic value)
@@ -90,8 +107,8 @@ class Node2D {
   void setDown(const float& down) { this->down = down; }
   void setLeft(const float& left) { this->left = left; }
   void setRight(const float& right) { this->right = right; }
-  void setIx(const float& ix) { this->ix = ix; }
-  void setIy(const float& iy) { this->iy = iy; }
+  void setFloatx(const float& ix) { this->float_x = ix; }
+  void setFloaty(const float& iy) { this->float_y = iy; }
   void setWide(const bool& wide) { this->wide = wide; }
   // UPDATE METHODS
   /// Updates the cost-so-far for the node x' coming from its predecessor. It also discovers the node.
@@ -121,6 +138,8 @@ class Node2D {
   /// Possible movements in the y direction
   static const int dy[];
 
+  bool whether_store_float;
+
  private:
   /// the x position
   int x;
@@ -146,8 +165,8 @@ class Node2D {
   float left;
   float right;
 
-  float ix;
-  float iy;
+  float float_x;
+  float float_y;
 
   bool wide;
 };
