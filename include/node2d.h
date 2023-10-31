@@ -32,7 +32,7 @@ class Node2D {
     this->wide = 0;
   }
 
-  Node2D(float x, float y, float g, float h, Node2D* pred) {
+  Node2D(float x, float y) { //prevent implicit call
     this->whether_store_float = true;
     this->x = -1;
     this->y = -1;
@@ -91,7 +91,15 @@ class Node2D {
   /// set the cost-to-come (heuristic value)
   void setH(const float& h) { this->h = h; }
   /// set and get the index of the node in the 2D array
-  int setIdx(int width) { this->idx = y * width + x; return idx;}
+  int setIdx(int width) { 
+    if(this->whether_store_float){
+      assert(this->float_x >= 0 && this->float_y >= 0);
+      this->idx = std::floor(this->float_y) * width + std::floor(this->float_x); return idx;
+    }else{
+      this->idx = y * width + x; return idx;
+    }
+
+    }
   /// open the node
   void open() { o = true; c = false; }
   /// close the node

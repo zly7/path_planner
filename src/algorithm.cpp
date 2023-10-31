@@ -434,8 +434,9 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
       ny=y+up+deltaL;
       if (ny<=height){
         for(nx=x-left;nx<=x+right;nx+=deltaL){
-          Node2D nNode =  Node2D(nx, ny, 0, 0, nullptr);
-          if(!configurationSpace.isTraversable(&nNode)){
+          Node2D nNode =  Node2D(nx, ny);
+          nNode.setIdx(width);
+          if(!configurationSpace.isObstacleThisPoint(&nNode)){
             upFlag = false;
             break;
           }
@@ -445,8 +446,9 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
       ny=y-down-deltaL;
       if (ny>=0){
         for(nx=x-left;nx<=x+right;nx+=deltaL){
-          Node2D nNode =  Node2D(nx,ny, 0, 0, nullptr);
-          if(!configurationSpace.isTraversable(&nNode)){
+          Node2D nNode =  Node2D(nx,ny);
+          nNode.setIdx(width);
+          if(!configurationSpace.isObstacleThisPoint(&nNode)){
             downFlag = false;
             break;
           }
@@ -456,28 +458,25 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
       nx=x-left-deltaL;
       if (nx>=0){
         for(ny=x-down;nx<=x+up;nx+=deltaL){
-          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
-          nNode.setFloatx(nx);
-          nNode.setFloaty(ny);
-          if(!configurationSpace.isTraversable(&nNode)){
+          Node2D nNode =  Node2D(nx,ny);
+          nNode.setIdx(width);
+          if(!configurationSpace.isObstacleThisPoint(&nNode)){
             leftFlag = false;
             break;
           }
         }
         if(upFlag&&leftFlag){
-          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
-          nNode.setFloatx(nx);
-          nNode.setFloaty(y+up+deltaL);
-          if(!configurationSpace.isTraversable(&nNode)){
+          Node2D nNode =  Node2D(nx,y+up+deltaL);
+          nNode.setIdx(width);
+          if(!configurationSpace.isObstacleThisPoint(&nNode)){
             upFlag = false;
             leftFlag = false;
           }
         }
         if(downFlag&&leftFlag){
-          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
-          nNode.setFloatx(nx);
-          nNode.setFloaty(y-down-deltaL);
-          if(!configurationSpace.isTraversable(&nNode)){
+          Node2D nNode =  Node2D(nx, y-down-deltaL);
+          nNode.setIdx(width);
+          if(!configurationSpace.isObstacleThisPoint(&nNode)){
             downFlag = false;
             leftFlag = false;
           }
@@ -486,28 +485,25 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
       nx=x+right+deltaL;
       if (nx<=width){
         for(ny=x-down;nx<=x+up;nx+=deltaL){
-          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
-          nNode.setFloatx(nx);
-          nNode.setFloaty(ny);
-          if(!configurationSpace.isTraversable(&nNode)){
+          Node2D nNode =  Node2D(nx,ny);
+          nNode.setIdx(width);
+          if(!configurationSpace.isObstacleThisPoint(&nNode)){
             rightFlag = false;
             break;
           }
         }
         if(upFlag&&rightFlag){
-          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
-          nNode.setFloatx(nx);
-          nNode.setFloaty(y+up+deltaL);
-          if(!configurationSpace.isTraversable(&nNode)){
+          Node2D nNode =  Node2D(nx, y+up+deltaL);
+          nNode.setIdx(width);
+          if(!configurationSpace.isObstacleThisPoint(&nNode)){
             upFlag = false;
             rightFlag = false;
           }
         }
         if(downFlag&&rightFlag){
-          Node2D nNode =  Node2D(0, 0, 0, 0, nullptr);
-          nNode.setFloatx(nx);
-          nNode.setFloaty(y-down-deltaL);
-          if(!configurationSpace.isTraversable(&nNode)){
+          Node2D nNode =  Node2D(nx,y-down-deltaL);
+          nNode.setIdx(width);
+          if(!configurationSpace.isObstacleThisPoint(&nNode)){
             downFlag = false;
             rightFlag = false;
           }

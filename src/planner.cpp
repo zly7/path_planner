@@ -221,7 +221,7 @@ void Planner::plan() {
       // CREATE THE UPDATED PATH
       std::cout << "3D path number" << smoother.getPath().size() << std::endl;
       path.updatePath(smoother.getPath(),k);
-      smoother.smoothPath(voronoiDiagram);
+      // smoother.smoothPath(voronoiDiagram); //you don't know its effect
       // CREATE THE UPDATED PATH
       smoothedPath.updatePath(smoother.getPath(),k);
       k++;

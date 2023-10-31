@@ -50,18 +50,30 @@ class CollisionDetection {
     // assign values to the configuration
     getConfiguration(node, x, y, t);
 
-    // 2D collision test
-    if (t == 99) {
-      return !grid->data[node->getIdx()];
+    // // 2D collision test Zhang iyu: we should let the 2D point to check
+    // if (t == 99) {
+    //   return !grid->data[node->getIdx()];
+    // }
+    //如果2D搜索的时候有60%的方向认为可以过 ，就认为这个点可以过
+    if(t == 99){
+      for(int j = 0 ; j <Constants::headings; j++){
+        cost += configurationTest(x, y, j) ? -0.8 : 1;
+      }
+    }else{
+      cost = configurationTest(x, y, t) ? -1 : 1;
     }
 
-    if (true) {
-      cost = configurationTest(x, y, t) ? 0 : 1;
-    } else {
-      cost = configurationCost(x, y, t);
-    }
+    // if (true) {
+    //   cost = configurationTest(x, y, t) ? 0 : 1;
+    // } else {
+    //   cost = configurationCost(x, y, t);
+    // }
 
     return cost <= 0;
+  }
+
+  template<typename T> bool isObstacleThisPoint(const T* node) const {
+      return !grid->data[node->getIdx()];
   }
 
   /*!
