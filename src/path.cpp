@@ -49,10 +49,8 @@ void Path::clear() {
 //###################################################
 // __________
 // TRACE PATH
-void Path::updatePath(const std::vector<Node3D>& nodePath,int k) {
+void Path::updatePathFromK(const std::vector<Node3D>& nodePath,int k) {
   path.header.stamp = ros::Time::now();
-  // int k = 0;
-
   for (size_t i = 0; i < nodePath.size(); ++i) {
     std::cout << "add path " << i << " " << nodePath[i].getX() << " " << nodePath[i].getY() << std::endl;
     addSegment(nodePath[i]);
@@ -61,7 +59,20 @@ void Path::updatePath(const std::vector<Node3D>& nodePath,int k) {
     addVehicle(nodePath[i], k);
     k++;
   }
+  return;
+}
 
+void Path::updatePath(const std::vector<Node3D>& nodePath) {
+  path.header.stamp = ros::Time::now();
+  int k = 0;
+  for (size_t i = 0; i < nodePath.size(); ++i) {
+    std::cout << "add path " << i << " " << nodePath[i].getX() << " " << nodePath[i].getY() << std::endl;
+    addSegment(nodePath[i]);
+    addNode(nodePath[i], k);
+    k++;
+    addVehicle(nodePath[i], k);
+    k++;
+  }
   return;
 }
 

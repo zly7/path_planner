@@ -2,7 +2,7 @@
 #define NODE2D_H
 
 #include <cmath>
-
+#include <cassert>
 #include "constants.h"
 namespace HybridAStar {
 
@@ -36,9 +36,9 @@ class Node2D {
     this->whether_store_float = true;
     this->x = -1;
     this->y = -1;
-    this->g = g;
-    this->h = h;
-    this->pred = pred;
+    this->g = 0;
+    this->h = 0;
+    this->pred = nullptr;
     this->o = false;
     this->c = false;
     this->d = false;
@@ -79,6 +79,8 @@ class Node2D {
   float getRight() const { return right;}
   int getIntX() const { return x;}
   int getIntY() const { return y;}
+  float getFloatX() const { return float_x;}
+  float getFloatY() const { return float_y;}
   bool getWide() const { return wide;}
 
   // SETTER METHODS
@@ -98,8 +100,7 @@ class Node2D {
     }else{
       this->idx = y * width + x; return idx;
     }
-
-    }
+  }
   /// open the node
   void open() { o = true; c = false; }
   /// close the node

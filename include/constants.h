@@ -14,7 +14,7 @@
 //    Y-COORDINATE => designating the height of the grid
 
 #include <cmath>
-
+#include <string>
 /*!
     \brief The namespace that wraps the entire project
     \namespace HybridAStar
@@ -28,7 +28,7 @@ namespace HybridAStar {
 namespace Constants {
 // _________________
 // CONFIG FLAGS
-
+static const std::string algorithm = "split_hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.

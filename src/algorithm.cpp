@@ -417,8 +417,8 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
                   CollisionDetection& configurationSpace, 
                   float deltaL){
   for (Node2D& node2d : path2D) {
-    float x = static_cast<float>(node2d.getIntX());
-    float y = static_cast<float>(node2d.getIntY());
+    float x = node2d.getFloatX();
+    float y = node2d.getFloatY();
     std::cout << "path2D " << x << " " << y <<std::endl;
     while(true){
       float up = node2d.getUp();

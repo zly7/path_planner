@@ -65,7 +65,8 @@ class Path {
      \param node a 3D node, usually the goal node
      \param i a parameter for counting the number of nodes
   */
-  void updatePath(const std::vector<Node3D> &nodePath, int k);
+  void updatePathFromK(const std::vector<Node3D> &nodePath, int k);
+  void updatePath(const std::vector<Node3D> &nodePath);
   void update2DPath(const std::vector<Node2D> &nodePath);
   /*!
      \brief Adds a segment to the path

@@ -199,40 +199,50 @@ void Planner::plan() {
     // CLEAR THE PATH
     path.clear();
     smoothedPath.clear();
-    Node2D* nSolution2D = Algorithm::aStar2D(nStart2D, nGoal2D, nodes2D, width, height, configurationSpace, visualization);
-    smoother.tracePath2D(nSolution2D);
-    
-    std::vector<Node2D> path2D=smoother.getPath2D();
-    float deltaL=0.3;
-    Algorithm::node2DToBox(path2D,width,height,configurationSpace,deltaL);
-    float threshold=45;
-    std::vector<Node3D> nodeBou=Algorithm::findBou(nStart,nGoal,path2D,threshold);
-    path.update2DPath(path2D);
-    std::cout<<"findBou"<<std::endl;
-    int k=0;
-    for(size_t i = nodeBou.size()-1; i>0 ; i--){
-      std::cout << "start " << i << " " << nodeBou[i-1].getX() << " " << nodeBou[i-1].getY() <<std::endl;
-      std::cout << "end   " << i << " " << nodeBou[i].getX() << " " << nodeBou[i].getY() <<std::endl;
-      Node3D* nSolution = Algorithm::hybridAStar(nodeBou[i-1], nodeBou[i], nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
-      std::cout<<" nSolusion "<<nSolution->getX()<<" "<<nSolution->getY()<<std::endl;
-      std::cout<<" nSolusion end "<<nodeBou[i].getX()<<" "<<nodeBou[i].getY()<<std::endl;
+    if(Constants::algorithm == "split_hybrid_astar"){
+      Node2D* nSolution2D = Algorithm::aStar2D(nStart2D, nGoal2D, nodes2D, width, height, configurationSpace, visualization);
+      smoother.tracePath2D(nSolution2D);
+      
+      std::vector<Node2D> path2D=smoother.getPath2D();
+      float deltaL=0.3;
+      Algorithm::node2DToBox(path2D,width,height,configurationSpace,deltaL);
+      float threshold=45;
+      std::vector<Node3D> nodeBou=Algorithm::findBou(nStart,nGoal,path2D,threshold);
+      path.update2DPath(path2D);
+      std::cout<<"findBou Finished!"<<std::endl;
+      int k=0;
+      for(size_t i = nodeBou.size()-1; i>0 ; i--){
+        std::cout << "start " << i << " " << nodeBou[i-1].getX() << " " << nodeBou[i-1].getY() <<std::endl;
+        std::cout << "end   " << i << " " << nodeBou[i].getX() << " " << nodeBou[i].getY() <<std::endl;
+        Node3D* nSolution = Algorithm::hybridAStar(nodeBou[i-1], nodeBou[i], nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
+        std::cout<<" nSolusion "<<nSolution->getX()<<" "<<nSolution->getY()<<std::endl;
+        std::cout<<" nSolusion end "<<nodeBou[i].getX()<<" "<<nodeBou[i].getY()<<std::endl;
+        // TRACE THE PATH
+        smoother.tracePath(nSolution);
+        // CREATE THE UPDATED PATH
+        std::cout << "3D path number" << smoother.getPath().size() << std::endl;
+        path.updatePathFromK(smoother.getPath(),k);
+        // smoother.smoothPath(voronoiDiagram); //you don't know its effect
+        // CREATE THE UPDATED PATH
+        smoothedPath.updatePathFromK(smoother.getPath(),k);
+        k++;
+      }
+    }else if(Constants::algorithm == "hybrid_astar"){
+      // FIND THE PATH
+      Node3D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
       // TRACE THE PATH
       smoother.tracePath(nSolution);
       // CREATE THE UPDATED PATH
-      std::cout << "3D path number" << smoother.getPath().size() << std::endl;
-      path.updatePath(smoother.getPath(),k);
-      // smoother.smoothPath(voronoiDiagram); //you don't know its effect
+      path.updatePath(smoother.getPath());
+      // SMOOTH THE PATH
+      smoother.smoothPath(voronoiDiagram);
       // CREATE THE UPDATED PATH
-      smoothedPath.updatePath(smoother.getPath(),k);
-      k++;
+      smoothedPath.updatePath(smoother.getPath());
+    }else{
+      std::cout<<"algorithm error"<<std::endl;
     }
+    
  
-    // Node3D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
-    // // TRACE THE PATH
-    // smoother.tracePath(nSolution);
-    // // CREATE THE UPDATED PATH
-    // path.updatePath(smoother.getPath());
-    // // SMOOTH THE PATH
     ros::Time t1 = ros::Time::now();
     ros::Duration d(t1 - t0);
     std::cout << "TIME in ms: " << d * 1000 << std::endl;
@@ -242,15 +252,18 @@ void Planner::plan() {
     path.publishPath();
     path.publishPathNodes();
     path.publishPathVehicles();
-    path.publishPath2DNodes();
-    path.publishPathBoxes();
     smoothedPath.publishPath();
     smoothedPath.publishPathNodes();
-    smoothedPath.publishPath2DNodes();
     smoothedPath.publishPathVehicles();
-    smoothedPath.publishPathBoxes();
     visualization.publishNode3DCosts(nodes3D, width, height, depth);
     visualization.publishNode2DCosts(nodes2D, width, height);
+    
+    if(Constants::algorithm == "split_hybrid_astar"){
+      path.publishPath2DNodes();
+      path.publishPathBoxes();
+      smoothedPath.publishPathBoxes();
+      smoothedPath.publishPath2DNodes();
+    }
 
 
 
