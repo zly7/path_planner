@@ -312,7 +312,7 @@ Node2D* Algorithm::aStar2D(Node2D& start,
   // PREDECESSOR AND SUCCESSOR INDEX
   int iPred, iSucc;
   float newG;
-
+8
   // reset the open and closed list
   for (int i = 0; i < width * height; ++i) {
     nodes2D[i].reset();
@@ -407,7 +407,7 @@ Node2D* Algorithm::aStar2D(Node2D& start,
       }
     }
   }
-
+  std::cout<<"not found"<<std::endl;
   return nullptr;
 }
 
