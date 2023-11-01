@@ -51,9 +51,10 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map) {  // 这里显然�
   //update the configuration space with the current map
   configurationSpace.updateGrid(map);
   //create array for Voronoi diagram
-//  ros::Time t0 = ros::Time::now();
+  //  ros::Time t0 = ros::Time::now(); 这里没有根据resolution,cellSize修改
   int height = map->info.height;
   int width = map->info.width;
+  std::cout << "when setting map in Planner, height: " << height << " width: " << width << std::endl;
   bool** binMap;
   binMap = new bool*[width];
 
@@ -204,6 +205,10 @@ void Planner::plan() {
       smoother.tracePath2D(nSolution2D);
       
       std::vector<Node2D> path2D=smoother.getPath2D();
+      std::cout << "Path 2D Result: " << std::endl;
+      for (const auto& node : path2D) {
+        std::cout << "Node: X = " << node.getX() << ", Y = " << node.getY() << std::endl;
+      }
       float deltaL=0.3;
       Algorithm::node2DToBox(path2D,width,height,configurationSpace,deltaL);
       float threshold=45;

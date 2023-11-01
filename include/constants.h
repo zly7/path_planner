@@ -28,7 +28,8 @@ namespace HybridAStar {
 namespace Constants {
 // _________________
 // CONFIG FLAGS
-static const std::string algorithm = "split_hybrid_astar";
+// static const std::string algorithm = "split_hybrid_astar";
+static const std::string algorithm = "hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
@@ -59,12 +60,13 @@ static const bool twoD = true;
 static const int iterations = 30000;
 /// [m] --- Uniformly adds a padding around the vehicle
 static const double bloating = 0;
+static const double each_meter_to_how_many_pixel = 5;
 /// [m] --- The width of the vehicle
-static const double width = 1.25 + 2 * bloating;
+static const double width = 1 * each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The length of the vehicle
-static const double length = 2 + 2 * bloating;
+static const double length = 1.75 *each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The minimum turning radius of the vehicle
-static const float r = 0.5; 
+static const float r = 0.5 * each_meter_to_how_many_pixel; 
 /// [m] --- The number of discretizations in heading
 static const int headings = 72;
 /// [°] --- The discretization value of the heading (goal condition)

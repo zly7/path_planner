@@ -28,8 +28,8 @@ class Node2D {
     this->c = false;
     this->d = false;
     this->idx = -1;
-    this->float_x = -1;
-    this->float_y = -1;
+    this->float_x = static_cast<float>(x);
+    this->float_y = static_cast<float>(y);
     this->wide = 0;
   }
 

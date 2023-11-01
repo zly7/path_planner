@@ -4,6 +4,7 @@ from PIL import Image
 
 # 创建一个20x20的全白地图
 map = np.ones((20, 20))
+resolution = 5
 
 # 在地图上创建一个7x7的房间（我们将房间的墙的像素值设为0，表示黑色）
 up = 4
@@ -27,10 +28,12 @@ map[12:14, 9] = 1
 
 map[1:18,5] = 0
 
+upsampled_map = np.repeat(np.repeat(map, resolution, axis=0), resolution, axis=1)
+
 # 使用matplotlib显示地图
-plt.imshow(map, cmap='gray')
+plt.imshow(upsampled_map, cmap='gray')
 plt.show()
 
 # 使用PIL保存地图为图片
-img = Image.fromarray((map * 255).astype(np.uint8))
-img.save('map.png')
+img = Image.fromarray((upsampled_map * 255).astype(np.uint8))
+img.save('./map_1m_to_'+str(resolution)+'pixel.png')

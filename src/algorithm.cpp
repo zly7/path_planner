@@ -419,7 +419,7 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
   for (Node2D& node2d : path2D) {
     float x = node2d.getFloatX();
     float y = node2d.getFloatY();
-    std::cout << "path2D " << x << " " << y <<std::endl;
+    std::cout << "path2D_To_Box_Start_Search_Box " << x << " " << y <<std::endl;
     while(true){
       float up = node2d.getUp();
       float down = node2d.getDown();
@@ -520,7 +520,8 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
       }
 
     }
-    std::cout << "path2D " << x << " " << y << " " << node2d.getLeft()+node2d.getRight() << " " << node2d.getUp()+node2d.getDown() <<std::endl;
+    std::cout << " path2D_Bound_Box_Result: x:" << x << " y:" << y << " Left: " << node2d.getLeft()<<
+        " Right: "<< node2d.getRight() << " Up: " << node2d.getUp() << " Down: "  <<node2d.getDown() <<std::endl;
   }
 }
 
