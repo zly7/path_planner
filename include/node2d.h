@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cassert>
 #include "constants.h"
+#include <iostream>
 namespace HybridAStar {
 
 /*!
@@ -34,8 +35,8 @@ class Node2D {
 
   Node2D(float x, float y) { //prevent implicit call
     this->whether_store_float = true;
-    this->x = -1;
-    this->y = -1;
+    this->x = int(x);
+    this->y = int(y);
     this->g = 0;
     this->h = 0;
     this->pred = nullptr;
@@ -95,6 +96,7 @@ class Node2D {
   /// set and get the index of the node in the 2D array
   int setIdx(int width) { 
     if(this->whether_store_float){
+      // std::cout<<"aaa "<< this->float_x<<" "<<this->float_y<<std::endl;
       assert(this->float_x >= 0 && this->float_y >= 0);
       this->idx = std::floor(this->float_y) * width + std::floor(this->float_x); return idx;
     }else{
