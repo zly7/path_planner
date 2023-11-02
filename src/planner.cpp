@@ -211,7 +211,7 @@ void Planner::plan() {
       }
       float deltaL=0.3;
       Algorithm::node2DToBox(path2D,width,height,configurationSpace,deltaL);
-      float threshold=45;
+      float threshold=4.5;
       std::vector<Node3D> nodeBou=Algorithm::findBou(nStart,nGoal,path2D,threshold);
       path.update2DPath(path2D);
       std::cout<<"findBou Finished!"<<std::endl;

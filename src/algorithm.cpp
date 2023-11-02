@@ -421,104 +421,36 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
     float y = node2d.getFloatY();
     std::cout << "path2D_To_Box_Start_Search_Box " << x << " " << y <<std::endl;
     while(true){
-      float up = node2d.getUp();
-      float down = node2d.getDown();
-      float left = node2d.getLeft();
-      float right = node2d.getRight(); //current
-      bool upFlag = true; 
-      bool downFlag = true; 
-      bool leftFlag = true; 
-      bool rightFlag = true;
-      float nx=0;
-      float ny=0;
-      ny=y+up+deltaL;
-      if (ny<=height){
-        for(nx=x-left;nx<=x+right;nx+=deltaL){
-          Node2D nNode =  Node2D(nx, ny);
-          nNode.setIdx(width);
-          if(!configurationSpace.isObstacleThisPoint(&nNode)){
-            upFlag = false;
-            break;
-          }
-        }
-      }else {upFlag = false;};
-
-      ny=y-down-deltaL;
-      if (ny>=0){
-        for(nx=x-left;nx<=x+right;nx+=deltaL){
-          Node2D nNode =  Node2D(nx,ny);
-          nNode.setIdx(width);
-          if(!configurationSpace.isObstacleThisPoint(&nNode)){
-            downFlag = false;
-            break;
-          }
-        }
-      }else {downFlag = false;};
-
-      nx=x-left-deltaL;
-      if (nx>=0){
-        for(ny=x-down;nx<=x+up;nx+=deltaL){
-          Node2D nNode =  Node2D(nx,ny);
-          nNode.setIdx(width);
-          if(!configurationSpace.isObstacleThisPoint(&nNode)){
-            leftFlag = false;
-            break;
-          }
-        }
-        if(upFlag&&leftFlag){
-          Node2D nNode =  Node2D(nx,y+up+deltaL);
-          nNode.setIdx(width);
-          if(!configurationSpace.isObstacleThisPoint(&nNode)){
-            upFlag = false;
-            leftFlag = false;
-          }
-        }
-        if(downFlag&&leftFlag){
-          Node2D nNode =  Node2D(nx, y-down-deltaL);
-          nNode.setIdx(width);
-          if(!configurationSpace.isObstacleThisPoint(&nNode)){
-            downFlag = false;
-            leftFlag = false;
-          }
-        }
-      }else {leftFlag = false;};
-      nx=x+right+deltaL;
-      if (nx<=width){
-        for(ny=x-down;nx<=x+up;nx+=deltaL){
-          Node2D nNode =  Node2D(nx,ny);
-          nNode.setIdx(width);
-          if(!configurationSpace.isObstacleThisPoint(&nNode)){
-            rightFlag = false;
-            break;
-          }
-        }
-        if(upFlag&&rightFlag){
-          Node2D nNode =  Node2D(nx, y+up+deltaL);
-          nNode.setIdx(width);
-          if(!configurationSpace.isObstacleThisPoint(&nNode)){
-            upFlag = false;
-            rightFlag = false;
-          }
-        }
-        if(downFlag&&rightFlag){
-          Node2D nNode =  Node2D(nx,y-down-deltaL);
-          nNode.setIdx(width);
-          if(!configurationSpace.isObstacleThisPoint(&nNode)){
-            downFlag = false;
-            rightFlag = false;
-          }
-        }
-      }else {rightFlag = false;};
-
-      node2d.setUp(up+upFlag*deltaL);
-      node2d.setDown(down+downFlag*deltaL);
-      node2d.setLeft(left+leftFlag*deltaL);
-      node2d.setRight(right+rightFlag*deltaL);
-
-      if((!upFlag)&&(!downFlag)&&(!rightFlag)&&(!leftFlag)){
+      float up = node2d.getUp()+deltaL;
+      float down = node2d.getDown()+deltaL;
+      float left = node2d.getLeft()+deltaL;
+      float right = node2d.getRight()+deltaL; //next status
+      if(y+up>height||y-down<0||x+right>width||x-left<0){
         break;
       }
-
+      float nx[]={x-left,x-left,x-left,x+right};
+      float ny[]={y+up,y-down,y+up,y+up};
+      float dx[]={deltaL,deltaL,0,0};
+      float dy[]={0,0,-deltaL,-deltaL};
+      int number=int((up+down)/deltaL);
+      std::cout<<"number:"<<number<<std::endl;
+      for(int count1=0;count1<number;count1++){
+        for(int count2=0;count2<4;count2++){
+          float node_x=nx[count2]+dx[count2]*float(count1);
+          float node_y=ny[count2]+dy[count2]*float(count1);
+          std::cout<<"node_x: "<<node_x<<" node_y: "<<node_y<<std::endl;
+          Node2D nNode =  Node2D(node_x, node_y);
+          nNode.setIdx(width);
+          std::cout<<"idx: "<<nNode.getIdx();
+          if(!configurationSpace.isObstacleThisPoint(&nNode)){
+            break;
+          }
+        } 
+      }
+      node2d.setUp(up);
+      node2d.setDown(down);
+      node2d.setLeft(left);
+      node2d.setRight(right);
     }
     std::cout << " path2D_Bound_Box_Result: x:" << x << " y:" << y << " Left: " << node2d.getLeft()<<
         " Right: "<< node2d.getRight() << " Up: " << node2d.getUp() << " Down: "  <<node2d.getDown() <<std::endl;

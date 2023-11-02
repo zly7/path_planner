@@ -31,6 +31,11 @@ class Node2D {
     this->float_x = static_cast<float>(x);
     this->float_y = static_cast<float>(y);
     this->wide = 0;
+
+    this->up = 0;
+    this->down = 0;
+    this->left = 0;
+    this->right = 0;
   }
 
   Node2D(float x, float y) { //prevent implicit call
