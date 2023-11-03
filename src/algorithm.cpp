@@ -420,6 +420,7 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
     float x = node2d.getFloatX();
     float y = node2d.getFloatY();
     std::cout << "path2D_To_Box_Start_Search_Box " << x << " " << y <<std::endl;
+    bool flag=false;
     while(true){
       float up = node2d.getUp()+deltaL;
       float down = node2d.getDown()+deltaL;
@@ -433,20 +434,27 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
       float dx[]={deltaL,deltaL,0,0};
       float dy[]={0,0,-deltaL,-deltaL};
       int number=int((up+down)/deltaL);
-      std::cout<<"number:"<<number<<std::endl;
+      // std::cout<<"number:"<<number<<std::endl;
       for(int count1=0;count1<number;count1++){
         for(int count2=0;count2<4;count2++){
           float node_x=nx[count2]+dx[count2]*float(count1);
           float node_y=ny[count2]+dy[count2]*float(count1);
-          std::cout<<"node_x: "<<node_x<<" node_y: "<<node_y<<std::endl;
+          // std::cout<<"node_x: "<<node_x<<" node_y: "<<node_y<<std::endl;
           Node2D nNode =  Node2D(node_x, node_y);
           nNode.setIdx(width);
-          std::cout<<"idx: "<<nNode.getIdx();
+          // std::cout<<"aa idx: "<<nNode.getIdx()<<" "<<!configurationSpace.isObstacleThisPoint(&nNode)<<std::endl;
           if(!configurationSpace.isObstacleThisPoint(&nNode)){
+            flag=true;
             break;
           }
         } 
+        if(flag){
+          break;
+        }
       }
+      if(flag){
+          break;
+        }
       node2d.setUp(up);
       node2d.setDown(down);
       node2d.setLeft(left);
