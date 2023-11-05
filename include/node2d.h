@@ -30,7 +30,12 @@ class Node2D {
     this->idx = -1;
     this->float_x = static_cast<float>(x);
     this->float_y = static_cast<float>(y);
-    this->wide = 0;
+    this->wide = false;
+    this->boundary = false;
+    this->up = 0;
+    this->down = 0;
+    this->left = 0;
+    this->right = 0;
   }
 
   Node2D(float x, float y) { //prevent implicit call
@@ -51,6 +56,7 @@ class Node2D {
     this->float_x = x;
     this->float_y = y;
     this->wide = false;
+    this->boundary = false;
   }
   // GETTER METHODS
   /// get the x position
@@ -83,6 +89,7 @@ class Node2D {
   float getFloatX() const { return float_x;}
   float getFloatY() const { return float_y;}
   bool getWide() const { return wide;}
+  bool getBoundary() const { return boundary;}
 
   // SETTER METHODS
   /// set the x position
@@ -121,6 +128,7 @@ class Node2D {
   void setFloatx(const float& ix) { this->float_x = ix; }
   void setFloaty(const float& iy) { this->float_y = iy; }
   void setWide(const bool& wide) { this->wide = wide; }
+  void setBoundary(const bool&boundary) { this->boundary = boundary; }
   // UPDATE METHODS
   /// Updates the cost-so-far for the node x' coming from its predecessor. It also discovers the node.
   void updateG() { g += movementCost(*pred); d = true; }
@@ -180,6 +188,8 @@ class Node2D {
   float float_y;
 
   bool wide;
+  bool boundary;
+
 };
 }
 #endif // NODE2D_H

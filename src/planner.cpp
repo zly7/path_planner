@@ -211,26 +211,35 @@ void Planner::plan() {
       }
       float deltaL=0.3;
       Algorithm::node2DToBox(path2D,width,height,configurationSpace,deltaL);
-      float threshold=45;
+      float threshold=10;
       std::vector<Node3D> nodeBou=Algorithm::findBou(nStart,nGoal,path2D,threshold);
       path.update2DPath(path2D);
       std::cout<<"findBou Finished!"<<std::endl;
       int k=0;
       for(size_t i = nodeBou.size()-1; i>0 ; i--){
-        std::cout << "start " << i << " " << nodeBou[i-1].getX() << " " << nodeBou[i-1].getY() <<std::endl;
-        std::cout << "end   " << i << " " << nodeBou[i].getX() << " " << nodeBou[i].getY() <<std::endl;
-        Node3D* nSolution = Algorithm::hybridAStar(nodeBou[i-1], nodeBou[i], nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
-        std::cout<<" nSolusion "<<nSolution->getX()<<" "<<nSolution->getY()<<std::endl;
-        std::cout<<" nSolusion end "<<nodeBou[i].getX()<<" "<<nodeBou[i].getY()<<std::endl;
-        // TRACE THE PATH
-        smoother.tracePath(nSolution);
-        // CREATE THE UPDATED PATH
-        std::cout << "3D path number" << smoother.getPath().size() << std::endl;
-        path.updatePathFromK(smoother.getPath(),k);
-        // smoother.smoothPath(voronoiDiagram); //you don't know its effect
-        // CREATE THE UPDATED PATH
-        smoothedPath.updatePathFromK(smoother.getPath(),k);
-        k++;
+        // std::cout << "start " << i << " " << nodeBou[i-1].getX() << " " << nodeBou[i-1].getY() <<std::endl;
+        // std::cout << "end   " << i << " " << nodeBou[i].getX() << " " << nodeBou[i].getY() <<std::endl;
+        // Node3D* nSolution = Algorithm::hybridAStar(nodeBou[i-1], nodeBou[i], nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
+        // std::cout<<" nSolusion "<<nSolution->getX()<<" "<<nSolution->getY()<<std::endl;
+        // std::cout<<" nSolusion end "<<nodeBou[i].getX()<<" "<<nodeBou[i].getY()<<std::endl;
+        // // TRACE THE PATH
+        // smoother.tracePath(nSolution);
+        // // CREATE THE UPDATED PATH
+        // std::cout << "3D path number" << smoother.getPath().size() << std::endl;
+        // path.updatePathFromK(smoother.getPath(),k);
+        // // smoother.smoothPath(voronoiDiagram); //you don't know its effect
+        // // CREATE THE UPDATED PATH
+        // smoothedPath.updatePathFromK(smoother.getPath(),k);
+        // k++;
+
+
+        // delete [] nodes3D;
+        // delete [] nodes2D;
+
+        // Node3D* nodes3D = new Node3D[length]();
+        // Node2D* nodes2D = new Node2D[width * height]();
+
+
       }
     }else if(Constants::algorithm == "hybrid_astar"){
       // FIND THE PATH

@@ -28,8 +28,8 @@ namespace HybridAStar {
 namespace Constants {
 // _________________
 // CONFIG FLAGS
-// static const std::string algorithm = "split_hybrid_astar";
-static const std::string algorithm = "hybrid_astar";
+static const std::string algorithm = "split_hybrid_astar";
+// static const std::string algorithm = "hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
@@ -181,7 +181,8 @@ static constexpr color brown = {139.f / 255.f, 69.f / 255.f, 19.f / 255.f};
 static constexpr color black = {0.f / 255.f, 0.f / 255.f, 0.f / 255.f};
 /// A definition for a color used for visualization
 static constexpr color red = {255.f / 255.f, 0.f / 255.f, 0.f / 255.f};
-
+/// A definition for a color used for visualization
+static constexpr color blue = {0.f / 255.f, 191.f / 255.f, 255.f / 255.f};
 
 }
 }

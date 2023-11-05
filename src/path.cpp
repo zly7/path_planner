@@ -156,10 +156,10 @@ void Path::add2DNode(const Node2D& node, int i) {
   pathNode.scale.z = 0.5;
   pathNode.color.a = 1.0;
 
-  if (smoothed) {
-    pathNode.color.r = Constants::black.red;
-    pathNode.color.g = Constants::black.green;
-    pathNode.color.b = Constants::black.blue;
+  if (node.getBoundary()) {
+    pathNode.color.r = Constants::green.red;
+    pathNode.color.g = Constants::green.green;
+    pathNode.color.b = Constants::green.blue;
   } else {
     pathNode.color.r = Constants::black.red;
     pathNode.color.g = Constants::black.green;
@@ -226,9 +226,9 @@ void Path::add2DBox(const Node2D& node, int i){
     pathBox.color.g = Constants::red.green;
     pathBox.color.b = Constants::red.blue;
   } else {
-    pathBox.color.r = Constants::green.red;
-    pathBox.color.g = Constants::green.green;
-    pathBox.color.b = Constants::green.blue;
+    pathBox.color.r = Constants::blue.red;
+    pathBox.color.g = Constants::blue.green;
+    pathBox.color.b = Constants::blue.blue;
   }
 
   pathBoxes.markers.push_back(pathBox);
