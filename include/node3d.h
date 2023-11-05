@@ -62,7 +62,12 @@ class Node3D {
   /// set the y position
   void setY(const float& y) { this->y = y; }
   /// set the heading theta
-  void setT(const float& t) { this->t = t; }
+  void setT(const float& t) { 
+    if(t<Constants::headings){this->t = t; }
+    else{
+      std::cout<<"error in setT"<<std::endl;
+    }
+  }
   /// set the cost-so-far (real value)
   void setG(const float& g) { this->g = g; }
   /// set the cost-to-come (heuristic value)

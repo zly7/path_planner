@@ -514,7 +514,7 @@ std::vector<Node3D> Algorithm::findBou(Node3D& start,
   std::cout << "nodeBou number" << nodeBou.size() << std::endl;
   for (size_t i = 1; i < nodeBou.size()-1; ++i) {
     float nt=atanf((nodeBou[i].getY()-nodeBou[i-1].getY())/(nodeBou[i].getX()-nodeBou[i-1].getX()));
-    nodeBou[i].setT(nt * 180 / M_PI);
+    nodeBou[i].setT((nt * 180 / M_PI) /Constants::deltaHeadingDeg);
     std::cout << i << " " << nodeBou[i].getX() << " "  << nodeBou[i].getY() << " "  << nodeBou[i].getT() << std::endl;
   }
   return nodeBou;
