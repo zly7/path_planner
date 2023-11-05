@@ -249,9 +249,10 @@ float aStar(Node2D& start,
 
       // RViz visualization
       if (Constants::visualization2D) {
+        // std::cout << "2d visual npred :" << nPred->getX() << " " << nPred->getY() << std::endl;
         visualization.publishNode2DPoses(*nPred);
         visualization.publishNode2DPose(*nPred);
-        //        d.sleep();
+        d.sleep();
       }
 
       // remove node from open list
@@ -269,16 +270,16 @@ float aStar(Node2D& start,
         // CREATE POSSIBLE SUCCESSOR NODES
         for (int i = 0; i < Node2D::dir; i++) {
           // create possible successor
-          nSucc = nPred->createSuccessor(i);
+          nSucc = nPred->createSuccessor(i); //创建后继这里会做g的继承
           // set index of the successor
           iSucc = nSucc->setIdx(width);
 
           // ensure successor is on grid ROW MAJOR
           // ensure successor is not blocked by obstacle
           // ensure successor is not on closed list
-          if (nSucc->isOnGrid(width, height) &&  configurationSpace.isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
+          if (nSucc->isOnGrid(width, height) &&  configurationSpace.isObstacleThisPoint(nSucc) && !nodes2D[iSucc].isClosed()) {
             // calculate new G value
-            nSucc->updateG();
+            nSucc->updateG(); //在这里的G应该累加？
             newG = nSucc->getG();
 
             // if successor not on open list or g value lower than before put it on open list
@@ -570,7 +571,7 @@ std::vector<Node3D> Algorithm::findBou(Node3D& start,
   std::cout << "nodeBou number" << nodeBou.size() << std::endl;
   for (size_t i = 1; i < nodeBou.size()-1; ++i) {
     float nt=atanf((nodeBou[i].getY()-nodeBou[i-1].getY())/(nodeBou[i].getX()-nodeBou[i-1].getX()));
-    nodeBou[i].setT(nt);
+    nodeBou[i].setT(nt * 180 / M_PI);
     std::cout << i << " " << nodeBou[i].getX() << " "  << nodeBou[i].getY() << " "  << nodeBou[i].getT() << std::endl;
   }
   return nodeBou;

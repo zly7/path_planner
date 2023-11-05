@@ -147,7 +147,7 @@ inline void collisionLookup(Constants::config* lookup) {
     theta = 0;
 
     // set points of rectangle
-    c.x = (double)size / 2 + points[q].x;
+    c.x = (double)size / 2 + points[q].x; // zly:this maybe the center
     c.y = (double)size / 2 + points[q].y;
 
     p[0].x = c.x - Constants::length / 2 / cSize;
@@ -179,7 +179,7 @@ inline void collisionLookup(Constants::config* lookup) {
         temp.y = p[j].y - c.y;
 
         // rotate and shift back
-        nP[j].x = temp.x * cos(theta) - temp.y * sin(theta) + c.x;
+        nP[j].x = temp.x * cos(theta) - temp.y * sin(theta) + c.x; //nP:
         nP[j].y = temp.x * sin(theta) + temp.y * cos(theta) + c.y;
       }
 
@@ -293,7 +293,7 @@ inline void collisionLookup(Constants::config* lookup) {
         for (int j = 0; j < size; ++j) {
           if (cSpace[i * size + j]) {
             // compute the relative position of the car cells
-            lookup[q * Constants::headings + o].pos[count].x = j - (int)c.x;
+            lookup[q * Constants::headings + o].pos[count].x = j - (int)c.x; // q from 0 to 99. o is current heading
             lookup[q * Constants::headings + o].pos[count].y = i - (int)c.y;
             // add one for the length of the current list
             count++;

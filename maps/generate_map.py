@@ -4,7 +4,7 @@ from PIL import Image
 
 # 创建一个20x20的全白地图
 map = np.ones((20, 20))
-resolution = 5
+resolution = 10
 
 # 在地图上创建一个7x7的房间（我们将房间的墙的像素值设为0，表示黑色）
 up = 4
