@@ -60,7 +60,7 @@ static const bool twoD = true;
 static const int iterations = 30000;
 /// [m] --- Uniformly adds a padding around the vehicle
 static const double bloating = 0;
-static const double each_meter_to_how_many_pixel = 2;
+static const double each_meter_to_how_many_pixel = 4;
 /// [m] --- The width of the vehicle
 static const double width = 1 * each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The length of the vehicle
@@ -181,7 +181,8 @@ static constexpr color brown = {139.f / 255.f, 69.f / 255.f, 19.f / 255.f};
 static constexpr color black = {0.f / 255.f, 0.f / 255.f, 0.f / 255.f};
 /// A definition for a color used for visualization
 static constexpr color red = {255.f / 255.f, 0.f / 255.f, 0.f / 255.f};
-
+/// A definition for a color used for visualization
+static constexpr color blue = {0.f / 255.f, 191.f / 255.f, 255.f / 255.f};
 
 }
 }
