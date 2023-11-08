@@ -160,6 +160,9 @@ void Path::add2DNode(const Node2D& node, int i) {
     pathNode.color.r = Constants::green.red;
     pathNode.color.g = Constants::green.green;
     pathNode.color.b = Constants::green.blue;
+    pathNode.scale.x = 2;
+    pathNode.scale.y = 2;
+    pathNode.scale.z = 2;
   } else {
     pathNode.color.r = Constants::black.red;
     pathNode.color.g = Constants::black.green;

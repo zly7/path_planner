@@ -160,8 +160,8 @@ void Planner::plan() {
     int depth = Constants::headings;
     int length = width * height * depth;
     // define list pointers and initialize lists
-    Node3D* nodes3D = new Node3D[length]();
-    Node2D* nodes2D = new Node2D[width * height]();
+    // Node3D* nodes3D = new Node3D[length]();
+    // Node2D* nodes2D = new Node2D[width * height]();
 
     // ________________________
     // retrieving goal position
@@ -174,7 +174,7 @@ void Planner::plan() {
     const Node2D nGoal2D(x, y, 0, 0, nullptr);
     // __________
     // DEBUG GOAL
-    //    const Node3D nGoal(155.349, 36.1969, 0.7615936, 0, 0, nullptr);
+      //  const Node3D nGoal(21,8,4.71239, 0, 0, nullptr);
 
 
     // _________________________
@@ -188,7 +188,7 @@ void Planner::plan() {
     Node2D nStart2D(x, y, 0, 0, nullptr);
     // ___________
     // DEBUG START
-    //    Node3D nStart(108.291, 30.1081, 0, 0, 0, nullptr);
+      //  Node3D nStart(22,7,5.49779, 0, 0, nullptr);
 
 
     // ___________________________
@@ -201,6 +201,8 @@ void Planner::plan() {
     path.clear();
     smoothedPath.clear();
     if(Constants::algorithm == "split_hybrid_astar"){
+
+      Node2D* nodes2D = new Node2D[width * height]();
       Node2D* nSolution2D = Algorithm::aStar2D(nStart2D, nGoal2D, nodes2D, width, height, configurationSpace, visualization);
       smoother.tracePath2D(nSolution2D);
       
@@ -216,32 +218,47 @@ void Planner::plan() {
       path.update2DPath(path2D);
       std::cout<<"findBou Finished!"<<std::endl;
       int k=0;
-      for(size_t i = nodeBou.size()-1; i>0 ; i--){
-        // std::cout << "start " << i << " " << nodeBou[i-1].getX() << " " << nodeBou[i-1].getY() <<std::endl;
-        // std::cout << "end   " << i << " " << nodeBou[i].getX() << " " << nodeBou[i].getY() <<std::endl;
-        // Node3D* nSolution = Algorithm::hybridAStar(nodeBou[i-1], nodeBou[i], nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
-        // std::cout<<" nSolusion "<<nSolution->getX()<<" "<<nSolution->getY()<<std::endl;
-        // std::cout<<" nSolusion end "<<nodeBou[i].getX()<<" "<<nodeBou[i].getY()<<std::endl;
-        // // TRACE THE PATH
-        // smoother.tracePath(nSolution);
-        // // CREATE THE UPDATED PATH
-        // std::cout << "3D path number" << smoother.getPath().size() << std::endl;
+      Node3D* nSolution=nullptr;
+      delete [] nodes2D;
+      for(size_t i = 1; i<nodeBou.size() ; i++){
+        Node3D* nodes3D = new Node3D[length]();
+        Node2D* nodes2D = new Node2D[width * height]();
+        std::cout << "start " << i << " " << nodeBou[i].getX() << " " << nodeBou[i].getY() <<std::endl;
+        std::cout << "end   " << i << " " << nodeBou[i-1].getX() << " " << nodeBou[i-1].getY() <<std::endl;
+        nSolution = Algorithm::hybridAStar(nodeBou[i], nodeBou[i-1], nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
+        // nodeBou[i-1].setPred(nSolution);
+        std::cout<<" nSolusion "<<nSolution->getX()<<" "<<nSolution->getY()<<std::endl;
+        std::cout<<" nSolusion end "<<nodeBou[i-1].getX()<<" "<<nodeBou[i-1].getY()<<std::endl;
+        // TRACE THE PATH
+        smoother.tracePath(nSolution,0,smoother.getPath());
+        // CREATE THE UPDATED PATH
+        std::cout << "3D path number" << smoother.getPath().size() << std::endl;
         // path.updatePathFromK(smoother.getPath(),k);
-        // // smoother.smoothPath(voronoiDiagram); //you don't know its effect
-        // // CREATE THE UPDATED PATH
+        // smoother.smoothPath(voronoiDiagram); //you don't know its effect
+        // CREATE THE UPDATED PATH
         // smoothedPath.updatePathFromK(smoother.getPath(),k);
         // k++;
 
 
-        // delete [] nodes3D;
-        // delete [] nodes2D;
+        delete [] nodes3D;
+        delete [] nodes2D;
 
         // Node3D* nodes3D = new Node3D[length]();
         // Node2D* nodes2D = new Node2D[width * height]();
 
 
       }
+      // smoother.tracePath(nSolution);
+      //   // CREATE THE UPDATED PATH
+      // std::cout << "3D path number" << smoother.getPath().size() << std::endl;
+      // path.updatePathFromK(smoother.getPath(),k);
+      //   // smoother.smoothPath(voronoiDiagram); //you don't know its effect
+      //   // CREATE THE UPDATED PATH
+      smoothedPath.updatePathFromK(smoother.getPath(),k);
+      k++;
     }else if(Constants::algorithm == "hybrid_astar"){
+      Node3D* nodes3D = new Node3D[length]();
+      Node2D* nodes2D = new Node2D[width * height]();
       // FIND THE PATH
       Node3D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
       // TRACE THE PATH
@@ -252,10 +269,12 @@ void Planner::plan() {
       smoother.smoothPath(voronoiDiagram);
       // CREATE THE UPDATED PATH
       smoothedPath.updatePath(smoother.getPath());
+
+        delete [] nodes3D;
+        delete [] nodes2D;
     }else{
       std::cout<<"algorithm error"<<std::endl;
     }
-    
  
     ros::Time t1 = ros::Time::now();
     ros::Duration d(t1 - t0);
@@ -269,8 +288,8 @@ void Planner::plan() {
     smoothedPath.publishPath();
     smoothedPath.publishPathNodes();
     smoothedPath.publishPathVehicles();
-    visualization.publishNode3DCosts(nodes3D, width, height, depth);
-    visualization.publishNode2DCosts(nodes2D, width, height);
+    // visualization.publishNode3DCosts(nodes3D, width, height, depth);
+    // visualization.publishNode2DCosts(nodes2D, width, height);
     
     if(Constants::algorithm == "split_hybrid_astar"){
       path.publishPath2DNodes();
@@ -281,8 +300,8 @@ void Planner::plan() {
 
 
 
-    delete [] nodes3D;
-    delete [] nodes2D;
+    // delete [] nodes3D;
+    // delete [] nodes2D;
 
   } else {
     std::cout << "missing goal or start" << std::endl;

@@ -60,11 +60,11 @@ static const bool twoD = true;
 static const int iterations = 30000;
 /// [m] --- Uniformly adds a padding around the vehicle
 static const double bloating = 0;
-static const double each_meter_to_how_many_pixel = 10;
+static const double each_meter_to_how_many_pixel = 5;
 /// [m] --- The width of the vehicle
-static const double width = 1.5 * each_meter_to_how_many_pixel + 2 * bloating;
+static const double width = 1 * each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The length of the vehicle
-static const double length = 2 *each_meter_to_how_many_pixel + 2 * bloating;
+static const double length = 1.75 *each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The minimum turning radius of the vehicle
 static const float r = 0.5 * each_meter_to_how_many_pixel; 
 /// [m] --- The number of discretizations in heading
@@ -125,7 +125,7 @@ static const int dubinsArea = dubinsWidth * dubinsWidth;
 /// [m] -- The bounding box size length and width to precompute all possible headings
 static const int bbSize = std::ceil((sqrt(width * width + length* length) + 4) / cellSize);
 /// [#] --- The sqrt of the number of discrete positions per cell
-static const int positionResolution = 1;
+static const int positionResolution = 10;
 /// [#] --- The number of discrete positions per cell
 static const int positions = positionResolution * positionResolution;
 /// A structure describing the relative position of the occupied cell based on the center of the vehicle

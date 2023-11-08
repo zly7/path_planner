@@ -420,7 +420,7 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
   for (Node2D& node2d : path2D) {
     float x = node2d.getFloatX();
     float y = node2d.getFloatY();
-    std::cout << "path2D_To_Box_Start_Search_Box " << x << " " << y <<std::endl;
+    // std::cout << "path2D_To_Box_Start_Search_Box " << x << " " << y <<std::endl;
     bool flag=false;
     while(true){
       float up = node2d.getUp()+deltaL;
@@ -461,8 +461,8 @@ void Algorithm::node2DToBox(std::vector<Node2D> &path2D,
       node2d.setLeft(left);
       node2d.setRight(right);
     }
-    std::cout << " path2D_Bound_Box_Result: x:" << x << " y:" << y << " Left: " << node2d.getLeft()<<
-        " Right: "<< node2d.getRight() << " Up: " << node2d.getUp() << " Down: "  <<node2d.getDown() <<std::endl;
+    // std::cout << " path2D_Bound_Box_Result: x:" << x << " y:" << y << " Left: " << node2d.getLeft()<<
+    //     " Right: "<< node2d.getRight() << " Up: " << node2d.getUp() << " Down: "  <<node2d.getDown() <<std::endl;
   }
 }
 
@@ -470,51 +470,58 @@ std::vector<Node3D> Algorithm::findBou(Node3D& start,
                   const Node3D& goal,
                   std::vector<Node2D> &path2D,
                   float threshold){
-  std::vector<Node2D> nodeSeq;
+  // std::vector<Node2D> nodeSeq;
   std::vector<Node3D> nodeBou;
-  nodeBou.push_back(start);
+  nodeBou.push_back(goal);
   bool narrowFlag = false;
   bool wideFlag = false;
   std::cout<<"path2D "<< path2D.size() <<std::endl;
+  std::cout<<start.getT()<<" "<<goal.getT()<<std::endl;
   
   for (size_t i = 0; i < path2D.size(); ++i) {
     float up = path2D[i].getUp();
     float down = path2D[i].getDown();
     float left = path2D[i].getLeft();
     float right = path2D[i].getRight();
-    std::cout<< i << " " << up+down << " " << left+right <<std::endl;
+    std::cout<< i << " " << path2D[i].getX() << " " << path2D[i].getY() <<std::endl;
     if(up+down>=threshold&&left+right>=threshold){
       wideFlag=true;
       path2D[i].setWide(true);
       if(narrowFlag){
         narrowFlag=false;
-        nodeSeq.push_back(path2D[i-1]);
-        nodeSeq.push_back(path2D[i]);
+        // nodeSeq.push_back(path2D[i-1]);
+        // nodeSeq.push_back(path2D[i]);
         path2D[i].setBoundary(true);
-        Node3D node3d(path2D[i].getIntX(), path2D[i].getIntY(), 0, 0, 0, nullptr);
+        std::cout<<"x "<<(path2D[i].getX()-path2D[i+1].getX())<<" y "<<(path2D[i].getY()-path2D[i+1].getY())<<std::endl;
+        float nt=atan2f((path2D[i].getY()-path2D[i+1].getY()),(path2D[i].getX()-path2D[i+1].getX()));
+        nt=Helper::normalizeHeadingRad(nt);
+        Node3D node3d(path2D[i].getIntX(), path2D[i].getIntY(), nt, 0, 0, nullptr);
         nodeBou.push_back(node3d);
-        std::cout << "bouBox" << " " << i-1  << " " << path2D[i-1].getUp()+path2D[i-1].getDown()  << " " << path2D[i-1].getLeft()+path2D[i-1].getRight()  << " " << path2D[i-1].getIntX()  << " " <<path2D[i-1].getIntY() << std::endl;
-        std::cout << "bouBox" << " " << i  << " " << up+down  << " " << left+right  << " " << path2D[i].getIntX()  << " " <<path2D[i].getIntY() << std::endl;
+        std::cout << "bouBox" << " " << i+1  << " " << path2D[i+1].getIntX()  << " " <<path2D[i+1].getIntY() << std::endl;
+        std::cout << "bouBox" << " " << i  << " " << up+down  << " " << left+right  << " " << path2D[i].getIntX()  << " " <<path2D[i].getIntY() << " " << node3d.getT() << std::endl;
       }
     }else{
       narrowFlag=true;
       if(wideFlag){
         wideFlag=false;
-        nodeSeq.push_back(path2D[i-1]);
-        nodeSeq.push_back(path2D[i]);
+        // nodeSeq.push_back(path2D[i-1]);
+        // nodeSeq.push_back(path2D[i]);
         path2D[i].setBoundary(true);
-        Node3D node3d(path2D[i].getIntX(), path2D[i].getIntY(), 0, 0, 0, nullptr);
+        std::cout<<"x "<<(path2D[i].getX()-path2D[i+1].getX())<<" y "<<(path2D[i].getY()-path2D[i+1].getY())<<std::endl;
+        float nt=atan2f((path2D[i].getY()-path2D[i+1].getY()),(path2D[i].getX()-path2D[i+1].getX()));
+        nt=Helper::normalizeHeadingRad(nt);
+        Node3D node3d(path2D[i].getIntX(), path2D[i].getIntY(), nt, 0, 0, nullptr);
         nodeBou.push_back(node3d);
-        std::cout << "bouBox" << " " << i-1  << " " << path2D[i-1].getUp()+path2D[i-1].getDown()  << " " << path2D[i-1].getLeft()+path2D[i-1].getRight()  << " " << path2D[i-1].getIntX()  << " " <<path2D[i-1].getIntY() << std::endl;
-        std::cout << "bouBox" << " " << i  << " " << up+down  << " " << left+right  << " " << path2D[i].getIntX()  << " " <<path2D[i].getIntY() << std::endl;
+        std::cout << "bouBox" << " " << i-1  << " " << path2D[i+1].getIntX()  << " " <<path2D[i+1].getIntY() << std::endl;
+        std::cout << "bouBox" << " " << i  << " " << up+down  << " " << left+right  << " " << path2D[i].getIntX()  << " " <<path2D[i].getIntY() << " " << node3d.getT() << std::endl;
       }
     }
   }
-  nodeBou.push_back(goal);
+  nodeBou.push_back(start);
   std::cout << "nodeBou number" << nodeBou.size() << std::endl;
-  for (size_t i = 1; i < nodeBou.size()-1; ++i) {
-    float nt=atanf((nodeBou[i].getY()-nodeBou[i-1].getY())/(nodeBou[i].getX()-nodeBou[i-1].getX()));
-    nodeBou[i].setT((nt * 180 / M_PI) /Constants::deltaHeadingDeg);
+  for (size_t i = 0; i < nodeBou.size()-1; ++i) {
+    // float nt=atan2f((nodeBou[i].getX()-nodeBou[i-1].getX()),(nodeBou[i].getY()-nodeBou[i-1].getY()));
+    // nodeBou[i].setT(Helper::normalizeHeadingRad(nt));
     std::cout << i << " " << nodeBou[i].getX() << " "  << nodeBou[i].getY() << " "  << nodeBou[i].getT() << std::endl;
   }
   return nodeBou;
