@@ -277,7 +277,7 @@ float aStar(Node2D& start,
           // ensure successor is on grid ROW MAJOR
           // ensure successor is not blocked by obstacle
           // ensure successor is not on closed list
-          if (nSucc->isOnGrid(width, height) &&  configurationSpace.isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
+          if (nSucc->isOnGrid(width, height) &&  configurationSpace.isObstacleThisPoint(nSucc) && !nodes2D[iSucc].isClosed()) {
             // calculate new G value
             nSucc->updateG(); //在这里的G应该累加？
             newG = nSucc->getG();
