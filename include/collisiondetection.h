@@ -53,8 +53,8 @@ class CollisionDetection {
     // // 2D collision test Zhang iyu: we should let the 2D point to check
     //如果2D搜索的时候有60%的方向认为可以过 ，就认为这个点可以过,
     if(t == 99){
-      for(int j = 0 ; j <Constants::headings; j++){
-        cost += configurationTest(x, y, j) ? -1.2 : 1;
+      for(int j = 0 ; j <Constants::headings; j ++){
+        cost += configurationTest(x, y, j*Constants::deltaHeadingRad) ? -1.2 : 1;
       }
     }else{
       cost = configurationTest(x, y, t) ? -1 : 1;
@@ -92,11 +92,12 @@ class CollisionDetection {
      \return true if it is in C_free, else false
   */
   bool configurationTest(float x, float y, float t) const;
+  void visualizeGrid(nav_msgs::OccupancyGrid::Ptr grid, int gridSize, int gridWidth, int gridHeight) const;
 
   /*!
      \brief updates the grid with the world map
   */
-  void updateGrid(nav_msgs::OccupancyGrid::Ptr map) {grid = map;}
+  void updateGrid(nav_msgs::OccupancyGrid::Ptr map) {grid = map;} 
 
  private:
   /// The occupancy grid

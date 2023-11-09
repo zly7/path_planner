@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
     tf
     )
 
+
 set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithm.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/node2d.cpp
@@ -65,6 +66,8 @@ find_package(ompl REQUIRED)
 if(NOT OMPL_FOUND)
     message(AUTHOR_WARNING,"Open Motion Planning Library not found")
 endif(NOT OMPL_FOUND)
+find_package(OpenCV REQUIRED)
+include_directories(${OpenCV_INCLUDE_DIRS})
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 include_directories(include ${OMPL_INCLUDE_DIRS})
@@ -76,7 +79,7 @@ target_link_libraries(tf_broadcaster ${catkin_LIBRARIES})
 add_executable(hybrid_astar src/main.cpp ${HEADERS} ${SOURCES})
 target_link_libraries(hybrid_astar ${catkin_LIBRARIES})
 target_link_libraries(hybrid_astar ${OMPL_LIBRARIES})
-
+target_link_libraries(hybrid_astar ${OpenCV_LIBS})
 install(TARGETS ${PROJECT_NAME} tf_broadcaster
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
     LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

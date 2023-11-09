@@ -15,6 +15,7 @@
 
 #include <cmath>
 #include <string>
+#include <vector>
 /*!
     \brief The namespace that wraps the entire project
     \namespace HybridAStar
@@ -28,8 +29,8 @@ namespace HybridAStar {
 namespace Constants {
 // _________________
 // CONFIG FLAGS
-static const std::string algorithm = "split_hybrid_astar";
-// static const std::string algorithm = "hybrid_astar";
+// static const std::string algorithm = "split_hybrid_astar";
+static const std::string algorithm = "hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
@@ -60,7 +61,7 @@ static const bool twoD = true;
 static const int iterations = 30000;
 /// [m] --- Uniformly adds a padding around the vehicle
 static const double bloating = 0;
-static const double each_meter_to_how_many_pixel = 5;
+static const double each_meter_to_how_many_pixel = 10;
 /// [m] --- The width of the vehicle
 static const double width = 1 * each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The length of the vehicle
@@ -125,7 +126,7 @@ static const int dubinsArea = dubinsWidth * dubinsWidth;
 /// [m] -- The bounding box size length and width to precompute all possible headings
 static const int bbSize = std::ceil((sqrt(width * width + length* length) + 4) / cellSize);
 /// [#] --- The sqrt of the number of discrete positions per cell
-static const int positionResolution = 10;
+static const int positionResolution = 1;
 /// [#] --- The number of discrete positions per cell
 static const int positions = positionResolution * positionResolution;
 /// A structure describing the relative position of the occupied cell based on the center of the vehicle
@@ -137,14 +138,8 @@ struct relPos {
 };
 /// A structure capturing the lookup for each theta configuration
 struct config {
-  /// the number of cells occupied by this configuration of the vehicle
   int length;
-  /*!
-     \var relPos pos[64]
-     \brief The maximum number of occupied cells
-     \todo needs to be dynamic
-  */
-  relPos pos[64];
+  std::vector<relPos> pos;
 };
 
 // _________________

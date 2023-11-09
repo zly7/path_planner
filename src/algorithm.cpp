@@ -277,7 +277,7 @@ float aStar(Node2D& start,
           // ensure successor is on grid ROW MAJOR
           // ensure successor is not blocked by obstacle
           // ensure successor is not on closed list
-          if (nSucc->isOnGrid(width, height) &&  configurationSpace.isObstacleThisPoint(nSucc) && !nodes2D[iSucc].isClosed()) {
+          if (nSucc->isOnGrid(width, height) &&  configurationSpace.isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
             // calculate new G value
             nSucc->updateG(); //在这里的G应该累加？
             newG = nSucc->getG();
@@ -324,11 +324,9 @@ Node2D* Algorithm::aStar2D(Node2D& start,
 
   boost::heap::binomial_heap<Node2D*,
         boost::heap::compare<CompareNodes>> O;
-  // update h value
+
   start.updateH(goal);
-  // mark start as open
   start.open();
-  // push on priority queue
   O.push(&start);
   iPred = start.setIdx(width);
   nodes2D[iPred] = start;
@@ -337,23 +335,17 @@ Node2D* Algorithm::aStar2D(Node2D& start,
   Node2D* nPred;
   Node2D* nSucc;
 
-  // continue until O empty
+
   while (!O.empty()) {
     // pop node with lowest cost from priority queue
     nPred = O.top();
     // set index
     iPred = nPred->setIdx(width);
-
-    // _____________________________
-    // LAZY DELETION of rewired node
-    // if there exists a pointer this node has already been expanded
     if (nodes2D[iPred].isClosed()) {
       // pop node from the open list and start with a fresh node
       O.pop();
       continue;
     }
-    // _________________
-    // EXPANSION OF NODE
     else if (nodes2D[iPred].isOpen()) {
       // add node to closed list
       nodes2D[iPred].close();
@@ -363,10 +355,8 @@ Node2D* Algorithm::aStar2D(Node2D& start,
       if (Constants::visualization2D) {
         visualization.publishNode2DPoses(*nPred);
         visualization.publishNode2DPose(*nPred);
-        //        d.sleep();
       }
 
-      // remove node from open list
       O.pop();
 
       // _________
@@ -384,20 +374,11 @@ Node2D* Algorithm::aStar2D(Node2D& start,
           nSucc = nPred->createSuccessor(i);
           // set index of the successor
           iSucc = nSucc->setIdx(width);
-
-          // ensure successor is on grid ROW MAJOR
-          // ensure successor is not blocked by obstacle
-          // ensure successor is not on closed list
           if (nSucc->isOnGrid(width, height) &&  configurationSpace.isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
-            // calculate new G value
             nSucc->updateG();
             newG = nSucc->getG();
-
-            // if successor not on open list or g value lower than before put it on open list
             if (!nodes2D[iSucc].isOpen() || newG < nodes2D[iSucc].getG()) {
-              // calculate the H value
               nSucc->updateH(goal);
-              // put successor on open list
               nSucc->open();
               nodes2D[iSucc] = *nSucc;
               O.push(&nodes2D[iSucc]);

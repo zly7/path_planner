@@ -3,10 +3,47 @@
 
 #include "dubins.h"
 #include "constants.h"
-
+#include <opencv2/opencv.hpp>
 namespace HybridAStar {
 namespace Lookup {
 
+inline void visulize2DcSpsace(int d,bool * array){ 
+cv::Mat img(d, d, CV_8UC1);
+for (int i = 0; i < d; ++i) {
+    for (int j = 0; j < d; ++j) {
+        img.at<uchar>(i, j) = array[i * d + j] ? 255 : 0;
+    }
+}
+cv::namedWindow("Bool Array Visualization", cv::WINDOW_AUTOSIZE);
+cv::imshow("Bool Array Visualization", img);
+cv::resizeWindow("Bool Array Visualization", 500, 500); // 设置你希望的窗口宽度和高度
+cv::waitKey(0);
+return;
+}
+inline void visualize2DSpace(std::vector<std::vector<bool>>& boolArrays, int size) {
+    if (boolArrays.size() != 72) {
+        std::cerr << "Error: The outer vector must have exactly 72 elements." << std::endl;
+        return;
+    }
+
+    cv::Mat bigImg(size * 9, size * 8, CV_8UC1);
+
+    for (int i = 0; i < 9; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            cv::Mat smallImg(size, size, CV_8UC1);
+            for (int x = 0; x < size; ++x) {
+                for (int y = 0; y < size; ++y) {
+                    smallImg.at<uchar>(x, y) = boolArrays[i * 8 + j][x * size + y] ? 255 : 0;
+                }
+            }
+            smallImg.copyTo(bigImg(cv::Rect(j * size, i * size, size, size)));
+        }
+    }
+    cv::namedWindow("Bool Array Visualization", cv::WINDOW_AUTOSIZE);
+    cv::imshow("Bool Array Visualization", bigImg);
+    cv::resizeWindow("Bool Array Visualization", 500, 500);
+    cv::waitKey(0);
+}
 //###################################################
 //                                      DUBINS LOOKUP
 //###################################################
@@ -79,6 +116,8 @@ inline int sign(double x) {
 // COLLISION LOOKUP CREATION
 inline void collisionLookup(Constants::config* lookup) {
   bool DEBUG = false;
+
+
   std::cout << "I am building the collision lookup table...";
   // cell size
   const float cSize = Constants::cellSize;
@@ -122,6 +161,7 @@ inline void collisionLookup(Constants::config* lookup) {
   int stepY;
   // grid
   bool cSpace[size * size];
+  std::vector<std::vector<bool>> cSpaceRecord;
   bool inside = false;
   int hcross1 = 0;
   int hcross2 = 0;
@@ -174,7 +214,7 @@ inline void collisionLookup(Constants::config* lookup) {
 
       // shape rotation
       for (int j = 0; j < 4; ++j) {
-        // translate point to origin
+        // translate point to origin. p will not change
         temp.x = p[j].x - c.x;
         temp.y = p[j].y - c.y;
 
@@ -289,13 +329,16 @@ inline void collisionLookup(Constants::config* lookup) {
       // GENERATE THE ACTUAL LOOKUP
       count = 0;
 
+      std::vector<bool> cSpaceVector(cSpace, cSpace + size*size);
+      cSpaceRecord.push_back(cSpaceVector);
+
       for (int i = 0; i < size; ++i) {
         for (int j = 0; j < size; ++j) {
           if (cSpace[i * size + j]) {
-            // compute the relative position of the car cells
-            lookup[q * Constants::headings + o].pos[count].x = j - (int)c.x; // q from 0 to 99. o is current heading
-            lookup[q * Constants::headings + o].pos[count].y = i - (int)c.y;
-            // add one for the length of the current list
+            Constants::relPos rP;
+            rP.x = j - (int)c.x;
+            rP.y = i - (int)c.y;
+            lookup[q * Constants::headings + o].pos.push_back(rP);
             count++;
           }
         }
@@ -325,11 +368,15 @@ inline void collisionLookup(Constants::config* lookup) {
         }
       }
     }
+    if(DEBUG){
+      visualize2DSpace(cSpaceRecord, size);
+    }
+
   }
 
   std::cout << " done!" << std::endl;
-}
 
+}
 }
 }
 #endif // LOOKUP

@@ -110,6 +110,7 @@ class Node3D {
   static const float dy[];
   /// Possible movements regarding heading theta
   static const float dt[];
+  static const float resolution_mutiplier;
 
  private:
   /// the x position
