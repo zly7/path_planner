@@ -29,8 +29,8 @@ namespace HybridAStar {
 namespace Constants {
 // _________________
 // CONFIG FLAGS
-// static const std::string algorithm = "split_hybrid_astar";
-static const std::string algorithm = "hybrid_astar";
+static const std::string algorithm = "split_hybrid_astar";
+// static const std::string algorithm = "hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
