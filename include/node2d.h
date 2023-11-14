@@ -32,10 +32,7 @@ class Node2D {
     this->float_y = static_cast<float>(y);
     this->wide = false;
     this->boundary = false;
-    this->up = 0;
-    this->down = 0;
-    this->left = 0;
-    this->right = 0;
+    this->radius = 0;
   }
 
   Node2D(float x, float y) { //prevent implicit call
@@ -49,10 +46,7 @@ class Node2D {
     this->c = false;
     this->d = false;
     this->idx = -1;
-    this->up = 0;
-    this->down = 0;
-    this->left = 0;
-    this->right = 0;
+    this->radius = 0;
     this->float_x = x;
     this->float_y = y;
     this->wide = false;
@@ -80,10 +74,7 @@ class Node2D {
   /// get a pointer to the predecessor
   Node2D* getPred() const { return pred; }
 
-  float getUp() const { return up;}
-  float getDown() const { return down;}
-  float getLeft() const { return left;}
-  float getRight() const { return right;}
+  float getRadius() const { return radius;}
   int getIntX() const { return x;}
   int getIntY() const { return y;}
   float getFloatX() const { return float_x;}
@@ -121,10 +112,7 @@ class Node2D {
   /// set a pointer to the predecessor of the node
   void setPred(Node2D* pred) { this->pred = pred; }
 
-  void setUp(const float& up) { this->up = up; }
-  void setDown(const float& down) { this->down = down; }
-  void setLeft(const float& left) { this->left = left; }
-  void setRight(const float& right) { this->right = right; }
+  void setRadius(const float& radius) { this->radius = radius; }
   void setFloatx(const float& ix) { this->float_x = ix; }
   void setFloaty(const float& iy) { this->float_y = iy; }
   void setWide(const bool& wide) { this->wide = wide; }
@@ -182,10 +170,7 @@ class Node2D {
   /// the predecessor pointer
   Node2D* pred;
 
-  float up;
-  float down;
-  float left;
-  float right;
+  float radius;
 
   float float_x;
   float float_y;
