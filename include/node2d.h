@@ -129,6 +129,9 @@ class Node2D {
   void setFloaty(const float& iy) { this->float_y = iy; }
   void setWide(const bool& wide) { this->wide = wide; }
   void setBoundary(const bool&boundary) { this->boundary = boundary; }
+  float distanceTo(const Node2D* other) const {
+    return sqrt(pow(float_x - other->float_x, 2) + pow(float_y - other->float_y, 2));
+  }
   // UPDATE METHODS
   /// Updates the cost-so-far for the node x' coming from its predecessor. It also discovers the node.
   void updateG() { g += movementCost(*pred); d = true; }

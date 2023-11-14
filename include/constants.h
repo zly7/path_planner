@@ -30,7 +30,8 @@ namespace Constants {
 // _________________
 // CONFIG FLAGS
 // static const std::string algorithm = "split_hybrid_astar";
-static const std::string algorithm = "hybrid_astar";
+// static const std::string algorithm = "hybrid_astar";
+static const std::string algorithm = "contour_hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
@@ -104,6 +105,8 @@ static const float dubinsShotDistance = 100;
 /// [m] --- The step size for the analytical solution (Dubin's shot) primarily relevant for collision checking
 static const float dubinsStepSize = 1;
 
+/* For split hybrid A*:
+*/
 static const float deltaL1 = 1;
 
 static const float deltaL2 = 0.1;
@@ -130,6 +133,13 @@ static const int positionResolution = 1;
 /// [#] --- The number of discrete positions per cell
 static const int positions = positionResolution * positionResolution;
 /// A structure describing the relative position of the occupied cell based on the center of the vehicle
+
+/*For algorithmcontour:*/
+static const float minContourPairDistance = width * 1;
+static const float maxContourPairDistance = width * 2;
+
+
+
 struct relPos {
   /// the x position relative to the center
   int x;

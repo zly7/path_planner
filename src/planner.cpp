@@ -215,7 +215,9 @@ void Planner::plan() {
       Algorithm::node2DToBox(path2D,width,height,configurationSpace,deltaL);
       float threshold=10;
       std::vector<Node3D> nodeBou=Algorithm::findBou(nStart,nGoal,path2D,threshold);
-      path.update2DPath(path2D);
+      path.update2DPath(path2D); //visulize 2D path for rviz
+      path.publishPath2DNodes();
+      path.publishPathBoxes();
       std::cout<<"findBou Finished!"<<std::endl;
       int k=0;
       Node3D* nSolution=nullptr;
@@ -272,6 +274,8 @@ void Planner::plan() {
 
         delete [] nodes3D;
         delete [] nodes2D;
+    }else if(Constants::algorithm == "contour_hybrid_astar"){
+      AlgorithmContour::findContour(grid);
     }else{
       std::cout<<"algorithm error"<<std::endl;
     }
