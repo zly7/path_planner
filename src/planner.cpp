@@ -213,9 +213,15 @@ void Planner::plan() {
       }
       float deltaL=0.3;
       Algorithm::node2DToBox(path2D,width,height,configurationSpace,deltaL);
-      float threshold=15;
+      float threshold=20;
       std::vector<Node3D> nodeBou=Algorithm::findBou(nStart,nGoal,path2D,threshold);
       path.update2DPath(path2D);
+
+      path.publishPath2DNodes();
+      path.publishPathBoxes();
+      smoothedPath.publishPathBoxes();
+      smoothedPath.publishPath2DNodes();
+      
       std::cout<<"findBou Finished!"<<std::endl;
       int k=0;
       Node3D* nSolution=nullptr;
@@ -291,12 +297,12 @@ void Planner::plan() {
     // visualization.publishNode3DCosts(nodes3D, width, height, depth);
     // visualization.publishNode2DCosts(nodes2D, width, height);
     
-    if(Constants::algorithm == "split_hybrid_astar"){
-      path.publishPath2DNodes();
-      path.publishPathBoxes();
-      smoothedPath.publishPathBoxes();
-      smoothedPath.publishPath2DNodes();
-    }
+    // if(Constants::algorithm == "split_hybrid_astar"){
+    //   path.publishPath2DNodes();
+    //   path.publishPathBoxes();
+    //   smoothedPath.publishPathBoxes();
+    //   smoothedPath.publishPath2DNodes();
+    // }
 
 
 

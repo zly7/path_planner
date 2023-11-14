@@ -81,7 +81,7 @@ void Path::update2DPath(const std::vector<Node2D>& nodePath) {
   int k = 0;
 
   for (size_t i = 0; i < nodePath.size(); ++i) {
-    std::cout << "add 2D path " << i << " " << nodePath[i].getX() << " " << nodePath[i].getY() << std::endl;
+    // std::cout << "add 2D path " << i << " " << nodePath[i].getX() << " " << nodePath[i].getY() << std::endl;
     add2DNode(nodePath[i], k);
     k++;
     add2DBox(nodePath[i],k);
@@ -160,9 +160,9 @@ void Path::add2DNode(const Node2D& node, int i) {
     pathNode.color.r = Constants::green.red;
     pathNode.color.g = Constants::green.green;
     pathNode.color.b = Constants::green.blue;
-    pathNode.scale.x = 2;
-    pathNode.scale.y = 2;
-    pathNode.scale.z = 2;
+    pathNode.scale.x = 1.5;
+    pathNode.scale.y = 1.5;
+    pathNode.scale.z = 1.5;
   } else {
     pathNode.color.r = Constants::black.red;
     pathNode.color.g = Constants::black.green;
@@ -187,42 +187,26 @@ void Path::add2DBox(const Node2D& node, int i){
     pathBox.action = 3;
   }
 
-  std::cout<<"  Box   " << node.getLeft() << " " << node.getRight() << " " << node.getUp() << " " << node.getDown() <<std::endl;
+  std::cout<<"  Box   " << node.getRadius() << " " << node.getX() << " " << node.getY() <<std::endl;
   pathBox.header.frame_id = "path";
   pathBox.header.stamp = ros::Time(0);
   pathBox.id = i;
-  pathBox.type = visualization_msgs::Marker::LINE_LIST;
-  pathBox.scale.x = 0.1;
-  pathBox.color.a = 1.0;
-  // Define the points for the rectangle's corners (assuming a 2D rectangle)
-  geometry_msgs::Point point1, point2, point3, point4;
-  point1.x = node.getIntX()-node.getLeft();  // X-coordinate of the first corner
-  point1.y = node.getIntY()+node.getUp();  // Y-coordinate of the first corner
-  point1.z = 0.0;  // Z-coordinate of the first corner (set to 0 for 2D)
 
-  point2.x = node.getIntX()-node.getLeft();  // X-coordinate of the second corner
-  point2.y = node.getIntY()-node.getDown();  // Y-coordinate of the second corner
-  point2.z = 0.0;  // Z-coordinate of the second corner
+  pathBox.type = visualization_msgs::Marker::CYLINDER;
+  pathBox.action = visualization_msgs::Marker::ADD;
 
-  point3.x = node.getIntX()+node.getRight();  // X-coordinate of the third corner
-  point3.y = node.getIntY()-node.getDown();  // Y-coordinate of the third corner
-  point3.z = 0.0;  // Z-coordinate of the third corner
+  pathBox.pose.position.x = node.getX() * Constants::cellSize;
+  pathBox.pose.position.y = node.getY() * Constants::cellSize;
+  pathBox.pose.position.z = 0;
+  pathBox.pose.orientation.x = 0.0;
+  pathBox.pose.orientation.y = 0.0;
+  pathBox.pose.orientation.z = 0.0;
+  pathBox.pose.orientation.w = 1.0;
+  pathBox.scale.x = 2*node.getRadius();  // Diameter of the circle
+  pathBox.scale.y = 2*node.getRadius();  // Diameter of the circle
+  pathBox.scale.z = 0.0001;  // Height of the cylinder (thickness of the circle)
 
-  point4.x = node.getIntX()+node.getRight();  // X-coordinate of the fourth corner
-  point4.y = node.getIntY()+node.getUp();  // Y-coordinate of the fourth corner
-  point4.z = 0.0;  // Z-coordinate of the fourth corner
-
-  // Add the points to the marker
-  pathBox.points.push_back(point1);
-  pathBox.points.push_back(point2);
-  pathBox.points.push_back(point2);
-  pathBox.points.push_back(point3);
-  pathBox.points.push_back(point3);
-  pathBox.points.push_back(point4);
-  pathBox.points.push_back(point4);
-  pathBox.points.push_back(point1);
-
-  std::cout << "scale " << pathBox.scale.x << " " << pathBox.scale.y << std::endl;
+  // std::cout << "scale " << pathBox.scale.x << " " << pathBox.scale.y << std::endl;
 
   if (node.getWide()) {
     pathBox.color.r = Constants::red.red;
@@ -233,6 +217,8 @@ void Path::add2DBox(const Node2D& node, int i){
     pathBox.color.g = Constants::blue.green;
     pathBox.color.b = Constants::blue.blue;
   }
+
+  pathBox.color.a = 0.05;
 
   pathBoxes.markers.push_back(pathBox);
 }
