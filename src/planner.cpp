@@ -212,14 +212,16 @@ void Planner::plan() {
         std::cout << "Node: X = " << node.getX() << ", Y = " << node.getY() << std::endl;
       }
       float deltaL=0.3;
-      Algorithm::node2DToBox(path2D,width,height,configurationSpace,deltaL);
-      float threshold=20;
-      std::vector<Node3D> nodeBou=Algorithm::findBou(nStart,nGoal,path2D,threshold);
+      AlgorithmSplit::node2DToBox(path2D,width,height,configurationSpace,deltaL);
+      float threshold=10;
+      std::vector<Node3D> nodeBou=AlgorithmSplit::findBou(nStart,nGoal,path2D,threshold);
       path.update2DPath(path2D);
+
       path.publishPath2DNodes();
       path.publishPathBoxes();
       smoothedPath.publishPathBoxes();
       smoothedPath.publishPath2DNodes();
+      
       std::cout<<"findBou Finished!"<<std::endl;
       int k=0;
       Node3D* nSolution=nullptr;
@@ -276,8 +278,6 @@ void Planner::plan() {
 
         delete [] nodes3D;
         delete [] nodes2D;
-    }else if(Constants::algorithm == "contour_hybrid_astar"){
-      AlgorithmContour::findContour(grid);
     }else{
       std::cout<<"algorithm error"<<std::endl;
     }

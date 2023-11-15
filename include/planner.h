@@ -21,6 +21,7 @@
 #include "visualize.h"
 #include "lookup.h"
 #include "algorithmcontour.h"
+#include "algorithmsplit.h"
 
 namespace HybridAStar {   // 这里是定义了一个namespace HybridAStar
 /*!
