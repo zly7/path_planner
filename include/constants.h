@@ -134,9 +134,12 @@ static const int positionResolution = 1;
 static const int positions = positionResolution * positionResolution;
 /// A structure describing the relative position of the occupied cell based on the center of the vehicle
 
-/*For algorithmcontour:*/
+/*
+For algorithmcontour:
+*/
 static const float minContourPairDistance = width * 1;
-static const float maxContourPairDistance = width * 2;
+static const float maxContourPairDistance = width * 2.25;
+static const int howManyNode2DDeterminesWhetherThroughNarrowContourPair = 3;
 
 
 

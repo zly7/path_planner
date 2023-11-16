@@ -277,7 +277,30 @@ void Planner::plan() {
         delete [] nodes3D;
         delete [] nodes2D;
     }else if(Constants::algorithm == "contour_hybrid_astar"){
-      AlgorithmContour::findContour(grid);
+      Node2D* nodes2D = new Node2D[width * height]();
+      Node2D* nSolution2D = Algorithm::aStar2D(nStart2D, nGoal2D, nodes2D, width, height, configurationSpace, visualization);
+
+      smoother.tracePath2D(nSolution2D);
+      std::vector<Node2D> path2D=smoother.getPath2D();
+      path.update2DPath(path2D);//这里是为了画出2D的路径
+      path.publishPath2DNodes();
+
+      AlgorithmContour algorithmContour;
+      algorithmContour.findContour(grid);     
+      algorithmContour.findNarrowContourPair();
+      AlgorithmContour::visualizeNarrowPairs(algorithmContour.narrowPairs,algorithmContour.gridMap);
+      algorithmContour.findThroughNarrowContourPair(path2D);
+      for(int i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
+        AlgorithmContour::visualizePathAndItNarrowPair(algorithmContour.throughNarrowPairsWaypoints[i],
+              algorithmContour.throughNarrowPairs[i],algorithmContour.gridMap);
+      }
+      algorithmContour.findKeyInformationForthrouthNarrowPairs();
+      for(int i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
+        AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(algorithmContour.throughNarrowPairs[i],
+              algorithmContour.keyInfoForThrouthNarrowPairs[i],algorithmContour.gridMap);
+      }
+
+      delete [] nodes2D;
     }else{
       std::cout<<"algorithm error"<<std::endl;
     }
