@@ -35,6 +35,7 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/dynamicvoronoi.cpp #Boris Lau, Christoph Sprunk, Wolfram Burgard
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bucketedqueue.cpp #Boris Lau, Christoph Sprunk, Wolfram Burgard
     ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithmcontour.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithmsplit.cpp
     )
 set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/algorithm.h
@@ -55,6 +56,7 @@ set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/bucketedqueue.h #Boris Lau, Christoph Sprunk, Wolfram Burgard
     ${CMAKE_CURRENT_SOURCE_DIR}/include/point.h #Boris Lau, Christoph Sprunk, Wolfram Burgard
     ${CMAKE_CURRENT_SOURCE_DIR}/include/algorithmcontour.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/algorithmsplit.h
     )
 add_library(HYAS ${SOURCES} ${HEADERS})
 
