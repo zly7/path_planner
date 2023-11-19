@@ -251,3 +251,37 @@ void AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(std::pair<Node2D*, N
     cv::imshow("Key Information Visualization", mapCopy);
     cv::waitKey(0);
 }
+
+float AlgorithmContour::findNarrowPassSpace(CollisionDetection &configurationSpace, directionVector &unitWireVector, directionVector &centerVerticalUnitVector, Node2D *startPoint)
+{
+  float radius=Constants::minRadius;
+  while (true)
+  {
+    float centerX = startPoint->getFloatX()+unitWireVector.x*radius;
+    float centerY = startPoint->getFloatY()+unitWireVector.y*radius;
+    Node2D* circleCenterPoint = new Node2D(centerX,centerY);
+    float cross=centerVerticalUnitVector.x*unitWireVector.y-centerVerticalUnitVector.y*unitWireVector.x;
+    if(cross>0){
+      cross=1;
+    }else cross=-1;
+    float angle = atan2f(centerVerticalUnitVector.y,centerVerticalUnitVector.x);
+    angle=Helper::normalizeHeadingRad(angle-cross*M_PI/2);
+    bool flag=true;
+    for(int x=0;x<Constants::maxAngle&&flag;x+=(Constants::maxAngle/100)){
+      angle=Helper::normalizeHeading(angle+cross*x);
+      float pointX=circleCenterPoint->getFloatX()+radius*sin(angle);
+      float pointY=circleCenterPoint->getFloatY()+radius*cos(angle);
+      Node2D nNode =  Node2D(pointX, pointY);
+      if(!configurationSpace.isObstacleThisPoint(&nNode)){
+        flag=false;
+        break;
+      }
+    }
+    if(flag){
+      return radius;
+    }else{
+      radius+=Constants::deltaRadius;
+    }
+  }
+  
+}

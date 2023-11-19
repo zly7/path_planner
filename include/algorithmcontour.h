@@ -40,6 +40,10 @@ namespace HybridAStar {
    directionVector centerVerticalUnitVector;
    Node2D* firstBoundPoint;
    Node2D* secondBoundPoint;
+   float firstOneRadius;
+   float firstTwoRadius;
+   float secondOneRadius;
+   float secondTwoRadius;
   };
   class AlgorithmContour {
   public:
@@ -63,6 +67,7 @@ namespace HybridAStar {
     static void visualizeNarrowPairs(std::vector<std::pair<Node2D*,Node2D*>> narrowPairs, const cv::Mat & gridMap);
     static void visualizePathAndItNarrowPair(std::vector<Node2D> & path,std::pair<Node2D*,Node2D*> narrowPair,const cv::Mat & gridMap);
     static void visualizekeyInfoForThrouthNarrowPair(std::pair<Node2D*,Node2D*> narrowPair,keyInfoForThrouthNarrowPair* keyInfo,const cv::Mat & gridMap);
+    float findNarrowPassSpace(CollisionDetection& configurationSpace,directionVector& unitWireVector,directionVector& centerVerticalUnitVector,Node2D* startPoint);
   };
 }
 #endif // ALGORITHM_CONTOUR_H
