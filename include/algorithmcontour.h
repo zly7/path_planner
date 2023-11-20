@@ -68,7 +68,7 @@ namespace HybridAStar {
     static void visualizePathAndItNarrowPair(std::vector<Node2D> & path,std::pair<Node2D*,Node2D*> narrowPair,const cv::Mat & gridMap);
     static void visualizekeyInfoForThrouthNarrowPair(std::pair<Node2D*,Node2D*> narrowPair,keyInfoForThrouthNarrowPair* keyInfo,const cv::Mat & gridMap);
     float findNarrowPassSpace(CollisionDetection& configurationSpace,directionVector& unitWireVector,directionVector& centerVerticalUnitVector,Node2D* startPoint,int width,int height);
-    void findNarrowPassSpaceForAllPairs(CollisionDetection& configurationSpace);
+    void findNarrowPassSpaceForAllPairs(CollisionDetection& configurationSpace,int width,int height);
   };
 }
 #endif // ALGORITHM_CONTOUR_H
