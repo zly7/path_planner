@@ -198,9 +198,10 @@ static float maxAngle = M_PI/2 ;
 static float minRadius = 10;
 //小车每次尝试增加的半径长度
 static float deltaRadius = 0.5;
+//小车尝试直线需要走的长度
+static float straightLength = 10;
 
 }
 }
-
 #endif // CONSTANTS
 
