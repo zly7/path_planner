@@ -192,8 +192,16 @@ static constexpr color red = {255.f / 255.f, 0.f / 255.f, 0.f / 255.f};
 /// A definition for a color used for visualization
 static constexpr color blue = {0.f / 255.f, 191.f / 255.f, 255.f / 255.f};
 
-}
-}
+//需要通过的路径对应的转过的角度
+static float maxAngle = M_PI/2 ;
+//小车可以达到的最大转向角对应的半径长度
+static float minRadius = 10;
+//小车每次尝试增加的半径长度
+static float deltaRadius = 0.5;
+//小车尝试直线需要走的长度
+static float straightLength = 10;
 
+}
+}
 #endif // CONSTANTS
 

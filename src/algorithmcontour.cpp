@@ -251,3 +251,101 @@ void AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(std::pair<Node2D*, N
     cv::imshow("Key Information Visualization", mapCopy);
     cv::waitKey(0);
 }
+
+float AlgorithmContour::findNarrowPassSpace(CollisionDetection &configurationSpace, directionVector &unitWireVector, directionVector &centerVerticalUnitVector, Node2D *startPoint,int width,int height)
+{
+  float radius=Constants::minRadius;
+  //如果超过最大半径就尝试直线
+  float maxRadiu=std::sqrt(width*width+height*height)/2/sin(Constants::maxAngle/2);
+  while (radius<=maxRadiu)
+  {
+    float centerX = startPoint->getFloatX()+unitWireVector.x*radius;
+    float centerY = startPoint->getFloatY()+unitWireVector.y*radius;
+    Node2D* circleCenterPoint = new Node2D(centerX,centerY);
+    float cross=centerVerticalUnitVector.x*unitWireVector.y-centerVerticalUnitVector.y*unitWireVector.x;
+    if(cross>0){
+      cross=1;
+    }else cross=-1;
+    float angle = atan2f(centerVerticalUnitVector.y,centerVerticalUnitVector.x);
+    angle=Helper::normalizeHeadingRad(angle-cross*M_PI/2);
+    bool flag=true;
+    for(int x=0;x<Constants::maxAngle&&flag;x+=(Constants::maxAngle/100)){
+      float angle1=Helper::normalizeHeading(angle+cross*x);
+      float pointX=circleCenterPoint->getFloatX()+radius*sin(angle1);
+      float pointY=circleCenterPoint->getFloatY()+radius*cos(angle1);
+      Node2D nNode =  Node2D(pointX, pointY);
+      if(!configurationSpace.isObstacleThisPoint(&nNode)){
+        flag=false;
+        break;
+      }
+    }
+    if(flag){
+      return radius;
+    }else{
+      radius+=Constants::deltaRadius;
+    }
+  }
+  bool flag=true;
+  for(int x=0;x<Constants::straightLength&&flag;x+=(Constants::straightLength/100)){
+      float pointX=startPoint->getFloatX()+x*centerVerticalUnitVector.x;
+      float pointY=startPoint->getFloatY()+x*centerVerticalUnitVector.y;
+      Node2D nNode =  Node2D(pointX, pointY);
+      if(!configurationSpace.isObstacleThisPoint(&nNode)){
+        flag=false;
+        break;
+      }
+  }
+  if(flag){
+    return 0;
+  }
+  radius=Constants::minRadius;
+  unitWireVector.x=-unitWireVector.x;
+  unitWireVector.y=-unitWireVector.y;
+  while (radius<=maxRadiu)
+  {
+    float centerX = startPoint->getFloatX()+unitWireVector.x*radius;
+    float centerY = startPoint->getFloatY()+unitWireVector.y*radius;
+    Node2D* circleCenterPoint = new Node2D(centerX,centerY);
+    float cross=centerVerticalUnitVector.x*unitWireVector.y-centerVerticalUnitVector.y*unitWireVector.x;
+    if(cross>0){
+      cross=1;
+    }else cross=-1;
+    float angle = atan2f(centerVerticalUnitVector.y,centerVerticalUnitVector.x);
+    angle=Helper::normalizeHeadingRad(angle-cross*M_PI/2);
+    bool flag=true;
+    for(int x=0;x<Constants::maxAngle&&flag;x+=(Constants::maxAngle/100)){
+      float angle1=Helper::normalizeHeading(angle+cross*x);
+      float pointX=circleCenterPoint->getFloatX()+radius*sin(angle1);
+      float pointY=circleCenterPoint->getFloatY()+radius*cos(angle1);
+      Node2D nNode =  Node2D(pointX, pointY);
+      if(!configurationSpace.isObstacleThisPoint(&nNode)){
+        flag=false;
+        break;
+      }
+    }
+    if(flag){
+      return -radius;
+    }else{
+      radius+=Constants::deltaRadius;
+    }
+  }
+  return -Constants::minRadius/2;
+}
+
+void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &configurationSpace,int width,int height)
+{
+  for (keyInfoForThrouthNarrowPair* myPair:keyInfoForThrouthNarrowPairs ) {
+    directionVector unitWireVector{};
+    unitWireVector.x = myPair->centerPoint->getFloatX() - myPair->firstBoundPoint->getFloatX();
+    unitWireVector.y = myPair->centerPoint->getFloatY() - myPair->firstBoundPoint->getFloatY();
+    unitWireVector.normalize();
+    myPair->firstRadius1=findNarrowPassSpace(configurationSpace,unitWireVector,myPair->centerVerticalUnitVector,myPair->firstBoundPoint,width,height);
+    directionVector centerVerticalUnitVector{-myPair->centerVerticalUnitVector.x,-myPair->centerVerticalUnitVector.y};
+    myPair->firstRadius1=findNarrowPassSpace(configurationSpace,unitWireVector,centerVerticalUnitVector,myPair->firstBoundPoint,width,height);
+    unitWireVector.x = myPair->centerPoint->getFloatX() - myPair->secondBoundPoint->getFloatX();
+    unitWireVector.y = myPair->centerPoint->getFloatY() - myPair->secondBoundPoint->getFloatY();
+    unitWireVector.normalize();
+    myPair->firstRadius1=findNarrowPassSpace(configurationSpace,unitWireVector,myPair->centerVerticalUnitVector,myPair->secondBoundPoint,width,height);
+    myPair->firstRadius1=findNarrowPassSpace(configurationSpace,unitWireVector,centerVerticalUnitVector,myPair->firstBoundPoint,width,height);
+  }
+}
