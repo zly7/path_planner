@@ -341,11 +341,11 @@ void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &config
     unitWireVector.normalize();
     myPair->firstRadius1=findNarrowPassSpace(configurationSpace,unitWireVector,myPair->centerVerticalUnitVector,myPair->firstBoundPoint,width,height);
     directionVector centerVerticalUnitVector{-myPair->centerVerticalUnitVector.x,-myPair->centerVerticalUnitVector.y};
-    myPair->firstRadius1=findNarrowPassSpace(configurationSpace,unitWireVector,centerVerticalUnitVector,myPair->firstBoundPoint,width,height);
+    myPair->firstRadius2=findNarrowPassSpace(configurationSpace,unitWireVector,centerVerticalUnitVector,myPair->firstBoundPoint,width,height);
     unitWireVector.x = myPair->centerPoint->getFloatX() - myPair->secondBoundPoint->getFloatX();
     unitWireVector.y = myPair->centerPoint->getFloatY() - myPair->secondBoundPoint->getFloatY();
     unitWireVector.normalize();
-    myPair->firstRadius1=findNarrowPassSpace(configurationSpace,unitWireVector,myPair->centerVerticalUnitVector,myPair->secondBoundPoint,width,height);
-    myPair->firstRadius1=findNarrowPassSpace(configurationSpace,unitWireVector,centerVerticalUnitVector,myPair->firstBoundPoint,width,height);
+    myPair->secondRadius1=findNarrowPassSpace(configurationSpace,unitWireVector,myPair->centerVerticalUnitVector,myPair->secondBoundPoint,width,height);
+    myPair->secondRadius2=findNarrowPassSpace(configurationSpace,unitWireVector,centerVerticalUnitVector,myPair->firstBoundPoint,width,height);
   }
 }
