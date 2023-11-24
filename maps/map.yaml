@@ -1,4 +1,4 @@
-image: map_1m_to_10pixel.png
+image: map_thin_1m_to_6pixel.png
 resolution: 1
 origin: [0.0, 0.0, 0.0]
 occupied_thresh: 0.1

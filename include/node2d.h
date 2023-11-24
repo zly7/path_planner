@@ -150,6 +150,11 @@ class Node2D {
 
   bool whether_store_float;
 
+  // 生成两个节点之间的中间点
+  static Node2D* middle(const Node2D* a, const Node2D* b) {
+      return new Node2D((a->float_x + b->float_x) / 2, (a->float_y + b->float_y) / 2);
+  }
+
  private:
   /// the x position
   int x;

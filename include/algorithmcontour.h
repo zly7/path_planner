@@ -32,24 +32,30 @@ namespace HybridAStar {
             y /= length;
         }
     }
+    directionVector getReverseVector(){
+      directionVector reverseVector(-this->x,-this->y);
+      return reverseVector;
+    }
   };
   class keyInfoForThrouthNarrowPair{
    public:
    directionVector wireUnitVector;
    Node2D* centerPoint;
-   directionVector centerVerticalUnitVector;
+   directionVector centerVerticalUnitVector;//中垂线的单位向量
    Node2D* firstBoundPoint;
    Node2D* secondBoundPoint;
-   float firstRadius1;
-   float firstRadius2;
-   float secondRadius1;
-   float secondRadius2;
+   std::vector<Node3D> containingWaypointsFirstBPForward;
+   std::vector<Node3D> containingWaypointsFirstBPBackward; ///沿着反方向路径走的圆弧上的点
+   std::vector<Node3D> containingWaypointsSecondBPForward;
+   std::vector<Node3D> containingWaypointsSecondBPBackward; ///沿着反方向路径走的圆弧上的点
+
   };
   class AlgorithmContour {
   public:
     /// The deault constructor
     AlgorithmContour() {}
     const static bool WhetherDebug = true;
+    const static bool whetherDeepDebug = true;
     cv::Mat gridMap;
     std::vector<std::vector<Node2D*>> contoursFromGrid;
     std::vector<std::pair<Node2D*, Node2D*>> narrowPairs;
@@ -67,8 +73,10 @@ namespace HybridAStar {
     static void visualizeNarrowPairs(std::vector<std::pair<Node2D*,Node2D*>> narrowPairs, const cv::Mat & gridMap);
     static void visualizePathAndItNarrowPair(std::vector<Node2D> & path,std::pair<Node2D*,Node2D*> narrowPair,const cv::Mat & gridMap);
     static void visualizekeyInfoForThrouthNarrowPair(std::pair<Node2D*,Node2D*> narrowPair,keyInfoForThrouthNarrowPair* keyInfo,const cv::Mat & gridMap);
-    float findNarrowPassSpace(CollisionDetection& configurationSpace,directionVector& unitWireVector,directionVector& centerVerticalUnitVector,Node2D* startPoint,int width,int height);
-    void findNarrowPassSpaceForAllPairs(CollisionDetection& configurationSpace,int width,int height);
+    
+    
+    std::vector<Node3D> findNarrowPassSpace(CollisionDetection& configurationSpace,const directionVector& radiusVectorToYuanxin,const directionVector& tangentVector,Node2D* startPoint);
+    void findNarrowPassSpaceForAllPairs(CollisionDetection& configurationSpace);
   };
 }
 #endif // ALGORITHM_CONTOUR_H

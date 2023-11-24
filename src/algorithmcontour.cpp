@@ -41,7 +41,7 @@ std::vector<std::vector<Node2D*>> AlgorithmContour::findContour(nav_msgs::Occupa
   for (auto& c : contours) {
     std::vector<Node2D*> contour;
     for (auto& p : c) {
-      Node2D* node = new Node2D(p.x, p.y);
+      Node2D* node = new Node2D((float)p.x+0.5, (float)p.y+0.5);//opencv 寻找角点的时候会选择内部的像素点，然后还有问题就是像素点的值本质上是左下角的int值。所以转化成float的时候全部加0.5
       contour.push_back(node);
     }
     result.push_back(contour);
@@ -59,7 +59,27 @@ void AlgorithmContour::findNarrowContourPair(){
     for (const auto& contour : this->contoursFromGrid) {
         allNodes.insert(allNodes.end(), contour.begin(), contour.end());
     }
+    std::set<size_t> nodesToRemove;
+    std::vector<Node2D*> middleNodes;
 
+    // 在合并后的 vector 中进行二重遍历
+    for (size_t i = 0; i < allNodes.size(); ++i) {
+        for (size_t j = i + 1; j < allNodes.size(); ++j) {
+            float distance = allNodes[i]->distanceTo(allNodes[j]);
+            if (distance < Constants::theMindistanceDetermineWhetherTheSameContourPoint) {
+                middleNodes.push_back(Node2D::middle(allNodes[i], allNodes[j]));
+                nodesToRemove.insert(i);
+                nodesToRemove.insert(j);
+            }
+        }
+    }
+
+    // 移除标记的节点
+    for (auto it = nodesToRemove.rbegin(); it != nodesToRemove.rend(); ++it) {
+        allNodes.erase(allNodes.begin() + *it);
+    }
+      // 将新生成的中间节点加入到 allNodes
+    allNodes.insert(allNodes.end(), middleNodes.begin(), middleNodes.end());
     // 在合并后的 vector 中进行二重遍历
     for (size_t i = 0; i < allNodes.size(); ++i) {
         for (size_t j = i + 1; j < allNodes.size(); ++j) {
@@ -152,7 +172,7 @@ void AlgorithmContour::findKeyInformationForthrouthNarrowPairs(){
         centerVerticalUnitVector.y = -1*centerVerticalUnitVector.y;
       }
       keyInfo->centerVerticalUnitVector = centerVerticalUnitVector;
-      float halfWidth = Constants::width / 2.0 * 1.2; //稍微留一些余地
+      float halfWidth = (float) (Constants::width+1) / 2.0 * 1.5; //稍微留一些余地
       Node2D* firstBoundPoint = new Node2D(firstPoint->getFloatX() + halfWidth * unitWireVector.x, 
                                           firstPoint->getFloatY() + halfWidth * unitWireVector.y);
       Node2D* secondBoundPoint = new Node2D(secondPoint->getFloatX() - halfWidth * unitWireVector.x, 
@@ -247,105 +267,106 @@ void AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(std::pair<Node2D*, N
     cv::Point centerVerticalEnd(center.x + Constants::each_meter_to_how_many_pixel * keyInfo->centerVerticalUnitVector.x, center.y + Constants::each_meter_to_how_many_pixel * keyInfo->centerVerticalUnitVector.y);
     cv::line(mapCopy, center, centerVerticalEnd, cv::Scalar(255, 255, 0), 1);
 
+    cv::resize(mapCopy, mapCopy, cv::Size(600, 600));
     // 显示图像
     cv::imshow("Key Information Visualization", mapCopy);
     cv::waitKey(0);
 }
 
-float AlgorithmContour::findNarrowPassSpace(CollisionDetection &configurationSpace, directionVector &unitWireVector, directionVector &centerVerticalUnitVector, Node2D *startPoint,int width,int height)
+std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& configurationSpace,
+    const directionVector& radiusVectorToYuanxin,const directionVector& tangentVector,Node2D* startPoint)
 {
+
   float radius=Constants::minRadius;
+  float maxRadius = Constants::maxRadus;
+  std::vector<Node3D> finalCirclePath;
   //如果超过最大半径就尝试直线
-  float maxRadiu=std::sqrt(width*width+height*height)/2/sin(Constants::maxAngle/2);
-  while (radius<=maxRadiu)
+  while (radius<=maxRadius)
   {
-    float centerX = startPoint->getFloatX()+unitWireVector.x*radius;
-    float centerY = startPoint->getFloatY()+unitWireVector.y*radius;
+    cv::Mat mapCopy;
+    if(whetherDeepDebug){
+      cv::cvtColor(this->gridMap, mapCopy, cv::COLOR_GRAY2BGR);
+    }
+
+    float centerX = startPoint->getFloatX()+radiusVectorToYuanxin.x*radius;
+    float centerY = startPoint->getFloatY()+radiusVectorToYuanxin.y*radius;
+
+     
     Node2D* circleCenterPoint = new Node2D(centerX,centerY);
-    float cross=centerVerticalUnitVector.x*unitWireVector.y-centerVerticalUnitVector.y*unitWireVector.x;
-    if(cross>0){
+    //右手定则
+    float cross=tangentVector.x*radiusVectorToYuanxin.y-tangentVector.y*radiusVectorToYuanxin.x;
+    if(cross>0){//ni时针
       cross=1;
     }else cross=-1;
-    float angle = atan2f(centerVerticalUnitVector.y,centerVerticalUnitVector.x);
-    angle=Helper::normalizeHeadingRad(angle-cross*M_PI/2);
+
+    float angleVehicleCurrent = atan2f(tangentVector.y,tangentVector.x);
+    angleVehicleCurrent=Helper::normalizeHeadingRad(angleVehicleCurrent);
+    float angleRelativeToCircleCurrent = 0;
     bool flag=true;
-    for(int x=0;x<Constants::maxAngle&&flag;x+=(Constants::maxAngle/100)){
-      float angle1=Helper::normalizeHeading(angle+cross*x);
-      float pointX=circleCenterPoint->getFloatX()+radius*sin(angle1);
-      float pointY=circleCenterPoint->getFloatY()+radius*cos(angle1);
-      Node2D nNode =  Node2D(pointX, pointY);
-      if(!configurationSpace.isObstacleThisPoint(&nNode)){
+      
+    finalCirclePath.clear();
+    for(float x=0;x<Constants::maxAngleRag;x+=Constants::deltaHeadingRad){
+      
+      angleRelativeToCircleCurrent = Helper::normalizeHeadingRad(-1*(angleVehicleCurrent +cross*M_PI/2 + cross*Constants::deltaHeadingRad));
+      //上面需要乘以-1的原因是你需要找到指出圆心的向量的方向
+      angleVehicleCurrent = Helper::normalizeHeadingRad(angleVehicleCurrent + cross*Constants::deltaHeadingRad);
+      float pointX=circleCenterPoint->getFloatX()+radius*cos(angleRelativeToCircleCurrent);
+      float pointY=circleCenterPoint->getFloatY()+radius*sin(angleRelativeToCircleCurrent);
+      Node3D NodeCurrentVehicle =  Node3D(pointX, pointY, angleVehicleCurrent);
+      
+      if(!configurationSpace.isTraversable(&NodeCurrentVehicle)){
         flag=false;
         break;
+      }else{
+        finalCirclePath.push_back(NodeCurrentVehicle);
       }
     }
+    if(whetherDeepDebug){
+      cv::circle(mapCopy, cv::Point(circleCenterPoint->getFloatX(), circleCenterPoint->getFloatY()), 2, cv::Scalar(255, 0, 0), -1);//蓝色是圆心
+      cv::circle(mapCopy,cv::Point(startPoint->getFloatX(),startPoint->getFloatY()),2,cv::Scalar(0, 0, 255), -1);
+      for(auto node:finalCirclePath){
+        cv::circle(mapCopy, cv::Point(node.getX(), node.getY()), 1, cv::Scalar(0, 255, 0), -1);
+      }
+      cv::Mat resizedMap;
+      cv::resize(mapCopy, resizedMap, cv::Size(600, 600));
+      cv::imshow("Key Information Visualization", resizedMap);
+      cv::waitKey(0);
+    }
     if(flag){
-      return radius;
+      return finalCirclePath;
     }else{
       radius+=Constants::deltaRadius;
     }
   }
-  bool flag=true;
-  for(int x=0;x<Constants::straightLength&&flag;x+=(Constants::straightLength/100)){
-      float pointX=startPoint->getFloatX()+x*centerVerticalUnitVector.x;
-      float pointY=startPoint->getFloatY()+x*centerVerticalUnitVector.y;
-      Node2D nNode =  Node2D(pointX, pointY);
-      if(!configurationSpace.isObstacleThisPoint(&nNode)){
-        flag=false;
-        break;
-      }
-  }
-  if(flag){
-    return 0;
-  }
-  radius=Constants::minRadius;
-  unitWireVector.x=-unitWireVector.x;
-  unitWireVector.y=-unitWireVector.y;
-  while (radius<=maxRadiu)
-  {
-    float centerX = startPoint->getFloatX()+unitWireVector.x*radius;
-    float centerY = startPoint->getFloatY()+unitWireVector.y*radius;
-    Node2D* circleCenterPoint = new Node2D(centerX,centerY);
-    float cross=centerVerticalUnitVector.x*unitWireVector.y-centerVerticalUnitVector.y*unitWireVector.x;
-    if(cross>0){
-      cross=1;
-    }else cross=-1;
-    float angle = atan2f(centerVerticalUnitVector.y,centerVerticalUnitVector.x);
-    angle=Helper::normalizeHeadingRad(angle-cross*M_PI/2);
-    bool flag=true;
-    for(int x=0;x<Constants::maxAngle&&flag;x+=(Constants::maxAngle/100)){
-      float angle1=Helper::normalizeHeading(angle+cross*x);
-      float pointX=circleCenterPoint->getFloatX()+radius*sin(angle1);
-      float pointY=circleCenterPoint->getFloatY()+radius*cos(angle1);
-      Node2D nNode =  Node2D(pointX, pointY);
-      if(!configurationSpace.isObstacleThisPoint(&nNode)){
-        flag=false;
-        break;
-      }
-    }
-    if(flag){
-      return -radius;
-    }else{
-      radius+=Constants::deltaRadius;
-    }
-  }
-  return -Constants::minRadius/2;
+  return finalCirclePath;
+  // bool flag=true;
+  // for(int x=0;x<Constants::straightLength&&flag;x+=(Constants::straightLength/100)){
+  //     float pointX=startPoint->getFloatX()+x*centerVerticalUnitVector.x;
+  //     float pointY=startPoint->getFloatY()+x*centerVerticalUnitVector.y;
+  //     Node2D nNode =  Node2D(pointX, pointY);
+  //     if(!configurationSpace.isTraversable(&nNode)){
+  //       flag=false;
+  //       break;
+  //     }
+  // }
+  // if(flag){
+  //   return 0;
+  // }
+  
+  // return -Constants::minRadius/2;
 }
 
-void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &configurationSpace,int width,int height)
+void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &configurationSpace)
 {
-  for (keyInfoForThrouthNarrowPair* myPair:keyInfoForThrouthNarrowPairs ) {
-    directionVector unitWireVector{};
-    unitWireVector.x = myPair->centerPoint->getFloatX() - myPair->firstBoundPoint->getFloatX();
-    unitWireVector.y = myPair->centerPoint->getFloatY() - myPair->firstBoundPoint->getFloatY();
-    unitWireVector.normalize();
-    myPair->firstRadius1=findNarrowPassSpace(configurationSpace,unitWireVector,myPair->centerVerticalUnitVector,myPair->firstBoundPoint,width,height);
-    directionVector centerVerticalUnitVector{-myPair->centerVerticalUnitVector.x,-myPair->centerVerticalUnitVector.y};
-    myPair->firstRadius2=findNarrowPassSpace(configurationSpace,unitWireVector,centerVerticalUnitVector,myPair->firstBoundPoint,width,height);
-    unitWireVector.x = myPair->centerPoint->getFloatX() - myPair->secondBoundPoint->getFloatX();
-    unitWireVector.y = myPair->centerPoint->getFloatY() - myPair->secondBoundPoint->getFloatY();
-    unitWireVector.normalize();
-    myPair->secondRadius1=findNarrowPassSpace(configurationSpace,unitWireVector,myPair->centerVerticalUnitVector,myPair->secondBoundPoint,width,height);
-    myPair->secondRadius2=findNarrowPassSpace(configurationSpace,unitWireVector,centerVerticalUnitVector,myPair->firstBoundPoint,width,height);
+  for (keyInfoForThrouthNarrowPair* KIpair:keyInfoForThrouthNarrowPairs ) {
+    KIpair->containingWaypointsFirstBPBackward=findNarrowPassSpace(configurationSpace,
+        KIpair->wireUnitVector.getReverseVector(),KIpair->centerVerticalUnitVector.getReverseVector(),KIpair->firstBoundPoint);
+    KIpair->containingWaypointsFirstBPForward=findNarrowPassSpace(configurationSpace,
+        KIpair->wireUnitVector.getReverseVector(),KIpair->centerVerticalUnitVector,KIpair->firstBoundPoint);
+    KIpair->containingWaypointsSecondBPBackward=findNarrowPassSpace(configurationSpace,
+        KIpair->wireUnitVector,KIpair->centerVerticalUnitVector.getReverseVector(),KIpair->secondBoundPoint);
+    KIpair->containingWaypointsSecondBPForward=findNarrowPassSpace(configurationSpace,
+        KIpair->wireUnitVector,KIpair->centerVerticalUnitVector,KIpair->secondBoundPoint);
+    
   }
 }

@@ -18,6 +18,7 @@ class Node3D {
 
   /// The default constructor for 3D array initialization
   Node3D(): Node3D(0, 0, 0, 0, 0, nullptr) {}
+  Node3D(float x,float y, float t): Node3D(x, y, t, 0, 0, nullptr) {}
   /// Constructor for a node with the given arguments
   Node3D(float x, float y, float t, float g, float h, const Node3D* pred, int prim = 0) {
     this->x = x;
@@ -63,10 +64,7 @@ class Node3D {
   void setY(const float& y) { this->y = y; }
   /// set the heading theta
   void setT(const float& t) { 
-    if(t<Constants::headings){this->t = t; }
-    else{
-      std::cout<<"error in setT"<<std::endl;
-    }
+    this->t = t; 
   }
   /// set the cost-so-far (real value)
   void setG(const float& g) { this->g = g; }

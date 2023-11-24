@@ -51,10 +51,10 @@ class CollisionDetection {
     getConfiguration(node, x, y, t);
 
     // // 2D collision test Zhang iyu: we should let the 2D point to check
-    //如果2D搜索的时候有60%的方向认为可以过 ，就认为这个点可以过,
+    //如果2D搜索的时候有33.3(1/(2+1))%的方向认为可以过 ，就认为这个点可以过,
     if(t == 99){
       for(int j = 0 ; j <Constants::headings; j ++){
-        cost += configurationTest(x, y, j*Constants::deltaHeadingRad) ? -1.2 : 1;
+        cost += configurationTest(x, y, j*Constants::deltaHeadingRad) ? -2 : 1;
       }
     }else{
       cost = configurationTest(x, y, t) ? -1 : 1;

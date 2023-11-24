@@ -301,6 +301,7 @@ void Planner::plan() {
         AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(algorithmContour.throughNarrowPairs[i],
               algorithmContour.keyInfoForThrouthNarrowPairs[i],algorithmContour.gridMap);
       }
+      algorithmContour.findNarrowPassSpaceForAllPairs(configurationSpace);
 
       delete [] nodes2D;
     }else{
