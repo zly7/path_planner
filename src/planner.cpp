@@ -297,11 +297,16 @@ void Planner::plan() {
               algorithmContour.throughNarrowPairs[i],algorithmContour.gridMap);
       }
       algorithmContour.findKeyInformationForthrouthNarrowPairs();
-      for(int i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
+      for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(algorithmContour.throughNarrowPairs[i],
               algorithmContour.keyInfoForThrouthNarrowPairs[i],algorithmContour.gridMap);
       }
       algorithmContour.findNarrowPassSpaceForAllPairs(configurationSpace);
+      for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
+        AlgorithmContour::visualizePassSpaceBoundaryForThroughNarrowPair(algorithmContour.keyInfoForThrouthNarrowPairs[i],algorithmContour.gridMap);
+      }
+      algorithmContour.findNarrowPassSpaceInputSetOfNode3DForAllPairs(configurationSpace);
+
 
       delete [] nodes2D;
     }else{

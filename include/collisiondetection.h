@@ -11,8 +11,14 @@
 namespace HybridAStar {
 namespace {
 inline void getConfiguration(const Node2D* node, float& x, float& y, float& t) {
-  x = node->getX();
-  y = node->getY();
+  if(abs(node->getX()-node->getFloatX())<1e-6){
+    x = node->getFloatX();
+    y = node->getFloatY();
+  }else{
+    x = node->getX() + 0.5;//2D搜索的时候表征这个应该是用整数点的中心点去判断是不是configuration
+    y = node->getY() + 0.5;
+  }
+
   // avoid 2D collision checking
   t = 99;
 }

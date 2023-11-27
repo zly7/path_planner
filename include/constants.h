@@ -129,7 +129,7 @@ static const int dubinsArea = dubinsWidth * dubinsWidth;
 /// [m] -- The bounding box size length and width to precompute all possible headings
 static const int bbSize = std::ceil((sqrt(width * width + length* length) + 4) / cellSize);
 /// [#] --- The sqrt of the number of discrete positions per cell
-static const int positionResolution = 1;
+static const int positionResolution = 10;
 /// [#] --- The number of discrete positions per cell
 static const int positions = positionResolution * positionResolution;
 /// A structure describing the relative position of the occupied cell based on the center of the vehicle
@@ -195,7 +195,7 @@ static constexpr color blue = {0.f / 255.f, 191.f / 255.f, 255.f / 255.f};
 /*For algorithmcontour:
 */
 //需要通过的路径对应的转过的角度
-static float maxAngleRag = M_PI/2 ;
+static float maxAngleRag = M_PI * 75 /180 ;
 //小车可以达到的最大转向角对应的半径长度,这个半径的长度应该是车辆的最小转弯半径
 static float minRadius = r;
 

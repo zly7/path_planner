@@ -36,6 +36,10 @@ namespace HybridAStar {
       directionVector reverseVector(-this->x,-this->y);
       return reverseVector;
     }
+    static directionVector getUnitVectorFromNode3D(const Node3D* node){
+      directionVector unitVector(cos(node->getT()),sin(node->getT()));
+      return unitVector;
+    }
   };
   class keyInfoForThrouthNarrowPair{
    public:
@@ -50,18 +54,33 @@ namespace HybridAStar {
    std::vector<Node3D> containingWaypointsSecondBPBackward; ///沿着反方向路径走的圆弧上的点
 
   };
+  class finalPassSpaceInOutSet{
+  public:
+    std::vector<Node3D> inSet;
+    std::vector<Node3D> outSet;
+    finalPassSpaceInOutSet(std::vector<Node3D> inSet,std::vector<Node3D> outSet){
+      this->inSet = inSet;
+      this->outSet = outSet;
+    }
+    finalPassSpaceInOutSet(){
+      this->inSet = std::vector<Node3D>();
+      this->outSet = std::vector<Node3D>();
+    }
+  };
   class AlgorithmContour {
   public:
     /// The deault constructor
     AlgorithmContour() {}
     const static bool WhetherDebug = true;
     const static bool whetherDeepDebug = true;
+    const static bool whetherDeepDebug2 = true;
     cv::Mat gridMap;
     std::vector<std::vector<Node2D*>> contoursFromGrid;
     std::vector<std::pair<Node2D*, Node2D*>> narrowPairs;
     std::vector<std::pair<Node2D*, Node2D*>> throughNarrowPairs;
     std::vector<std::vector<Node2D>> throughNarrowPairsWaypoints; //用来记录狭窄点周围的路径点
     std::vector<keyInfoForThrouthNarrowPair*> keyInfoForThrouthNarrowPairs;
+    std::vector<finalPassSpaceInOutSet> finalPassSpaceInOutSets;
 
     std::vector<std::vector<Node2D*>> findContour(nav_msgs::OccupancyGrid::Ptr grid);
     void findNarrowContourPair();
@@ -74,9 +93,16 @@ namespace HybridAStar {
     static void visualizePathAndItNarrowPair(std::vector<Node2D> & path,std::pair<Node2D*,Node2D*> narrowPair,const cv::Mat & gridMap);
     static void visualizekeyInfoForThrouthNarrowPair(std::pair<Node2D*,Node2D*> narrowPair,keyInfoForThrouthNarrowPair* keyInfo,const cv::Mat & gridMap);
     
-    
-    std::vector<Node3D> findNarrowPassSpace(CollisionDetection& configurationSpace,const directionVector& radiusVectorToYuanxin,const directionVector& tangentVector,Node2D* startPoint);
+    //找到左上右上左下右下圆弧
+    std::vector<Node3D> findNarrowPassSpace(CollisionDetection& configurationSpace,const directionVector& radiusVectorToYuanxin,const directionVector& tangentVector,Node2D* startPoint, int whetherReverse);
     void findNarrowPassSpaceForAllPairs(CollisionDetection& configurationSpace);
+    static void visualizePassSpaceBoundaryForThroughNarrowPair(keyInfoForThrouthNarrowPair* keyInfo,const cv::Mat & gridMap);
+  
+    //找到实际的可以进入的点的函数
+    void findNarrowPassSpaceInputSetOfNode3DForAllPairs(CollisionDetection& configurationSpace);
+    finalPassSpaceInOutSet findNarrowPassSpaceInputSetOfNode3D(CollisionDetection& configurationSpace,keyInfoForThrouthNarrowPair* inputPair);
+    std::vector<Node3D> findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine(const Node3D & firstPoint,const Node3D & secondPoint,const Node2D & middlePoint,const directionVector middleVerticalLine);
+
   };
 }
 #endif // ALGORITHM_CONTOUR_H

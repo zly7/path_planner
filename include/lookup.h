@@ -176,15 +176,18 @@ inline void collisionLookup(Constants::config* lookup) {
   // generate all discrete positions within one cell
   for (int i = 0; i < positionResolution; ++i) {
     for (int j = 0; j < positionResolution; ++j) {
-      points[positionResolution * i + j].x = 1.f / positionResolution * j;
-      points[positionResolution * i + j].y = 1.f / positionResolution * i;
+      // points[positionResolution * i + j].x = 1.f / positionResolution * j + 1.f / (2 * positionResolution);
+      // points[positionResolution * i + j].y = 1.f / positionResolution * i + 1.f / (2 * positionResolution);
+      points[positionResolution * i + j].x = 1.f / positionResolution * j ;
+      points[positionResolution * i + j].y = 1.f / positionResolution * i ;
     }
   }
 
 
   for (int q = 0; q < positions; ++q) {
     // set the starting angle to zero;
-    theta = 0;
+    theta = Constants::deltaHeadingRad / 2;
+    
 
     // set points of rectangle
     c.x = (double)size / 2 + points[q].x; // zly:this maybe the center
