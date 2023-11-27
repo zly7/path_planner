@@ -16,6 +16,7 @@ Planner::Planner() {
   // TOPICS TO PUBLISH
   pubStart = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/start", 1);
 
+  pubNotification = n.advertise<std_msgs::Int32>("start_notification", 1);
   // ___________________
   // TOPICS TO SUBSCRIBE
   if (Constants::manual) {
@@ -46,6 +47,10 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map) {  // 这里显然�
   if (Constants::coutDEBUG) {
     std::cout << "I am seeing the map..." << std::endl;
   }
+  std_msgs::Int32 msg;
+  msg.data = 0;  
+  pubNotification.publish(msg);
+
 
   grid = map;
   //update the configuration space with the current map
