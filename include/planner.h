@@ -22,6 +22,7 @@
 #include "lookup.h"
 #include "algorithmcontour.h"
 #include "algorithmsplit.h"
+#include "std_msgs/Int32.h"
 
 namespace HybridAStar {   // 这里是定义了一个namespace HybridAStar
 /*!
@@ -69,6 +70,7 @@ class Planner {
   ros::NodeHandle n;
   /// A publisher publishing the start position for RViz
   ros::Publisher pubStart;
+  ros::Publisher pubNotification;
   /// A subscriber for receiving map updates
   ros::Subscriber subMap;
   /// A subscriber for receiving goal updates
