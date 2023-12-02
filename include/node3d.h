@@ -102,6 +102,10 @@ class Node3D {
   // CONSTANT VALUES
   /// Number of possible directions
   static const int dir;
+  /// @brief 直线弧长，应该是角度乘以pi
+  static const float arcLength;
+  /// @brief 转弯angel
+  static const float steeringAngle;
   /// Possible movements in the x direction
   static const float dx[];
   /// Possible movements in the y direction

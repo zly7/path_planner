@@ -29,9 +29,9 @@ namespace HybridAStar {
 namespace Constants {
 // _________________
 // CONFIG FLAGS
-// static const std::string algorithm = "split_hybrid_astar";
+static const std::string algorithm = "split_hybrid_astar";
 // static const std::string algorithm = "hybrid_astar";
-static const std::string algorithm = "contour_hybrid_astar";
+// static const std::string algorithm = "contour_hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
@@ -108,9 +108,7 @@ static const float dubinsStepSize = 1;
 /* For split hybrid A*:
 */
 static const float deltaL1 = 1;
-
 static const float deltaL2 = 0.1;
-
 static const float deltaLTest = 0.3;
 
 
@@ -140,6 +138,8 @@ For algorithmcontour:
 static const float minContourPairDistance = width * 1;
 static const float maxContourPairDistance = width * 2.25;
 static const int howManyNode2DDeterminesWhetherThroughNarrowContourPair = 3;
+/// [m] --- The minimum distance between two nodes in the astar and its successor, the unit is meter
+static const float arcLengthForAstarSuccessor = 0.3;
 
 
 

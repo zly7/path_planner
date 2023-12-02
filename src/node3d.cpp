@@ -10,15 +10,17 @@ const int Node3D::dir = 3;
 //const float Node3D::dx[] = { 0.62832,   0.62717,   0.62717};
 //const float Node3D::dt[] = { 0,         0.10472,   -0.10472};
 const float Node3D::resolution_mutiplier = Constants::each_meter_to_how_many_pixel;
-// R = 6, 6.75 DEG
-const float Node3D::dy[] = { 0 * Node3D::resolution_mutiplier, -0.0415893* Node3D::resolution_mutiplier,  0.0415893* Node3D::resolution_mutiplier};
-const float Node3D::dx[] = { 0.7068582* Node3D::resolution_mutiplier,   0.705224* Node3D::resolution_mutiplier,   0.705224* Node3D::resolution_mutiplier};
-const float Node3D::dt[] = { 0, 0.1178097,   -0.1178097};
+const float Node3D::arcLength = Constants::arcLengthForAstarSuccessor  * Constants::each_meter_to_how_many_pixel;
+const float Node3D::steeringAngle = M_PI * 6.75 / 180.0;
+// // R = 6, 6.75 DEG
+// const float Node3D::dy[] = { 0 * Node3D::resolution_mutiplier, -0.0415893* Node3D::resolution_mutiplier,  0.0415893* Node3D::resolution_mutiplier};
+// const float Node3D::dx[] = { 0.7068582* Node3D::resolution_mutiplier,   0.705224* Node3D::resolution_mutiplier,   0.705224* Node3D::resolution_mutiplier};
+// const float Node3D::dt[] = { 0, 0.1178097,   -0.1178097};
 
-// R = 3, 6.75 DEG
-//const float Node3D::dy[] = { 0,        -0.0207946, 0.0207946};
-//const float Node3D::dx[] = { 0.35342917352,   0.352612,  0.352612};
-//const float Node3D::dt[] = { 0,         0.11780972451,   -0.11780972451};
+// 6.75 DEG
+const float Node3D::dy[] = { 0, -Node3D::arcLength*sin(Node3D::steeringAngle), Node3D::arcLength*sin(Node3D::steeringAngle)};
+const float Node3D::dx[] = { Node3D::arcLength,   Node3D::arcLength*cos(Node3D::steeringAngle),  Node3D::arcLength*cos(Node3D::steeringAngle)};
+const float Node3D::dt[] = { 0,         Node3D::steeringAngle,   -Node3D::steeringAngle};
 
 //const float Node3D::dy[] = { 0,       -0.16578, 0.16578};
 //const float Node3D::dx[] = { 1.41372, 1.40067, 1.40067};
