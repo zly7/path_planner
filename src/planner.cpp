@@ -48,9 +48,8 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map) {  // 这里显然�
     std::cout << "I am seeing the map..." << std::endl;
   }
   std_msgs::Int32 msg;
-  msg.data = 0;  
+  msg.data = point_index;  
   pubNotification.publish(msg);
-
 
   grid = map;
   //update the configuration space with the current map
@@ -218,7 +217,7 @@ void Planner::plan() {
       }
       float deltaL=0.3;
       AlgorithmSplit::node2DToBox(path2D,width,height,configurationSpace,deltaL);
-      float threshold=10;
+      float threshold=13;
       std::vector<Node3D> nodeBou=AlgorithmSplit::findBou(nStart,nGoal,path2D,threshold);
       path.update2DPath(path2D);
 
@@ -322,6 +321,15 @@ void Planner::plan() {
     ros::Duration d(t1 - t0);
     std::cout << "TIME in ms: " << d * 1000 << std::endl;
 
+    validStart=false;
+    validGoal=false;
+    point_index++;
+    std_msgs::Int32 msg;
+    msg.data = point_index;  
+    pubNotification.publish(msg);
+
+    std::cout<<"point_index: "<<point_index<<std::endl;
+
     // _________________________________
     // PUBLISH THE RESULTS OF THE SEARCH
     path.publishPath();
@@ -345,7 +353,10 @@ void Planner::plan() {
     // delete [] nodes3D;
     // delete [] nodes2D;
 
+    
   } else {
     std::cout << "missing goal or start" << std::endl;
   }
+  
+  
 }

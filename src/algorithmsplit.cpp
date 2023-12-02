@@ -36,7 +36,7 @@ void AlgorithmSplit::node2DToBox(std::vector<Node2D> &path2D,
           break;
         }
       node2d.setRadius(radius);
-      std::cout << "radius " << radius <<std::endl;
+      // std::cout << "radius " << radius <<std::endl;
     }
   }
 }
