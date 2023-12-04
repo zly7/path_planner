@@ -69,7 +69,7 @@ class Node2D {
   bool  isOpen() const { return o; }
   /// determine whether the node is closed
   bool  isClosed() const { return c; }
-  /// determine whether the node is discovered
+/// determine whether the node is discovered
   bool  isDiscovered() const { return d; }
   /// get a pointer to the predecessor
   Node2D* getPred() const { return pred; }
@@ -107,7 +107,7 @@ class Node2D {
   void close() { c = true; o = false; }
   /// set the node neither open nor closed
   void reset() { c = false; o = false; }
-  /// discover the node
+/// discover the node
   void discover() { d = true; }
   /// set a pointer to the predecessor of the node
   void setPred(Node2D* pred) { this->pred = pred; }
@@ -117,6 +117,7 @@ class Node2D {
   void setFloaty(const float& iy) { this->float_y = iy; }
   void setWide(const bool& wide) { this->wide = wide; }
   void setBoundary(const bool&boundary) { this->boundary = boundary; }
+
   float distanceTo(const Node2D* other) const {
     return sqrt(pow(float_x - other->float_x, 2) + pow(float_y - other->float_y, 2));
   }
@@ -139,6 +140,8 @@ class Node2D {
   // SUCCESSOR CREATION
   /// Creates a successor on a eight-connected grid.
   Node2D* createSuccessor(const int i);
+
+  Node2D* getSuccessor(const int i,Node2D* nodeArray,const int width,const int height);
 
   // CONSTANT VALUES
   /// Number of possible directions

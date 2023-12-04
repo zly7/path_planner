@@ -157,9 +157,9 @@ void Path::add2DNode(const Node2D& node, int i) {
   pathNode.color.a = 1.0;
 
   if (node.getBoundary()) {
-    pathNode.color.r = Constants::green.red;
-    pathNode.color.g = Constants::green.green;
-    pathNode.color.b = Constants::green.blue;
+    pathNode.color.r = Constants::black.red;
+    pathNode.color.g = Constants::black.green;
+    pathNode.color.b = Constants::black.blue;
     pathNode.scale.x = 1.5;
     pathNode.scale.y = 1.5;
     pathNode.scale.z = 1.5;
@@ -255,4 +255,61 @@ void Path::addVehicle(const Node3D& node, int i) {
   pathVehicle.pose.position.y = node.getY() * Constants::cellSize;
   pathVehicle.pose.orientation = tf::createQuaternionMsgFromYaw(node.getT());
   pathVehicles.markers.push_back(pathVehicle);
+
+  visualization_msgs::Marker border;
+  border.header.frame_id = "path";
+  border.header.stamp = ros::Time(0);
+  border.ns = "border";
+  border.id = i+2000;//to make the id not the same as the vehicle
+  border.type = visualization_msgs::Marker::LINE_LIST;
+  border.scale.x = 0.2; // 线条的厚度
+  border.color.r = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
+  border.color.g = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
+  border.color.b = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
+  border.color.a = 0.5; 
+
+  // 计算矩形边框的四个顶点
+  geometry_msgs::Point p1, p2, p3, p4;
+  double length = Constants::length;
+  double width = Constants::width;
+  p1.x = length / 2;   // 前端，中心右侧
+  p1.y = -width / 2;   // 中心下方
+
+  p2.x = length / 2;   // 前端，中心右侧
+  p2.y = width / 2;    // 中心上方
+
+  p3.x = -length / 2;  // 后端，中心左侧
+  p3.y = width / 2;    // 中心上方
+
+  p4.x = -length / 2;  // 后端，中心左侧
+  p4.y = -width / 2;   // 中心下方
+ // 假设你已经有了车辆的朝向角 theta
+  double theta = node.getT(); // 获取车辆的朝向
+
+  // 计算旋转矩阵
+  double cosTheta = cos(theta);
+  double sinTheta = sin(theta);
+
+  // 对每个顶点应用旋转
+  for (auto& p : {&p1, &p2, &p3, &p4}) {
+      double x = p->x;
+      double y = p->y;
+
+      p->x = cosTheta * x - sinTheta * y + node.getX();
+      p->y = sinTheta * x + cosTheta * y + node.getY();
+  }
+
+  // 添加顶点到Marker
+  border.points.push_back(p1);
+  border.points.push_back(p2);
+  border.points.push_back(p2);
+  border.points.push_back(p3);
+  border.points.push_back(p3);
+  border.points.push_back(p4);
+  border.points.push_back(p4);
+  border.points.push_back(p1); // 闭合矩形
+
+  // 将边框添加到MarkerArray
+  pathVehicles.markers.push_back(border);
+
 }

@@ -36,6 +36,7 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/bucketedqueue.cpp #Boris Lau, Christoph Sprunk, Wolfram Burgard
     ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithmcontour.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithmsplit.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/multiGoalAstar.cpp
     )
 set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/algorithm.h
@@ -57,6 +58,7 @@ set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/point.h #Boris Lau, Christoph Sprunk, Wolfram Burgard
     ${CMAKE_CURRENT_SOURCE_DIR}/include/algorithmcontour.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/algorithmsplit.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/multiGoalAstar.h
     )
 add_library(HYAS ${SOURCES} ${HEADERS})
 

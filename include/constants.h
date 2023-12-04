@@ -29,17 +29,17 @@ namespace HybridAStar {
 namespace Constants {
 // _________________
 // CONFIG FLAGS
-static const std::string algorithm = "split_hybrid_astar";
-// static const std::string algorithm = "hybrid_astar";
+// static const std::string algorithm = "split_hybrid_astar";
+static const std::string algorithm = "hybrid_astar";
 // static const std::string algorithm = "contour_hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
 static const bool manual = true;
 /// A flag for the visualization of 3D nodes (true = on; false = off)
-static const bool visualization = true && manual;
+static const bool visualization = false && manual;
 /// A flag for the visualization of 2D nodes (true = on; false = off)
-static const bool visualization2D = true && manual;
+static const bool visualization2D = false && manual;
 /// A flag to toggle reversing (true = on; false = off)
 static const bool reverse = true;
 /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
@@ -64,11 +64,12 @@ static const int iterations = 30000;
 static const double bloating = 0;
 static const double each_meter_to_how_many_pixel = 6;
 /// [m] --- The width of the vehicle
-static const double width = 1.33 * each_meter_to_how_many_pixel + 2 * bloating;
+static const double width = 2.5 * each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The length of the vehicle
-static const double length = 1.9 *each_meter_to_how_many_pixel + 2 * bloating;
+static const double length = 3.6 *each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The minimum turning radius of the vehicle
-static const float r = 0.5 * each_meter_to_how_many_pixel; 
+// static const float r = 0.5 * each_meter_to_how_many_pixel; 
+static const float r = 2 * each_meter_to_how_many_pixel;
 /// [m] --- The number of discretizations in heading
 static const int headings = 72;
 /// [°] --- The discretization value of the heading (goal condition)
@@ -77,7 +78,7 @@ static const float deltaHeadingDeg = 360 / (float)headings;
 static const float deltaHeadingRad = 2 * M_PI / (float)headings;
 /// [c*M_PI] --- The heading part of the goal condition
 static const float deltaHeadingNegRad = 2 * M_PI - deltaHeadingRad;
-/// [m] --- The cell size of the 2D grid of the world
+/// [m] --- The cell size of the 2D grid of the world这个变量已经弃用
 static const float cellSize = 1;
 /*!
   \brief [m] --- The tie breaker breaks ties between nodes expanded in the same cell
@@ -101,7 +102,7 @@ static const float penaltyReversing = 2.0;
 /// [#] --- A movement cost penalty for change of direction (changing from primitives < 3 to primitives > 2)
 static const float penaltyCOD = 2.0;
 /// [m] --- The distance to the goal when the analytical solution (Dubin's shot) first triggers
-static const float dubinsShotDistance = 100;
+static const float dubinsShotDistance = 100 * sqrt(each_meter_to_how_many_pixel);
 /// [m] --- The step size for the analytical solution (Dubin's shot) primarily relevant for collision checking
 static const float dubinsStepSize = 1;
 
@@ -191,7 +192,6 @@ static constexpr color black = {0.f / 255.f, 0.f / 255.f, 0.f / 255.f};
 static constexpr color red = {255.f / 255.f, 0.f / 255.f, 0.f / 255.f};
 /// A definition for a color used for visualization
 static constexpr color blue = {0.f / 255.f, 191.f / 255.f, 255.f / 255.f};
-
 /*For algorithmcontour:
 */
 //需要通过的路径对应的转过的角度
@@ -205,6 +205,7 @@ static float deltaRadius = 0.2 * each_meter_to_how_many_pixel;
 //小车尝试直线需要走的长度
 // static float straightLength = 1 * each_meter_to_how_many_pixel;
 static float theMindistanceDetermineWhetherTheSameContourPoint = 0.6 * each_meter_to_how_many_pixel;
+
 
 }
 }

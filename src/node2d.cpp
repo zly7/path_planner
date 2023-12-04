@@ -24,6 +24,15 @@ Node2D* Node2D::createSuccessor(const int i) {
   return new Node2D(xSucc, ySucc, g, 0, this);
 }
 
+Node2D* Node2D::getSuccessor(const int i,Node2D* nodeArray,const int width,const int height) {
+  int xSucc = x + Node2D::dx[i];
+  int ySucc = y + Node2D::dy[i];
+  if (xSucc >= 0 && xSucc < width && ySucc >= 0 && ySucc < height) {
+    return &nodeArray[xSucc + ySucc * width];
+  }
+  return nullptr;
+}
+
 //###################################################
 //                                 2D NODE COMPARISON
 //###################################################

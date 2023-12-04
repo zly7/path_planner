@@ -101,11 +101,13 @@ void AlgorithmContour::findNarrowContourPair(){
     
     return;
 }
+//筛选出穿过路径的有效的狭窄点对
 void AlgorithmContour::findThroughNarrowContourPair(const std::vector<Node2D> & path){
 
     for (const auto& narrowPair : this->narrowPairs) {
         std::vector<Node2D> containingWaypointsTorecord;
-        if (this->determineWhetherThrough2DPath(path, narrowPair,containingWaypointsTorecord)) {
+        int aroundWaypointsIndex = 0;
+        if (this->determineWhetherThrough2DPath(path, narrowPair,containingWaypointsTorecord,aroundWaypointsIndex)) {
             this->throughNarrowPairs.push_back(narrowPair);
             std::reverse(containingWaypointsTorecord.begin(),containingWaypointsTorecord.end()); //拿到的path是从尾部trace过来的
             this->throughNarrowPairsWaypoints.push_back(containingWaypointsTorecord);
@@ -116,7 +118,7 @@ void AlgorithmContour::findThroughNarrowContourPair(const std::vector<Node2D> & 
 
 /*决定狭窄的点是否穿过路径*/
 bool AlgorithmContour::determineWhetherThrough2DPath(const std::vector<Node2D>& path, 
-          std::pair<Node2D*, Node2D*> narrowPair,std::vector<Node2D> & containingWaypointsTorecord){
+          std::pair<Node2D*, Node2D*> narrowPair,std::vector<Node2D> & containingWaypointsTorecord,int & aroundWaypointsIndex){
     int minContinue = Constants::howManyNode2DDeterminesWhetherThroughNarrowContourPair;
     int continueCount = 0;
     int continueCountMax = 0;
@@ -124,12 +126,14 @@ bool AlgorithmContour::determineWhetherThrough2DPath(const std::vector<Node2D>& 
     Node2D* pairSecond = narrowPair.second;
     //应该是再互化同心圆的相交里面
     float maxDistance = pairFirst->distanceTo(pairSecond);
-
+    int index = 0;
+    int allIndex = 0;
     bool isFlag = false;
     for (const auto& node : path) {
         if (node.distanceTo(narrowPair.first) < maxDistance && node.distanceTo(narrowPair.second) < maxDistance) {
             continueCount++;
             containingWaypointsTorecord.push_back(node);
+            allIndex += index;
             if(continueCount > continueCountMax){
                 continueCountMax = continueCount;
             }
@@ -137,14 +141,17 @@ bool AlgorithmContour::determineWhetherThrough2DPath(const std::vector<Node2D>& 
         else {
             continueCount = 0;
             if(isFlag==true){
+              aroundWaypointsIndex = allIndex / containingWaypointsTorecord.size();
               break;
             }else{
+              allIndex = 0;
               containingWaypointsTorecord.clear();
             }
         }
         if (continueCount >= minContinue) {
             isFlag = true;
         }
+        index++;
     }
     //如果只是在2个圆内，但是没有相交，这个还是不能算作我们需要求的狭窄路径点
     if(isFlag==true && !Helper::isIntersect(pairFirst, pairSecond, &containingWaypointsTorecord[0], &containingWaypointsTorecord[containingWaypointsTorecord.size() - 1])){
@@ -155,6 +162,34 @@ bool AlgorithmContour::determineWhetherThrough2DPath(const std::vector<Node2D>& 
     //     AlgorithmContour::visualizePathAndItNarrowPair(containingWaypointsTorecord,narrowPair,this->gridMap);
     // }
     return isFlag;
+}
+
+void AlgorithmContour::sortThroughNarrowPairsWaypoints(){
+  // 检查两个向量的大小是否相等
+  if (throughNarrowPairsWaypoints.size() != aroundWaypointsIndexOfThroughNarrowPairs.size()) {
+      std::cout << "Error: throughNarrowPairsWaypoints.size() != aroundWaypointsIndexOfThroughNarrowPairs.size()" << std::endl;
+      return;
+  }
+
+  // 创建一个索引数组，用于排序
+  std::vector<size_t> indices(throughNarrowPairsWaypoints.size());
+  for (size_t i = 0; i < indices.size(); ++i) {
+      indices[i] = i;
+  }
+
+  // 使用自定义比较函数排序索引
+  std::sort(indices.begin(), indices.end(), [this](size_t a, size_t b) {
+      return aroundWaypointsIndexOfThroughNarrowPairs[a] < aroundWaypointsIndexOfThroughNarrowPairs[b];
+  });
+
+  // 根据排序后的索引创建一个新的 waypoints 向量
+  std::vector<std::vector<Node2D>> sortedWaypoints(throughNarrowPairsWaypoints.size());
+  for (size_t i = 0; i < indices.size(); ++i) {
+      sortedWaypoints[i] = throughNarrowPairsWaypoints[indices[i]];
+  }
+
+  // 更新原来的 waypoints 向量
+  throughNarrowPairsWaypoints = sortedWaypoints;
 }
 
 void AlgorithmContour::findKeyInformationForthrouthNarrowPairs(){
