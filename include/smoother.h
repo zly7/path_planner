@@ -65,6 +65,7 @@ class Smoother {
     }
     return false;
   }
+  void clear();
 
  private:
   /// maximum possible curvature of the non-holonomic vehicle
