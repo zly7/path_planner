@@ -239,7 +239,7 @@ void Path::addVehicle(const Node3D& node, int i) {
   pathVehicle.scale.x = Constants::length - Constants::bloating * 2;
   pathVehicle.scale.y = Constants::width - Constants::bloating * 2;
   pathVehicle.scale.z = 1;
-  pathVehicle.color.a = 0.1;
+  pathVehicle.color.a = 0.3;
 
   if (smoothed) {
     pathVehicle.color.r = Constants::orange.red;

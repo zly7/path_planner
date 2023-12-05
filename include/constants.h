@@ -39,7 +39,7 @@ static const bool manual = true;
 /// A flag for the visualization of 3D nodes (true = on; false = off)
 static const bool visualization = false && manual;
 /// A flag for the visualization of 2D nodes (true = on; false = off)
-static const bool visualization2D = true && manual;
+static const bool visualization2D = false && manual;
 /// A flag to toggle reversing (true = on; false = off)
 static const bool reverse = true;
 /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
@@ -62,14 +62,14 @@ static const bool twoD = true;
 static const int iterations = 30000;
 /// [m] --- Uniformly adds a padding around the vehicle
 static const double bloating = 0;
-static const double each_meter_to_how_many_pixel = 6;
+static const double each_meter_to_how_many_pixel = 10;
 /// [m] --- The width of the vehicle
-static const double width = 2.5 * each_meter_to_how_many_pixel + 2 * bloating;
+static const double width = 1.8 * each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The length of the vehicle
-static const double length = 3.6 *each_meter_to_how_many_pixel + 2 * bloating;
+static const double length = 3 *each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The minimum turning radius of the vehicle
 // static const float r = 0.5 * each_meter_to_how_many_pixel; 
-static const float r = 2 * each_meter_to_how_many_pixel;
+static const float r = 1 * each_meter_to_how_many_pixel;
 /// [m] --- The number of discretizations in heading
 static const int headings = 72;
 /// [°] --- The discretization value of the heading (goal condition)
@@ -128,7 +128,7 @@ static const int dubinsArea = dubinsWidth * dubinsWidth;
 /// [m] -- The bounding box size length and width to precompute all possible headings
 static const int bbSize = std::ceil((sqrt(width * width + length* length) + 4) / cellSize);
 /// [#] --- The sqrt of the number of discrete positions per cell
-static const int positionResolution = 10;
+static const int positionResolution = 4;
 /// [#] --- The number of discrete positions per cell
 static const int positions = positionResolution * positionResolution;
 /// A structure describing the relative position of the occupied cell based on the center of the vehicle

@@ -72,7 +72,7 @@ namespace HybridAStar {
     /// The deault constructor
     AlgorithmContour() {}
     const static bool WhetherDebug = true;
-    const static bool whetherDeepDebug = true;
+    const static bool whetherDeepDebug = false;
     const static bool whetherDeepDebug2 = true;
     cv::Mat gridMap;
     std::vector<std::vector<Node2D*>> contoursFromGrid;

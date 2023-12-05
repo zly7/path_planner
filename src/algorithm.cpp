@@ -139,6 +139,8 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
           std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
           if(iterations > Constants::iterations){
             std::cout<<"到达了最长的搜索迭代次数"<<std::endl;
+          }else{
+            std::cout<<"当前搜索次数: "<<iterations<<std::endl;
           }
           return nPred;
         }
@@ -573,7 +575,7 @@ Node3D* Algorithm::dubinsShot(Node3D& start, const Node3D& goal, CollisionDetect
   // avoid duplicate waypoint
   x += Constants::dubinsStepSize;
   while (x <  length) {
-    double q[3];
+    double q[3];//q相当于是实际的点
     dubins_path_sample(&path, x, q);
     dubinsNodes[i].setX(q[0]);
     dubinsNodes[i].setY(q[1]);

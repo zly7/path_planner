@@ -1,4 +1,4 @@
-image: map2_thin_1m_to_6pixel.png
+image: useful1205/map_1m_to_10pixel_1_cry.png
 resolution: 1
 origin: [0.0, 0.0, 0.0]
 occupied_thresh: 0.1

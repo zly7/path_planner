@@ -428,7 +428,7 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
     }
     if(whetherDeepDebug){
       cv::Mat mapCopy;
-      float multiplier = 8;
+      float multiplier = 4;
       cv::resize(gridMap, mapCopy, cv::Size(), multiplier, multiplier, cv::INTER_NEAREST);
       cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
       cv::circle(mapCopy, cv::Point(circleCenterPoint->getFloatX()*multiplier, circleCenterPoint->getFloatY()*multiplier), 3, cv::Scalar(255, 0, 0), -1);//蓝色是圆心
@@ -501,7 +501,7 @@ void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &config
 // 主要的可视化函数
 void AlgorithmContour::visualizePassSpaceBoundaryForThroughNarrowPair(keyInfoForThrouthNarrowPair* keyInfo, const cv::Mat& gridMap) {
     cv::Mat mapCopy;
-    float multiplier = 8;
+    float multiplier = 4;
     cv::resize(gridMap, mapCopy, cv::Size(), multiplier, multiplier, cv::INTER_NEAREST);
     cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
 
