@@ -249,3 +249,9 @@ Vector2D Smoother::smoothnessTerm(Vector2D xim2, Vector2D xim1, Vector2D xi, Vec
   return wSmoothness * (xim2 - 4 * xim1 + 6 * xi - 4 * xip1 + xip2);
 }
 
+
+void Smoother::clear(){
+  path.clear();
+  path2D.clear();
+}
+

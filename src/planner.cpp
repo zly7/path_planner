@@ -204,7 +204,12 @@ void Planner::plan() {
     // CLEAR THE PATH
     path.clear();
     smoothedPath.clear();
+    smoother.clear();
     if(Constants::algorithm == "split_hybrid_astar"){
+
+      std_msgs::Int32 msg;
+      msg.data = -1;  
+      pubNotification.publish(msg);
 
       Node2D* nodes2D = new Node2D[width * height]();
       Node2D* nSolution2D = Algorithm::aStar2D(nStart2D, nGoal2D, nodes2D, width, height, configurationSpace, visualization);
@@ -223,8 +228,8 @@ void Planner::plan() {
 
       path.publishPath2DNodes();
       path.publishPathBoxes();
-      smoothedPath.publishPathBoxes();
-      smoothedPath.publishPath2DNodes();
+      // smoothedPath.publishPathBoxes();
+      // smoothedPath.publishPath2DNodes();
       
       std::cout<<"findBou Finished!"<<std::endl;
       int k=0;
