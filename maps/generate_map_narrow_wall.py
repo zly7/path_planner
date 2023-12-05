@@ -49,7 +49,7 @@ def main():
     # map[2:18, 8:12] = 1  # 走廊内部
     # map[2, 8:12] = map[17, 8:12] = map[2:18, 8] = map[2:18, 11] = 0  # 走廊的墙
 
-    map[1:18,5] = 0
+    map[1:18,2] = 0
 
     upsampled_map = np.repeat(np.repeat(map, resolution, axis=0), resolution, axis=1)
 

@@ -240,7 +240,8 @@ void Planner::plan() {
         Node2D* nodes2D = new Node2D[width * height]();
         std::cout << "start " << i << " " << nodeBou[i].getX() << " " << nodeBou[i].getY() <<std::endl;
         std::cout << "end   " << i << " " << nodeBou[i-1].getX() << " " << nodeBou[i-1].getY() <<std::endl;
-        nSolution = Algorithm::hybridAStar(nodeBou[i], nodeBou[i-1], nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
+        nSolution = Algorithm::hybridAStar(nodeBou[i], nodeBou[i-1], nodes3D, nodes2D, width, height, 
+              configurationSpace, dubinsLookup, visualization);
         // nodeBou[i-1].setPred(nSolution);
         std::cout<<" nSolusion "<<nSolution->getX()<<" "<<nSolution->getY()<<std::endl;
         std::cout<<" nSolusion end "<<nodeBou[i-1].getX()<<" "<<nodeBou[i-1].getY()<<std::endl;
@@ -253,14 +254,8 @@ void Planner::plan() {
         // CREATE THE UPDATED PATH
         // smoothedPath.updatePathFromK(smoother.getPath(),k);
         // k++;
-
-
         delete [] nodes3D;
         delete [] nodes2D;
-
-        // Node3D* nodes3D = new Node3D[length]();
-        // Node2D* nodes2D = new Node2D[width * height]();
-
 
       }
       // smoother.tracePath(nSolution);
@@ -305,6 +300,7 @@ void Planner::plan() {
         AlgorithmContour::visualizePathAndItNarrowPair(algorithmContour.throughNarrowPairsWaypoints[i],
               algorithmContour.throughNarrowPairs[i],algorithmContour.gridMap);
       }
+      algorithmContour.sortThroughNarrowPairsWaypoints();
       algorithmContour.findKeyInformationForthrouthNarrowPairs();
       for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(algorithmContour.throughNarrowPairs[i],
@@ -315,8 +311,32 @@ void Planner::plan() {
         AlgorithmContour::visualizePassSpaceBoundaryForThroughNarrowPair(algorithmContour.keyInfoForThrouthNarrowPairs[i],algorithmContour.gridMap);
       }
       algorithmContour.findNarrowPassSpaceInputSetOfNode3DForAllPairs(configurationSpace);
-
-
+      Node3D tempStart = nStart;
+      Node3D* nSolution=nullptr;
+      for(uint i = 0;i<algorithmContour.finalPassSpaceInOutSets.size();i++){
+        Node3D* nodes3D = new Node3D[length]();
+        Node2D* nodes2DSplitSearch = new Node2D[width * height]();
+        multiGoalSet3D goals = multiGoalSet3D();
+        goals.addGoals(algorithmContour.finalPassSpaceInOutSets[i].inSet);
+        nSolution = Algorithm::hybridAStarMultiGoals(tempStart, goals, nodes3D, nodes2DSplitSearch, width, height, 
+            configurationSpace, dubinsLookup, visualization);
+        smoother.tracePath(nSolution,0,smoother.getPath());//在h函数里面有可以省略后面两个参数的定义
+        Node3D* tempGoal = nullptr; //缓存目标节点
+        for(auto &node3d:algorithmContour.finalPassSpaceInOutSets[i].outSet){//这里可能要选择最好的结束点
+          tempGoal= Algorithm::dubinsShot(tempStart,node3d,configurationSpace);
+          if(tempGoal->getPred()!=nullptr){
+            smoother.tracePath(tempGoal->getPred(),0,smoother.getPath());
+            break;
+          }
+        }
+        if(tempGoal!=nullptr){
+          std::cout<<"在Set之间的dubinsShot搜索出现了问题"<<std::endl;
+        }
+        smoother.tracePath(nSolution,0,smoother.getPath());
+        tempStart = *nSolution;
+        delete [] nodes3D;
+        delete [] nodes2DSplitSearch;
+      }
       delete [] nodes2D;
     }else{
       std::cout<<"algorithm error"<<std::endl;

@@ -72,13 +72,14 @@ namespace HybridAStar {
     /// The deault constructor
     AlgorithmContour() {}
     const static bool WhetherDebug = true;
-    const static bool whetherDeepDebug = true;
+    const static bool whetherDeepDebug = false;
     const static bool whetherDeepDebug2 = true;
     cv::Mat gridMap;
     std::vector<std::vector<Node2D*>> contoursFromGrid;
     std::vector<std::pair<Node2D*, Node2D*>> narrowPairs;
     std::vector<std::pair<Node2D*, Node2D*>> throughNarrowPairs;
     std::vector<std::vector<Node2D>> throughNarrowPairsWaypoints; //用来记录狭窄点周围的路径点
+    std::vector<int> aroundWaypointsIndexOfThroughNarrowPairs; //用来记录狭窄点周围的路径点平均index，方便按照路径排序
     std::vector<keyInfoForThrouthNarrowPair*> keyInfoForThrouthNarrowPairs;
     std::vector<finalPassSpaceInOutSet> finalPassSpaceInOutSets;
 
@@ -86,7 +87,8 @@ namespace HybridAStar {
     void findNarrowContourPair();
     void findThroughNarrowContourPair(const std::vector<Node2D> & path);
 
-    bool determineWhetherThrough2DPath(const std::vector<Node2D> & path, std::pair<Node2D*, Node2D*> narrowPair,std::vector<Node2D> & containingWaypointsTorecord);
+    bool determineWhetherThrough2DPath(const std::vector<Node2D> & path, std::pair<Node2D*, Node2D*> narrowPair,std::vector<Node2D> & containingWaypointsTorecord,int & aroundWaypointsIndex);
+    void sortThroughNarrowPairsWaypoints();
     void findKeyInformationForthrouthNarrowPairs(); //找一些关键的信息比如中垂方向向量，中点，
     static bool samplePathAndjudgeAcuteAngel(std::vector<Node2D> & path,directionVector midperpendicular);
     static void visualizeNarrowPairs(std::vector<std::pair<Node2D*,Node2D*>> narrowPairs, const cv::Mat & gridMap);

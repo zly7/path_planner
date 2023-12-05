@@ -1,12 +1,21 @@
 #include "algorithm.h"
-
+#include <chrono>
 #include <boost/heap/binomial_heap.hpp>
 
 using namespace HybridAStar;
 
-float aStar(Node2D& start, Node2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
-void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
-Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
+float aStar2DForUpdateHValueOf3DNode(Node2D& start, Node2D& goal, Node2D* nodes2D, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
+void updateHFor3DNode(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization);
+
+
+
+double measureTime(std::function<void()> func) {
+    auto start = std::chrono::high_resolution_clock::now();
+    func();
+    auto stop = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = stop - start;
+    return elapsed.count();
+}
 
 //###################################################
 //                                    NODE COMPARISON
@@ -36,6 +45,20 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
                                int height,
                                CollisionDetection& configurationSpace,
                                float* dubinsLookup,
+                               Visualize& visualization)
+                              {
+  multiGoalSet3D goalSet;
+  goalSet.addGoal(goal);
+  return hybridAStarMultiGoals(start, goalSet, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
+                               }
+Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
+                               multiGoalSet3D& goalSet,
+                               Node3D* nodes3D,
+                               Node2D* nodes2D,
+                               int width,
+                               int height,
+                               CollisionDetection& configurationSpace,
+                               float* dubinsLookup,
                                Visualize& visualization) {
 
   // PREDECESSOR AND SUCCESSOR INDEX
@@ -45,7 +68,6 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
   int dir = Constants::reverse ? 6 : 3;
   // Number of iterations the algorithm has run for stopping based on Constants::iterations
   int iterations = 0;
-
   // VISUALIZATION DELAY
   ros::Duration d(0.003);
 
@@ -55,8 +77,8 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
           > priorityQueue;
   priorityQueue O;
 
-  // update h value
-  updateH(start, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
+  // update h value 下面这句话不清楚为什么作者会写，事实上注释掉好像没关系
+  //updateHFor3DNode(start, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);
   // mark start as open
   start.open();
   // push on priority queue aka open list
@@ -69,9 +91,15 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
   Node3D* nSucc;
 
   // float max = 0.f;
+  int currentLoop = 0;
+  double allRuningTime = 0;
+  double allRuningTimeDubinsShot = 0;
+  double allRuningTimeUpdateH = 0;
+  double allRuningTimeisTraversal = 0;
 
   // continue until O empty
   while (!O.empty()) {
+    auto startLoopTime = std::chrono::high_resolution_clock::now();
     // pop node with lowest cost from priority queue pop出堆的第一步
     nPred = O.top();
     // set index
@@ -103,80 +131,113 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
 
       // _________
       // GOAL TEST
-      if (*nPred == goal || iterations > Constants::iterations) {
-        // DEBUG
-        std::cout<< iterations<<std::endl;
-        std::cout<<"npred "<<nPred->getX()<<" "<<nPred->getY()<<std::endl;
-        std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
-        return nPred;
+      for(auto &goal : goalSet.goals){
+        if (*nPred == goal || iterations > Constants::iterations) {
+          // DEBUG
+          std::cout<< iterations<<std::endl;
+          std::cout<<"npred "<<nPred->getX()<<" "<<nPred->getY()<<std::endl;
+          std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
+          if(iterations > Constants::iterations){
+            std::cout<<"到达了最长的搜索迭代次数"<<std::endl;
+          }
+          return nPred;
+        }
       }
+      
 
       // ____________________
       // CONTINUE WITH SEARCH
-      else {
-        // _______________________
-        // SEARCH WITH DUBINS SHOT
-        if (Constants::dubinsShot && nPred->isInRange(goal) && nPred->getPrim() < 3) {
+      
+      // _______________________
+      // SEARCH WITH DUBINS SHOT
+      if (Constants::dubinsShot && nPred->isInRange(goalSet.virtualCenterNode3D) && nPred->getPrim() < 3) {
+        auto startDubinsShotTime = std::chrono::high_resolution_clock::now();
+        for (auto &goal : goalSet.goals){
           nSucc = dubinsShot(*nPred, goal, configurationSpace);
-
           if (nSucc != nullptr && *nSucc == goal) {  // 这里的相等就很妙，就是整数相等，整数映射空间
-            //DEBUG
-            // std::cout << "max diff " << max << std::endl;
-            std::cout<<"nSucc "<<nSucc->getX()<<" "<<nSucc->getY()<<std::endl;
-            std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
-            return nSucc;
+          //DEBUG
+          // std::cout << "max diff " << max << std::endl;
+          std::cout<<"nSucc "<<nSucc->getX()<<" "<<nSucc->getY()<<std::endl;
+          std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
+          return nSucc;
           }
         }
+        auto stopDubinsShotTime = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = stopDubinsShotTime - startDubinsShotTime;
+        allRuningTimeDubinsShot += elapsed.count();
 
-        // ______________________________
-        // SEARCH WITH FORWARD SIMULATION
-        for (int i = 0; i < dir; i++) {  //dir 就是一个int，然后3 or 6
-          // create possible successor
-          nSucc = nPred->createSuccessor(i);
-          // set index of the successor
-          iSucc = nSucc->setIdx(width, height);
+        
+      }
 
-          // ensure successor is on grid and traversable
-          if (nSucc->isOnGrid(width, height) && configurationSpace.isTraversable(nSucc)) {
+      // ______________________________
+      // SEARCH WITH FORWARD SIMULATION
+      for (int i = 0; i < dir; i++) {  //dir 就是一个int，然后3 or 6
+        // create possible successor
+        nSucc = nPred->createSuccessor(i);
+        // set index of the successor
+        iSucc = nSucc->setIdx(width, height);
 
-            // ensure successor is not on closed list or it has the same index as the predecessor
-            if (!nodes3D[iSucc].isClosed() || iPred == iSucc) {
+        // ensure successor is on grid and traversable
+        auto startisTraversableTime = std::chrono::high_resolution_clock::now();
+        bool isTraversable = configurationSpace.isTraversable(nSucc);
+        auto stopisTraversableTime = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsedisTraversable = stopisTraversableTime - startisTraversableTime;
+        allRuningTimeisTraversal += elapsedisTraversable.count();
+        if (nSucc->isOnGrid(width, height) && isTraversable) {
 
-              // calculate new G value
-              nSucc->updateG();
-              newG = nSucc->getG();
+          // ensure successor is not on closed list or it has the same index as the predecessor
+          if (!nodes3D[iSucc].isClosed() || iPred == iSucc) {
 
-              // if successor not on open list or found a shorter way to the cell
-              if (!nodes3D[iSucc].isOpen() || newG < nodes3D[iSucc].getG() || iPred == iSucc) {
+            // calculate new G value
+            nSucc->updateG();
+            newG = nSucc->getG();
 
-                // calculate H value
-                updateH(*nSucc, goal, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);  //计算真实的花费
+            // if successor not on open list or found a shorter way to the cell
+            if (!nodes3D[iSucc].isOpen() || newG < nodes3D[iSucc].getG() || iPred == iSucc) {
 
-                // if the successor is in the same cell but the C value is larger
-                if (iPred == iSucc && nSucc->getC() > nPred->getC() + Constants::tieBreaker) {
-                  delete nSucc;
-                  continue;
-                }
-                // if successor is in the same cell and the C value is lower, set predecessor to predecessor of predecessor
-                else if (iPred == iSucc && nSucc->getC() <= nPred->getC() + Constants::tieBreaker) {
-                  nSucc->setPred(nPred->getPred());
-                }
+              // calculate H value
+              auto startupdateHTime = std::chrono::high_resolution_clock::now();
+              updateHFor3DNode(*nSucc, goalSet.virtualCenterNode3D, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);  //计算真实的花费
+              auto stopupdateHTime = std::chrono::high_resolution_clock::now();
+              std::chrono::duration<double> elapsedupdateH = stopupdateHTime - startupdateHTime;
+              std::cout << "elapsedupdateH: " << elapsedupdateH.count() << std::endl;
+              allRuningTimeUpdateH += elapsedupdateH.count();
 
-                if (nSucc->getPred() == nSucc) {
-                  std::cout << "looping";
-                }
-
-                // put successor on open list
-                nSucc->open();
-                nodes3D[iSucc] = *nSucc;
-                O.push(&nodes3D[iSucc]);
+              // if the successor is in the same cell but the C value is larger
+              if (iPred == iSucc && nSucc->getC() > nPred->getC() + Constants::tieBreaker) {
                 delete nSucc;
-              } else { delete nSucc; }
+                continue;
+              }
+              // if successor is in the same cell and the C value is lower, set predecessor to predecessor of predecessor
+              else if (iPred == iSucc && nSucc->getC() <= nPred->getC() + Constants::tieBreaker) {
+                nSucc->setPred(nPred->getPred());
+              }
+
+              if (nSucc->getPred() == nSucc) {
+                std::cout << "looping";
+              }
+
+              // put successor on open list
+              nSucc->open();
+              nodes3D[iSucc] = *nSucc;
+              O.push(&nodes3D[iSucc]);
+              delete nSucc;
             } else { delete nSucc; }
           } else { delete nSucc; }
-        }
+        } else { delete nSucc; }
       }
+      
     }
+    auto stopLoopTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = stopLoopTime - startLoopTime;
+    allRuningTime += elapsed.count();
+    if(currentLoop % 10 == 0) {
+      std::cout << "currentLoop: "<< currentLoop<<" all Runing time: " << allRuningTime << std::endl;
+      std::cout << "currentLoop: "<< currentLoop<<" all Runing time DubinsShot: " << allRuningTimeDubinsShot << std::endl;
+      std::cout << "currentLoop: "<< currentLoop<<" all Runing time updateH: " << allRuningTimeUpdateH << std::endl;
+      std::cout << "currentLoop: "<< currentLoop<<" all Runing time isTraversal: " << allRuningTimeisTraversal << std::endl;
+    }
+    currentLoop++;
   }
 
   if (O.empty()) {
@@ -187,9 +248,9 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
 }
 
 //###################################################
-//                                        2D A*
+//                                        2D A*这个函数应该是goal作为start传入
 //###################################################
-float aStar(Node2D& start,
+float aStar2DForUpdateHValueOf3DNode(Node2D& start,
             Node2D& goal,
             Node2D* nodes2D,
             int width,
@@ -201,7 +262,7 @@ float aStar(Node2D& start,
   int iPred, iSucc;
   float newG;
 
-  // reset the open and closed list
+  // reset the open and closed list//这里果然有清空的代码
   for (int i = 0; i < width * height; ++i) {
     nodes2D[i].reset();
   }
@@ -251,7 +312,7 @@ float aStar(Node2D& start,
         // std::cout << "2d visual npred :" << nPred->getX() << " " << nPred->getY() << std::endl;
         visualization.publishNode2DPoses(*nPred);
         visualization.publishNode2DPose(*nPred);
-        d.sleep();
+
       }
 
       // remove node from open list
@@ -278,7 +339,7 @@ float aStar(Node2D& start,
           // ensure successor is not on closed list
           if (nSucc->isOnGrid(width, height) &&  configurationSpace.isObstacleThisPoint(nSucc) && !nodes2D[iSucc].isClosed()) {
             // calculate new G value
-            nSucc->updateG(); //在这里的G应该累加？
+            nSucc->updateG(); //在这里的G应该累加,然而事实上确实累加了
             newG = nSucc->getG();
 
             // if successor not on open list or g value lower than before put it on open list
@@ -335,7 +396,7 @@ Node2D* Algorithm::aStar2D(Node2D& start,
   // NODE POINTER
   Node2D* nPred;
   Node2D* nSucc;
-
+  
   // continue until O empty
   while (!O.empty()) {
     // pop node with lowest cost from priority queue
@@ -362,7 +423,7 @@ Node2D* Algorithm::aStar2D(Node2D& start,
       if (Constants::visualization2D) {
         visualization.publishNode2DPoses(*nPred);
         visualization.publishNode2DPose(*nPred);
-        //        d.sleep();
+        d.sleep();
       }
 
       // remove node from open list
@@ -389,7 +450,7 @@ Node2D* Algorithm::aStar2D(Node2D& start,
           // ensure successor is not on closed list
           if (nSucc->isOnGrid(width, height) &&  configurationSpace.isTraversable(nSucc) && !nodes2D[iSucc].isClosed()) {
             // calculate new G value
-            nSucc->updateG();
+            nSucc->updateG(); //在这里的G应该累加,然而事实上确实累加了
             newG = nSucc->getG();
 
             // if successor not on open list or g value lower than before put it on open list
@@ -415,62 +476,20 @@ Node2D* Algorithm::aStar2D(Node2D& start,
 //###################################################
 //                                         COST TO GO
 //###################################################
-void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, CollisionDetection& configurationSpace, Visualize& visualization) {
+void updateHFor3DNode(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLookup, int width, int height, 
+  CollisionDetection& configurationSpace, Visualize& visualization) {
+  
   float dubinsCost = 0;
   float reedsSheppCost = 0;
   float twoDCost = 0;
   float twoDoffset = 0;
-
+  double runAllTime = 0;
+  double runReedSheppTime = 0;
+  double runAstarForH = 0;
+  auto startAllTime = std::chrono::high_resolution_clock::now();
   // if dubins heuristic is activated calculate the shortest path
   // constrained without obstacles
   if (Constants::dubins) {
- 
-    // ONLY FOR dubinsLookup
-    //    int uX = std::abs((int)goal.getX() - (int)start.getX());
-    //    int uY = std::abs((int)goal.getY() - (int)start.getY());
-    //    // if the lookup table flag is set and the vehicle is in the lookup area
-    //    if (Constants::dubinsLookup && uX < Constants::dubinsWidth - 1 && uY < Constants::dubinsWidth - 1) {
-    //      int X = (int)goal.getX() - (int)start.getX();
-    //      int Y = (int)goal.getY() - (int)start.getY();
-    //      int h0;
-    //      int h1;
-
-    //      // mirror on x axis
-    //      if (X >= 0 && Y <= 0) {
-    //        h0 = (int)(helper::normalizeHeadingRad(M_PI_2 - t) / Constants::deltaHeadingRad);
-    //        h1 = (int)(helper::normalizeHeadingRad(M_PI_2 - goal.getT()) / Constants::deltaHeadingRad);
-    //      }
-    //      // mirror on y axis
-    //      else if (X <= 0 && Y >= 0) {
-    //        h0 = (int)(helper::normalizeHeadingRad(M_PI_2 - t) / Constants::deltaHeadingRad);
-    //        h1 = (int)(helper::normalizeHeadingRad(M_PI_2 - goal.getT()) / Constants::deltaHeadingRad);
-
-    //      }
-    //      // mirror on xy axis
-    //      else if (X <= 0 && Y <= 0) {
-    //        h0 = (int)(helper::normalizeHeadingRad(M_PI - t) / Constants::deltaHeadingRad);
-    //        h1 = (int)(helper::normalizeHeadingRad(M_PI - goal.getT()) / Constants::deltaHeadingRad);
-
-    //      } else {
-    //        h0 = (int)(t / Constants::deltaHeadingRad);
-    //        h1 = (int)(goal.getT() / Constants::deltaHeadingRad);
-    //      }
-
-    //      dubinsCost = dubinsLookup[uX * Constants::dubinsWidth * Constants::headings * Constants::headings
-    //                                + uY *  Constants::headings * Constants::headings
-    //                                + h0 * Constants::headings
-    //                                + h1];
-    //    } else {
-
-    /*if (Constants::dubinsShot && std::abs(start.getX() - goal.getX()) >= 10 && std::abs(start.getY() - goal.getY()) >= 10)*/
-    //      // start
-    //      double q0[] = { start.getX(), start.getY(), start.getT()};
-    //      // goal
-    //      double q1[] = { goal.getX(), goal.getY(), goal.getT()};
-    //      DubinsPath dubinsPath;
-    //      dubins_init(q0, q1, Constants::r, &dubinsPath);
-    //      dubinsCost = dubins_path_length(&dubinsPath);
-
     ompl::base::DubinsStateSpace dubinsPath(Constants::r);
     State* dbStart = (State*)dubinsPath.allocState();
     State* dbEnd = (State*)dubinsPath.allocState();
@@ -482,8 +501,8 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
   }
 
   // if reversing is active use a  一般用这个reedsShepp，可以倒车
+  auto startReedSheppTime = std::chrono::high_resolution_clock::now();
   if (Constants::reverse && !Constants::dubins) {
-    //    ros::Time t0 = ros::Time::now();
     ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);
     State* rsStart = (State*)reedsSheppPath.allocState();
     State* rsEnd = (State*)reedsSheppPath.allocState();
@@ -492,10 +511,10 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
     rsEnd->setXY(goal.getX(), goal.getY());
     rsEnd->setYaw(goal.getT());
     reedsSheppCost = reedsSheppPath.distance(rsStart, rsEnd);
-    //    ros::Time t1 = ros::Time::now();
-    //    ros::Duration d(t1 - t0);
-    //    std::cout << "calculated Reed-Sheep Heuristic in ms: " << d * 1000 << std::endl;
   }
+  auto stopReedSheppTime = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsedReedShepp = stopReedSheppTime - startReedSheppTime;
+  runReedSheppTime += elapsedReedShepp.count();
 
   // if twoD heuristic is activated determine shortest path
   // unconstrained with obstacles
@@ -506,10 +525,12 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
     // create a 2d goal node
     Node2D goal2d(goal.getX(), goal.getY(), 0, 0, nullptr);
     // run 2d astar and return the cost of the cheapest path for that node
-    nodes2D[(int)start.getY() * width + (int)start.getX()].setG(aStar(goal2d, start2d, nodes2D, width, height, configurationSpace, visualization));
-    //    ros::Time t1 = ros::Time::now();
-    //    ros::Duration d(t1 - t0);
-    //    std::cout << "calculated 2D Heuristic in ms: " << d * 1000 << std::endl;
+    auto startAstarForHTime = std::chrono::high_resolution_clock::now();
+    nodes2D[(int)start.getY() * width + (int)start.getX()].setG(
+        aStar2DForUpdateHValueOf3DNode( goal2d,start2d, nodes2D, width, height, configurationSpace, visualization));
+    auto stopAstarForHTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsedAstarForH = stopAstarForHTime - startAstarForHTime;
+    runAstarForH += elapsedAstarForH.count();
   }
 
   if (Constants::twoD) {
@@ -522,12 +543,18 @@ void updateH(Node3D& start, const Node3D& goal, Node2D* nodes2D, float* dubinsLo
 
   // return the maximum of the heuristics, making the heuristic admissable
   start.setH(std::max(reedsSheppCost, std::max(dubinsCost, twoDCost)));
+  auto stopAllTime = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsedAll = stopAllTime - startAllTime;
+  runAllTime += elapsedAll.count();
+  std::cout << "runReedSheppTime: " << runReedSheppTime << std::endl;
+  std::cout << "runAstarForH: " << runAstarForH << std::endl;
+  std::cout << "runAllTime: " << runAllTime << std::endl;
 }
 
 //###################################################
 //                                        DUBINS SHOT
 //###################################################
-Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace) {
+Node3D* Algorithm::dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace) {
   // start
   double q0[] = { start.getX(), start.getY(), start.getT() };
   // goal

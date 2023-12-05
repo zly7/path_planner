@@ -81,9 +81,9 @@ class Planner {
   tf::TransformListener listener;
   /// A transform for moving start positions
   tf::StampedTransform transform;
-  /// The path produced by the hybrid A* algorithm
+  /// The path produced by the hybrid A* algorithm, most for visualization purposes
   Path path;
-  /// The smoother used for optimizing the path
+  /// The smoother used for optimizing the path, the most inportant recording the whole path
   Smoother smoother;
   /// The path smoothed and ready for the controller
   Path smoothedPath = Path(true);

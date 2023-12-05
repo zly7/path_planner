@@ -13,6 +13,7 @@ typedef ompl::base::SE2StateSpace::StateType State;
 #include "visualize.h"
 #include "collisiondetection.h"
 #include <cmath>
+#include "multiGoalAstar.h"
 
 namespace HybridAStar {
 class Node3D;
@@ -52,6 +53,16 @@ class Algorithm {
                              float* dubinsLookup,
                              Visualize& visualization);
 
+   static Node3D* hybridAStarMultiGoals(Node3D& start,
+                             multiGoalSet3D& goals,
+                             Node3D* nodes3D,
+                             Node2D* nodes2D,
+                             int width,
+                             int height,
+                             CollisionDetection& configurationSpace,
+                             float* dubinsLookup,
+                             Visualize& visualization);              
+
    static Node2D* aStar2D(Node2D& start,
                               const Node2D& goal,
                               Node2D* nodes2D,
@@ -59,6 +70,8 @@ class Algorithm {
                               int height,
                               CollisionDetection& configurationSpace,
                               Visualize& visualization);
+
+   static Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
 
 };
 }
