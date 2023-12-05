@@ -295,7 +295,7 @@ void Planner::plan() {
         AlgorithmContour::visualizePathAndItNarrowPair(algorithmContour.throughNarrowPairsWaypoints[i],
               algorithmContour.throughNarrowPairs[i],algorithmContour.gridMap);
       }
-      algorithmContour.sortThroughNarrowPairsWaypoints();
+      algorithmContour.sortThroughNarrowPairsWaypoints();//按照路径前后重排序狭窄点
       algorithmContour.findKeyInformationForthrouthNarrowPairs();
       for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(algorithmContour.throughNarrowPairs[i],
@@ -317,7 +317,7 @@ void Planner::plan() {
             configurationSpace, dubinsLookup, visualization);
         smoother.tracePath(nSolution,0,smoother.getPath());//在h函数里面有可以省略后面两个参数的定义
         Node3D* tempGoal = nullptr; //缓存目标节点
-        for(auto &node3d:algorithmContour.finalPassSpaceInOutSets[i].outSet){//这里可能要选择最好的结束点
+        for(auto &node3d:algorithmContour.finalPassSpaceInOutSets[i].outSet){//
           tempGoal= Algorithm::dubinsShot(tempStart,node3d,configurationSpace);
           if(tempGoal->getPred()!=nullptr){
             smoother.tracePath(tempGoal->getPred(),0,smoother.getPath());

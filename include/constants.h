@@ -30,8 +30,8 @@ namespace Constants {
 // _________________
 // CONFIG FLAGS
 // static const std::string algorithm = "split_hybrid_astar";
-static const std::string algorithm = "hybrid_astar";
-// static const std::string algorithm = "contour_hybrid_astar";
+// static const std::string algorithm = "hybrid_astar";
+static const std::string algorithm = "contour_hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
@@ -39,7 +39,7 @@ static const bool manual = true;
 /// A flag for the visualization of 3D nodes (true = on; false = off)
 static const bool visualization = false && manual;
 /// A flag for the visualization of 2D nodes (true = on; false = off)
-static const bool visualization2D = false && manual;
+static const bool visualization2D = true && manual;
 /// A flag to toggle reversing (true = on; false = off)
 static const bool reverse = true;
 /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
@@ -133,14 +133,7 @@ static const int positionResolution = 10;
 static const int positions = positionResolution * positionResolution;
 /// A structure describing the relative position of the occupied cell based on the center of the vehicle
 
-/*
-For algorithmcontour:
-*/
-static const float minContourPairDistance = width * 1;
-static const float maxContourPairDistance = width * 2.25;
-static const int howManyNode2DDeterminesWhetherThroughNarrowContourPair = 3;
-/// [m] --- The minimum distance between two nodes in the astar and its successor, the unit is meter
-static const float arcLengthForAstarSuccessor = 0.3;
+
 
 
 
@@ -203,9 +196,13 @@ static float  maxRadus = 10 * r;
 //小车每次尝试增加的半径长度
 static float deltaRadius = 0.2 * each_meter_to_how_many_pixel;
 //小车尝试直线需要走的长度
-// static float straightLength = 1 * each_meter_to_how_many_pixel;
 static float theMindistanceDetermineWhetherTheSameContourPoint = 0.6 * each_meter_to_how_many_pixel;
-
+static const float minContourPairDistance = width * 1;
+static const float maxContourPairDistance = width * 1.6;
+static const int howManyNode2DDeterminesWhetherThroughNarrowContourPair = 3;
+static float offsetPercentForHalfVehicleWidth = 1.05;
+/// [m] --- The minimum distance between two nodes in the astar and its successor, the unit is meter
+static const float arcLengthForAstarSuccessor = 0.3;
 
 }
 }

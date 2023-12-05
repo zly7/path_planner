@@ -89,16 +89,60 @@ void AlgorithmContour::findNarrowContourPair(){
     }
       // 将新生成的中间节点加入到 allNodes
     allNodes.insert(allNodes.end(), middleNodes.begin(), middleNodes.end());
-    // 在合并后的 vector 中进行二重遍历
+   // 步骤1: 创建映射
+    std::unordered_map<Node2D*, std::pair<float, Node2D*>> closestPairs;
+
+    // 初始化映射，设定初始最近距离为最大值
+    for (auto& node : allNodes) {
+        closestPairs[node] = std::make_pair(std::numeric_limits<float>::max(), nullptr);
+    }
+
+    // 步骤2: 遍历所有节点，更新最近点对信息
     for (size_t i = 0; i < allNodes.size(); ++i) {
         for (size_t j = i + 1; j < allNodes.size(); ++j) {
             float distance = allNodes[i]->distanceTo(allNodes[j]);
             if (distance > minDistance && distance < maxDistance) {
-                this->narrowPairs.emplace_back(allNodes[i], allNodes[j]);
+                // 更新节点i的最近点对信息
+                if (distance < closestPairs[allNodes[i]].first) {
+                    closestPairs[allNodes[i]] = std::make_pair(distance, allNodes[j]);
+                }
+                // 更新节点j的最近点对信息
+                if (distance < closestPairs[allNodes[j]].first) {
+                    closestPairs[allNodes[j]] = std::make_pair(distance, allNodes[i]);
+                }
             }
         }
     }
-    
+    // 从 unordered_map 复制到 vector
+    std::vector<std::pair<Node2D*, std::pair<float, Node2D*>>> sortedPairs;
+    for (const auto& pair : closestPairs) {
+      if(pair.second.second != nullptr){
+          sortedPairs.push_back(pair);
+      }
+    }
+
+    // 对 vector 进行排序,保证是从最小的距离开始添加
+    std::sort(sortedPairs.begin(), sortedPairs.end(), 
+        [](const std::pair<Node2D*, std::pair<float, Node2D*>>& a, 
+          const std::pair<Node2D*, std::pair<float, Node2D*>>& b) {
+            return a.second.first < b.second.first;
+        });
+
+    //防止重复添加的匿名函数
+    auto isPairExists = [&narrowPairs = this->narrowPairs]( Node2D* second) {
+        for (const auto& p : narrowPairs) {
+            if ((p.first == second ) || (p.second == second)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    for (const auto& pair : sortedPairs) {//保证我匹配的对家没有在当前的narrowPairs里面
+        if (pair.second.second != nullptr && !isPairExists(pair.second.second)) {
+            this->narrowPairs.emplace_back(pair.first, pair.second.second);
+        }
+    }
     return;
 }
 //筛选出穿过路径的有效的狭窄点对
@@ -194,6 +238,7 @@ void AlgorithmContour::sortThroughNarrowPairsWaypoints(){
 
 void AlgorithmContour::findKeyInformationForthrouthNarrowPairs(){
   int index = 0;
+  float offsetForHalfVehicleWidth = ((float) (Constants::width+1)) / 2.0 * Constants::offsetPercentForHalfVehicleWidth; //稍微留一些余地,+1也是为了留余地
   for (const auto& pair : this->throughNarrowPairs) {
       Node2D* firstPoint = pair.first;
       Node2D* secondPoint = pair.second;
@@ -216,11 +261,10 @@ void AlgorithmContour::findKeyInformationForthrouthNarrowPairs(){
         centerVerticalUnitVector.y = -1*centerVerticalUnitVector.y;
       }
       keyInfo->centerVerticalUnitVector = centerVerticalUnitVector;
-      float halfWidth = (float) (Constants::width+1) / 2.0 * 1.5; //稍微留一些余地
-      Node2D* firstBoundPoint = new Node2D(firstPoint->getFloatX() + halfWidth * unitWireVector.x, 
-                                          firstPoint->getFloatY() + halfWidth * unitWireVector.y);
-      Node2D* secondBoundPoint = new Node2D(secondPoint->getFloatX() - halfWidth * unitWireVector.x, 
-                                            secondPoint->getFloatY() - halfWidth * unitWireVector.y);
+      Node2D* firstBoundPoint = new Node2D(firstPoint->getFloatX() + offsetForHalfVehicleWidth * unitWireVector.x, 
+                                          firstPoint->getFloatY() + offsetForHalfVehicleWidth * unitWireVector.y);
+      Node2D* secondBoundPoint = new Node2D(secondPoint->getFloatX() - offsetForHalfVehicleWidth * unitWireVector.x, 
+                                            secondPoint->getFloatY() - offsetForHalfVehicleWidth * unitWireVector.y);
 
       keyInfo->firstBoundPoint = firstBoundPoint;
       keyInfo->secondBoundPoint = secondBoundPoint;
