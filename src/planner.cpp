@@ -205,12 +205,12 @@ void Planner::plan() {
     path.clear();
     smoothedPath.clear();
     smoother.clear();
+
+    std_msgs::Int32 msg1;
+    msg1.data = -1;  
+    pubNotification.publish(msg1);
+
     if(Constants::algorithm == "split_hybrid_astar"){
-
-      std_msgs::Int32 msg;
-      msg.data = -1;  
-      pubNotification.publish(msg);
-
       Node2D* nodes2D = new Node2D[width * height]();
       Node2D* nSolution2D = Algorithm::aStar2D(nStart2D, nGoal2D, nodes2D, width, height, configurationSpace, visualization);
       smoother.tracePath2D(nSolution2D);
@@ -349,9 +349,10 @@ void Planner::plan() {
     validStart=false;
     validGoal=false;
     point_index++;
-    std_msgs::Int32 msg;
-    msg.data = point_index;  
-    pubNotification.publish(msg);
+
+    std_msgs::Int32 msg2;
+    msg2.data = point_index;  
+    pubNotification.publish(msg2);
 
     std::cout<<"point_index: "<<point_index<<std::endl;
 
