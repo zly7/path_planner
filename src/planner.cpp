@@ -1,4 +1,4 @@
-// #define DEBUG_TIME_ALGORITHMCONTOUR
+#define DEBUG_TIME_ALGORITHMCONTOUR
 #include "planner.h"
 
 using namespace HybridAStar;

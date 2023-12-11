@@ -49,7 +49,7 @@ class CollisionDetection {
        standard: collision checking using the spatial occupancy enumeration
        other: collision checking using the 2d costmap and the navigation stack
     */
-    float cost = 0;
+    float cost = 1;
     float x;
     float y;
     float t;
@@ -60,7 +60,10 @@ class CollisionDetection {
     //如果2D搜索的时候有33.3(1/(8+1))%的方向认为可以过 ，就认为这个点可以过,as long as 1 one pass
     if(t == 99){
       for(int j = 0 ; j <Constants::headings; j ++){
-        cost += configurationTest(x+0.5, y+0.5, j*Constants::deltaHeadingRad+Constants::deltaHeadingRad/2) ? -100 : 1;
+        if(configurationTest(x+0.5, y+0.5, j*Constants::deltaHeadingRad+Constants::deltaHeadingRad/2)){
+          return true;
+        }
+        //cost += configurationTest(x+0.5, y+0.5, j*Constants::deltaHeadingRad+Constants::deltaHeadingRad/2) ? -100 : 1;
       }
     }else{
       cost = configurationTest(x, y, t) ? -1 : 1;

@@ -72,10 +72,11 @@ namespace HybridAStar {
   public:
     /// The deault constructor
     AlgorithmContour() {}
-    const static bool WhetherDebug = false;
-    const static bool whetherDeepDebug = false;
+    const static bool WhetherDebug = true;
+    const static bool whetherDeepDebug = true;
     const static bool whetherDeepDebug2 = false;
     const static int visualizeMultiplier = 4; //可视化的时候放大的倍数
+
     cv::Mat gridMap;
     std::vector<std::vector<Node2D*>> contoursFromGrid;
     std::vector<std::pair<Node2D*, Node2D*>> narrowPairs;
@@ -106,11 +107,35 @@ namespace HybridAStar {
     void findNarrowPassSpaceInputSetOfNode3DForAllPairs(CollisionDetection& configurationSpace);
     finalPassSpaceInOutSet findNarrowPassSpaceInputSetOfNode3D(CollisionDetection& configurationSpace,keyInfoForThrouthNarrowPair* inputPair);
     std::vector<Node3D> findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine(const Node3D & firstPoint,const Node3D & secondPoint,const Node2D & middlePoint,const directionVector middleVerticalLine);
-    
+    void AdjecentDistanceFilter(std::vector<std::vector<cv::Point2f>>& contoursInOut);
+
     // //从进入的点到实际的路径
     // void findContaingfFeasibleToCenterVerticalPoint(const Node3D & startPoint,CollisionDetection& configurationSpace);
     // static std::vector<Node3D> findArcByTwoPoints(const Node3D & firstPoint,const Node2D& middlePoint, const directionVector middleVerticalLine);
-
+  inline void RemoveWallConnection(const std::vector<cv::Point2f>& contour,
+                                    const cv::Point2f& add_p,
+                                    std::size_t& refined_idx)
+  {
+      if (refined_idx < 2) return;
+      if (!IsPrevWallVertex(contour[refined_idx-2], contour[refined_idx-1], add_p)) {
+          return;
+      } else {
+          -- refined_idx;
+          RemoveWallConnection(contour, add_p, refined_idx);
+      }
+  }
+  inline bool IsPrevWallVertex(const cv::Point2f& first_p,
+                                 const cv::Point2f& mid_p,
+                                 const cv::Point2f& add_p)
+    {
+        cv::Point2f diff_p1 = first_p - mid_p;
+        cv::Point2f diff_p2 = add_p - mid_p;
+        diff_p1 /= std::hypotf(diff_p1.x, diff_p1.y);
+        diff_p2 /= std::hypotf(diff_p2.x, diff_p2.y);
+        if (abs(diff_p1.dot(diff_p2)) > Constants::ALIGN_ANGLE_COS) return true;
+        return false;
+    }
   };
+
 }
 #endif // ALGORITHM_CONTOUR_H

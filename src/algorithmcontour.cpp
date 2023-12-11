@@ -25,29 +25,42 @@ std::vector<std::vector<Node2D*>> AlgorithmContour::findContour(nav_msgs::Occupa
   }
   this->gridMap = img;
   // Find contours
-  std::vector<std::vector<cv::Point>> contours;
+  std::vector<std::vector<cv::Point2i>> rawContours;
+  std::vector<std::vector<cv::Point2f>> refineContours;
   std::vector<cv::Vec4i> hierarchy;
-  cv::findContours(img, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
-
-  cv::Mat contourImg = cv::Mat::zeros(img.size(), CV_8UC3);
-  for (uint i = 0; i < contours.size(); i++) {
-      cv::Scalar color = cv::Scalar(0, 255, 0); // Green color for contours
-      cv::Scalar pointColor = cv::Scalar(0, 0, 255);
-      cv::drawContours(contourImg, contours, i, color, 2, cv::LINE_8, hierarchy, 0);
-      // Draw each contour point
-      for (uint j = 0; j < contours[i].size(); j++) {
-          cv::circle(contourImg, contours[i][j], 2, pointColor, -1); // -1 fills the circle
-      }
+  cv::findContours(img, rawContours, hierarchy, cv::RetrievalModes::RETR_TREE, 
+                     cv::ContourApproximationModes::CHAIN_APPROX_TC89_L1);
+  refineContours.resize(rawContours.size());
+  for (std::size_t i=0; i<rawContours.size(); i++) {
+        // using Ramer–Douglas–Peucker algorithm url: https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
+        cv::approxPolyDP(rawContours[i], refineContours[i], Constants::DIST_LIMIT, true);
   }
-
+  AdjecentDistanceFilter(refineContours);
   if(WhetherDebug){
+      cv::Mat contourImg = cv::Mat::zeros(img.size(), CV_8UC3);
+      std::vector<std::vector<cv::Point>> rContoursForDraw;
+      for (const auto& contour : refineContours) {
+          std::vector<cv::Point> intContour;
+          for (const auto& point : contour) {
+              intContour.push_back(cv::Point(static_cast<int>(point.x), static_cast<int>(point.y)));
+          }
+          rContoursForDraw.push_back(intContour);
+      }
+      for (uint i = 0; i < rContoursForDraw.size(); i++) {
+        cv::Scalar color = cv::Scalar(0, 255, 0); // Green color for contours
+        cv::Scalar pointColor = cv::Scalar(0, 0, 255);
+        cv::drawContours(contourImg, rContoursForDraw, static_cast<int>(i), color, 2, cv::LINE_8, hierarchy, 0);
+        // Draw each contour point
+        for (uint j = 0; j < rContoursForDraw[i].size(); j++) {
+            cv::circle(contourImg, rContoursForDraw[i][j], 2, pointColor, -1); // -1 fills the circle
+        }
+      }
       cv::imshow("Contours", contourImg);
       cv::waitKey(0);
   }
-
   // Convert contours from OpenCV format to Node2D*
   std::vector<std::vector<Node2D*>> result;
-  for (auto& c : contours) {
+  for (auto& c : refineContours) {
     std::vector<Node2D*> contour;
     for (auto& p : c) {
       Node2D* node = new Node2D((float)p.x+0.5, (float)p.y+0.5);//opencv 寻找角点的时候会选择内部的像素点，然后还有问题就是像素点的值本质上是左下角的int值。所以转化成float的时候全部加0.5
@@ -56,7 +69,42 @@ std::vector<std::vector<Node2D*>> AlgorithmContour::findContour(nav_msgs::Occupa
     result.push_back(contour);
   }
   this->contoursFromGrid = result;
+  
   return result;
+}
+/*为了搜索contour 添加的代码*/
+void AlgorithmContour::AdjecentDistanceFilter(std::vector<std::vector<cv::Point2f>>& contoursInOut) {
+    /* filter out vertices that are overlapped with neighbor */
+    std::unordered_set<int> remove_idxs;
+    for (std::size_t i=0; i<contoursInOut.size(); i++) { 
+        const auto c = contoursInOut[i];
+        const std::size_t c_size = c.size();
+        std::size_t refined_idx = 0;
+        for (std::size_t j=0; j<c_size; j++) {
+            cv::Point2f p = c[j]; 
+            if (refined_idx < 1 || Helper::PixelDistance(contoursInOut[i][refined_idx-1], p) > Constants::DIST_LIMIT) {
+                /** Reduce wall nodes */
+                RemoveWallConnection(contoursInOut[i], p, refined_idx);
+                contoursInOut[i][refined_idx] = p;
+                refined_idx ++;
+            }
+        }
+        /** Reduce wall nodes */
+        RemoveWallConnection(contoursInOut[i], contoursInOut[i][0], refined_idx);
+        contoursInOut[i].resize(refined_idx);
+        if (refined_idx > 1 && Helper::PixelDistance(contoursInOut[i].front(), contoursInOut[i].back()) < Constants::DIST_LIMIT) {
+            contoursInOut[i].pop_back();
+        }
+        if (contoursInOut[i].size() < 3) remove_idxs.insert(i);
+    }
+    if (!remove_idxs.empty()) { // clear contour with vertices size less that 3
+        std::vector<std::vector<cv::Point2f>> temp_contours = contoursInOut;
+        contoursInOut.clear();
+        for (uint i=0; i<temp_contours.size(); i++) {
+            if (remove_idxs.find(i) != remove_idxs.end()) continue;
+            contoursInOut.push_back(temp_contours[i]);
+        }
+    }
 }
 
 void AlgorithmContour::findNarrowContourPair(){

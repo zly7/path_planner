@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <node2d.h>
 #include "constants.h"
+#include <opencv2/opencv.hpp>
 namespace HybridAStar {
 /*!
     \brief The namespace that wraps helper.h
@@ -95,6 +96,9 @@ static inline bool isIntersect(const Node2D* a, const Node2D* b,const Node2D* c,
     // 如果每个线段的两个点分别位于另一个线段的两侧，则线段相交
     if (d1 * d2 < 0 && d3 * d4 < 0) return true;
     return false;
+}
+static float PixelDistance(const cv::Point2f& pre_p, const cv::Point2f& cur_p) {
+  return std::hypotf(pre_p.x - cur_p.x, pre_p.y - cur_p.y);
 }
 
 }

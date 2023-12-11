@@ -31,8 +31,8 @@ namespace Constants {
 // CONFIG FLAGS
 
 // static const std::string algorithm = "split_hybrid_astar";
-static const std::string algorithm = "hybrid_astar";
-// static const std::string algorithm = "contour_hybrid_astar";
+// static const std::string algorithm = "hybrid_astar";
+static const std::string algorithm = "contour_hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
@@ -65,12 +65,12 @@ static const int iterations = 30000;
 static const double bloating = 0;
 static const double each_meter_to_how_many_pixel = 10;
 /// [m] --- The width of the vehicle
-static const double width = 1.6 * each_meter_to_how_many_pixel + 2 * bloating;
+static const double width = 1.942 * each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The length of the vehicle
-static const double length = 2.5 *each_meter_to_how_many_pixel + 2 * bloating;
+static const double length = 4.689 *each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The minimum turning radius of the vehicle
 // static const float r = 0.5 * each_meter_to_how_many_pixel; 
-static const float r = 1 * each_meter_to_how_many_pixel;
+static const float r = 2 * each_meter_to_how_many_pixel;
 /// [m] --- The number of discretizations in heading
 static const int headings = 72;
 /// [°] --- The discretization value of the heading (goal condition)
@@ -105,7 +105,7 @@ static const float penaltyCOD = 2.0;
 /// [m] --- The distance to the goal when the analytical solution (Dubin's shot) first triggers
 static const float dubinsShotDistance = 100 * sqrt(each_meter_to_how_many_pixel);
 /// [m] --- The step size for the analytical solution (Dubin's shot) primarily relevant for collision checking
-static const float dubinsStepSize = 1;
+static const float dubinsStepSize = 1 * sqrt(each_meter_to_how_many_pixel);
 
 /* For split hybrid A*:
 */
@@ -204,6 +204,12 @@ static const int howManyNode2DDeterminesWhetherThroughNarrowContourPair = 3;
 static float offsetPercentForHalfVehicleWidth = 1.1;
 /// [m] --- The minimum distance between two nodes in the astar and its successor, the unit is meter
 static const float arcLengthForAstarSuccessor = 0.3;
+
+/*
+*/
+static const float DIST_LIMIT = 1.5;
+static const float ALIGN_ANGLE_COS = cos(15/180 * M_PI);
+
 
 }
 }
