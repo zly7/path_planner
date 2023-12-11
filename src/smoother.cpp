@@ -83,13 +83,25 @@ void Smoother::smoothPath(DynamicVoronoi& voronoi) {
 
 void Smoother::tracePath(const Node3D* node, int i, std::vector<Node3D> path) {
   if (node == nullptr) {
-    this->path = path;
+    this->path.insert(this->path.end(), path.begin(), path.end());
     return;
   }
 
   i++;
   path.push_back(*node);
   tracePath(node->getPred(), i, path);
+}
+
+void Smoother::tracePathAndReverse(const Node3D* node, int i, std::vector<Node3D> path) {
+  if (node == nullptr) {
+    std::reverse(path.begin(), path.end());
+    this->path.insert(this->path.end(), path.begin(), path.end());
+    return;
+  }
+
+  i++;
+  path.push_back(*node);
+  tracePathAndReverse(node->getPred(), i, path);
 }
 
 void Smoother::tracePath2D(const Node2D* node, int i, std::vector<Node2D> path2D) {

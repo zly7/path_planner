@@ -1,3 +1,4 @@
+// #define DEBUG_TIME_ALGORITHMCONTOUR
 #include "planner.h"
 
 using namespace HybridAStar;
@@ -283,6 +284,7 @@ void Planner::plan() {
         delete [] nodes3D;
         delete [] nodes2D;
     }else if(Constants::algorithm == "contour_hybrid_astar"){
+
       Node2D* nodes2D = new Node2D[width * height]();
       Node2D* nSolution2D = Algorithm::aStar2D(nStart2D, nGoal2D, nodes2D, width, height, configurationSpace, visualization);
 
@@ -290,26 +292,30 @@ void Planner::plan() {
       std::vector<Node2D> path2D=smoother.getPath2D();
       path.update2DPath(path2D);//这里是为了画出2D的路径
       path.publishPath2DNodes();
-
+      auto start = std::chrono::high_resolution_clock::now();
       AlgorithmContour algorithmContour;
       algorithmContour.findContour(grid);     
       algorithmContour.findNarrowContourPair();
-      AlgorithmContour::visualizeNarrowPairs(algorithmContour.narrowPairs,algorithmContour.gridMap);
       algorithmContour.findThroughNarrowContourPair(path2D);
+      #ifdef DEBUG_TIME_ALGORITHMCONTOUR
+      AlgorithmContour::visualizeNarrowPairs(algorithmContour.narrowPairs,algorithmContour.gridMap);
       for(int i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizePathAndItNarrowPair(algorithmContour.throughNarrowPairsWaypoints[i],
               algorithmContour.throughNarrowPairs[i],algorithmContour.gridMap);
       }
+      #endif
       algorithmContour.sortThroughNarrowPairsWaypoints();//按照路径前后重排序狭窄点
       algorithmContour.findKeyInformationForthrouthNarrowPairs();
+      algorithmContour.findNarrowPassSpaceForAllPairs(configurationSpace);
+      #ifdef DEBUG_TIME_ALGORITHMCONTOUR
+      for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
+        AlgorithmContour::visualizePassSpaceBoundaryForThroughNarrowPair(algorithmContour.keyInfoForThrouthNarrowPairs[i],algorithmContour.gridMap);
+      }
       for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(algorithmContour.throughNarrowPairs[i],
               algorithmContour.keyInfoForThrouthNarrowPairs[i],algorithmContour.gridMap);
       }
-      algorithmContour.findNarrowPassSpaceForAllPairs(configurationSpace);
-      for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
-        AlgorithmContour::visualizePassSpaceBoundaryForThroughNarrowPair(algorithmContour.keyInfoForThrouthNarrowPairs[i],algorithmContour.gridMap);
-      }
+      #endif
       algorithmContour.findNarrowPassSpaceInputSetOfNode3DForAllPairs(configurationSpace);
       Node3D tempStart = nStart;
       Node3D* nSolution=nullptr;
@@ -320,24 +326,44 @@ void Planner::plan() {
         goals.addGoals(algorithmContour.finalPassSpaceInOutSets[i].inSet);
         nSolution = Algorithm::hybridAStarMultiGoals(tempStart, goals, nodes3D, nodes2DSplitSearch, width, height, 
             configurationSpace, dubinsLookup, visualization);
-        smoother.tracePath(nSolution,0,smoother.getPath());//在h函数里面有可以省略后面两个参数的定义
+        smoother.tracePathAndReverse(nSolution,0,smoother.getPath());//在h函数里面有可以省略后面两个参数的定义
         Node3D* tempGoal = nullptr; //缓存目标节点
-        for(auto &node3d:algorithmContour.finalPassSpaceInOutSets[i].outSet){//
-          tempGoal= Algorithm::dubinsShot(tempStart,node3d,configurationSpace);
-          if(tempGoal->getPred()!=nullptr){
-            smoother.tracePath(tempGoal->getPred(),0,smoother.getPath());
-            break;
-          }
-        }
-        if(tempGoal!=nullptr){
-          std::cout<<"在Set之间的dubinsShot搜索出现了问题"<<std::endl;
-        }
-        smoother.tracePath(nSolution,0,smoother.getPath());
-        tempStart = *nSolution;
+        Node3D startSecondStage = *nSolution;
         delete [] nodes3D;
         delete [] nodes2DSplitSearch;
+        Node3D* nodes3Dt = new Node3D[length]();
+        Node2D* nodes2DSplitSearcht = new Node2D[width * height]();
+        tempGoal= Algorithm::hybridAStar(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->centerVerticalPoint3D, nodes3Dt, nodes2DSplitSearcht, width, height, 
+          configurationSpace, dubinsLookup, visualization);
+        if(tempGoal!=nullptr ){
+          smoother.tracePathAndReverse(tempGoal->getPred(),0,smoother.getPath());
+        }
+        if(tempGoal==nullptr){
+          std::cout<<"在Set之间的dubinsShot搜索出现了问题"<<std::endl;
+        }
+        smoother.tracePathAndReverse(nSolution,0,smoother.getPath());
+        tempStart = *nSolution;
+        delete [] nodes3Dt;
+        delete [] nodes2DSplitSearcht;
+        if(i==algorithmContour.finalPassSpaceInOutSets.size()-1){//从最后一个pair的中垂点搜索到结束点
+          Node3D* nodes3D = new Node3D[length]();
+          Node2D* nodes2DSplitSearch = new Node2D[width * height]();
+          Node3D startFinalStage = *nSolution;
+          tempGoal= Algorithm::hybridAStar(algorithmContour.keyInfoForThrouthNarrowPairs[i]->centerVerticalPoint3D,
+              nGoal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization);
+          if(tempGoal!=nullptr ){//每次都会反向trace一下
+            smoother.tracePathAndReverse(tempGoal->getPred(),0,smoother.getPath());
+          }
+          delete [] nodes3D;
+          delete [] nodes2DSplitSearch;
+        }
       }
+      smoothedPath.updatePath(smoother.getPath());
       delete [] nodes2D;
+
+      auto stop = std::chrono::high_resolution_clock::now();
+      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+      std::cout << "ALgorithmContour 使用时间: "<< duration.count() << "  ms" << std::endl;
     }else{
       std::cout<<"algorithm error"<<std::endl;
     }
@@ -360,8 +386,8 @@ void Planner::plan() {
     path.publishPath();
     path.publishPathNodes();
     path.publishPathVehicles();
-    smoothedPath.publishPath();
-    smoothedPath.publishPathNodes();
+    // smoothedPath.publishPath();
+    // smoothedPath.publishPathNodes();
     smoothedPath.publishPathVehicles();
     // visualization.publishNode3DCosts(nodes3D, width, height, depth);
     // visualization.publishNode2DCosts(nodes2D, width, height);

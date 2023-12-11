@@ -29,9 +29,9 @@ namespace HybridAStar {
 namespace Constants {
 // _________________
 // CONFIG FLAGS
-// static const std::string algorithm = "split_hybrid_astar";
+static const std::string algorithm = "split_hybrid_astar";
 // static const std::string algorithm = "hybrid_astar";
-static const std::string algorithm = "contour_hybrid_astar";
+// static const std::string algorithm = "contour_hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
@@ -64,9 +64,9 @@ static const int iterations = 30000;
 static const double bloating = 0;
 static const double each_meter_to_how_many_pixel = 10;
 /// [m] --- The width of the vehicle
-static const double width = 1.8 * each_meter_to_how_many_pixel + 2 * bloating;
+static const double width = 1.6 * each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The length of the vehicle
-static const double length = 3 *each_meter_to_how_many_pixel + 2 * bloating;
+static const double length = 2.5 *each_meter_to_how_many_pixel + 2 * bloating;
 /// [m] --- The minimum turning radius of the vehicle
 // static const float r = 0.5 * each_meter_to_how_many_pixel; 
 static const float r = 1 * each_meter_to_how_many_pixel;
@@ -200,7 +200,7 @@ static float theMindistanceDetermineWhetherTheSameContourPoint = 0.6 * each_mete
 static const float minContourPairDistance = width * 1;
 static const float maxContourPairDistance = width * 1.6;
 static const int howManyNode2DDeterminesWhetherThroughNarrowContourPair = 3;
-static float offsetPercentForHalfVehicleWidth = 1.05;
+static float offsetPercentForHalfVehicleWidth = 1.1;
 /// [m] --- The minimum distance between two nodes in the astar and its successor, the unit is meter
 static const float arcLengthForAstarSuccessor = 0.3;
 

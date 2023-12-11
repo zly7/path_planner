@@ -48,6 +48,7 @@ namespace HybridAStar {
    directionVector centerVerticalUnitVector;//中垂线的单位向量
    Node2D* firstBoundPoint;
    Node2D* secondBoundPoint;
+   Node3D centerVerticalPoint3D;
    std::vector<Node3D> containingWaypointsFirstBPForward;
    std::vector<Node3D> containingWaypointsFirstBPBackward; ///沿着反方向路径走的圆弧上的点
    std::vector<Node3D> containingWaypointsSecondBPForward;
@@ -71,9 +72,10 @@ namespace HybridAStar {
   public:
     /// The deault constructor
     AlgorithmContour() {}
-    const static bool WhetherDebug = true;
+    const static bool WhetherDebug = false;
     const static bool whetherDeepDebug = false;
-    const static bool whetherDeepDebug2 = true;
+    const static bool whetherDeepDebug2 = false;
+    const static int visualizeMultiplier = 4; //可视化的时候放大的倍数
     cv::Mat gridMap;
     std::vector<std::vector<Node2D*>> contoursFromGrid;
     std::vector<std::pair<Node2D*, Node2D*>> narrowPairs;
@@ -104,6 +106,10 @@ namespace HybridAStar {
     void findNarrowPassSpaceInputSetOfNode3DForAllPairs(CollisionDetection& configurationSpace);
     finalPassSpaceInOutSet findNarrowPassSpaceInputSetOfNode3D(CollisionDetection& configurationSpace,keyInfoForThrouthNarrowPair* inputPair);
     std::vector<Node3D> findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine(const Node3D & firstPoint,const Node3D & secondPoint,const Node2D & middlePoint,const directionVector middleVerticalLine);
+    
+    // //从进入的点到实际的路径
+    // void findContaingfFeasibleToCenterVerticalPoint(const Node3D & startPoint,CollisionDetection& configurationSpace);
+    // static std::vector<Node3D> findArcByTwoPoints(const Node3D & firstPoint,const Node2D& middlePoint, const directionVector middleVerticalLine);
 
   };
 }

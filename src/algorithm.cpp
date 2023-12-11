@@ -1,3 +1,5 @@
+// #define DEBUG_TIME_ASTAR3D
+// #define DEBUG_TIME_UPDATEH
 #include "algorithm.h"
 #include <chrono>
 #include <boost/heap/binomial_heap.hpp>
@@ -91,11 +93,13 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
   Node3D* nSucc;
 
   // float max = 0.f;
+  #ifdef DEBUG_TIME_ASTAR3D
   int currentLoop = 0;
   double allRuningTime = 0;
   double allRuningTimeDubinsShot = 0;
   double allRuningTimeUpdateH = 0;
   double allRuningTimeisTraversal = 0;
+  #endif
 
   // continue until O empty
   while (!O.empty()) {
@@ -153,7 +157,9 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
       // _______________________
       // SEARCH WITH DUBINS SHOT
       if (Constants::dubinsShot && nPred->isInRange(goalSet.virtualCenterNode3D) && nPred->getPrim() < 3) {
+        #ifdef DEBUG_TIME_ASTAR3D
         auto startDubinsShotTime = std::chrono::high_resolution_clock::now();
+        #endif
         for (auto &goal : goalSet.goals){
           nSucc = dubinsShot(*nPred, goal, configurationSpace);
           if (nSucc != nullptr && *nSucc == goal) {  // 这里的相等就很妙，就是整数相等，整数映射空间
@@ -164,9 +170,11 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
           return nSucc;
           }
         }
+        #ifdef DEBUG_TIME_ASTAR3D
         auto stopDubinsShotTime = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double> elapsed = stopDubinsShotTime - startDubinsShotTime;
         allRuningTimeDubinsShot += elapsed.count();
+        #endif
 
         
       }
@@ -180,11 +188,11 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
         iSucc = nSucc->setIdx(width, height);
 
         // ensure successor is on grid and traversable
-        auto startisTraversableTime = std::chrono::high_resolution_clock::now();
+        // auto startisTraversableTime = std::chrono::high_resolution_clock::now();
         bool isTraversable = configurationSpace.isTraversable(nSucc);
-        auto stopisTraversableTime = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsedisTraversable = stopisTraversableTime - startisTraversableTime;
-        allRuningTimeisTraversal += elapsedisTraversable.count();
+        // auto stopisTraversableTime = std::chrono::high_resolution_clock::now();
+        // std::chrono::duration<double> elapsedisTraversable = stopisTraversableTime - startisTraversableTime;
+        // allRuningTimeisTraversal += elapsedisTraversable.count();
         if (nSucc->isOnGrid(width, height) && isTraversable) {
 
           // ensure successor is not on closed list or it has the same index as the predecessor
@@ -198,12 +206,16 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
             if (!nodes3D[iSucc].isOpen() || newG < nodes3D[iSucc].getG() || iPred == iSucc) {
 
               // calculate H value
+              #ifdef DEBUG_TIME_ASTAR3D
               auto startupdateHTime = std::chrono::high_resolution_clock::now();
+              #endif
               updateHFor3DNode(*nSucc, goalSet.virtualCenterNode3D, nodes2D, dubinsLookup, width, height, configurationSpace, visualization);  //计算真实的花费
+              #ifdef DEBUG_TIME_ASTAR3D
               auto stopupdateHTime = std::chrono::high_resolution_clock::now();
               std::chrono::duration<double> elapsedupdateH = stopupdateHTime - startupdateHTime;
               std::cout << "elapsedupdateH: " << elapsedupdateH.count() << std::endl;
               allRuningTimeUpdateH += elapsedupdateH.count();
+              #endif
 
               // if the successor is in the same cell but the C value is larger
               if (iPred == iSucc && nSucc->getC() > nPred->getC() + Constants::tieBreaker) {
@@ -230,6 +242,7 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
       }
       
     }
+    #ifdef DEBUG_TIME_ASTAR3D
     auto stopLoopTime = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = stopLoopTime - startLoopTime;
     allRuningTime += elapsed.count();
@@ -240,6 +253,7 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
       std::cout << "currentLoop: "<< currentLoop<<" all Runing time isTraversal: " << allRuningTimeisTraversal << std::endl;
     }
     currentLoop++;
+    #endif
   }
 
   if (O.empty()) {
@@ -485,10 +499,12 @@ void updateHFor3DNode(Node3D& start, const Node3D& goal, Node2D* nodes2D, float*
   float reedsSheppCost = 0;
   float twoDCost = 0;
   float twoDoffset = 0;
+  #ifdef DEBUG_TIME_UPDATEH
   double runAllTime = 0;
   double runReedSheppTime = 0;
   double runAstarForH = 0;
   auto startAllTime = std::chrono::high_resolution_clock::now();
+  #endif
   // if dubins heuristic is activated calculate the shortest path
   // constrained without obstacles
   if (Constants::dubins) {
@@ -503,7 +519,9 @@ void updateHFor3DNode(Node3D& start, const Node3D& goal, Node2D* nodes2D, float*
   }
 
   // if reversing is active use a  一般用这个reedsShepp，可以倒车
+  #ifdef DEBUG_TIME_UPDATEH
   auto startReedSheppTime = std::chrono::high_resolution_clock::now();
+  #endif
   if (Constants::reverse && !Constants::dubins) {
     ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);
     State* rsStart = (State*)reedsSheppPath.allocState();
@@ -514,9 +532,11 @@ void updateHFor3DNode(Node3D& start, const Node3D& goal, Node2D* nodes2D, float*
     rsEnd->setYaw(goal.getT());
     reedsSheppCost = reedsSheppPath.distance(rsStart, rsEnd);
   }
+  #ifdef DEBUG_TIME_UPDATEH
   auto stopReedSheppTime = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsedReedShepp = stopReedSheppTime - startReedSheppTime;
   runReedSheppTime += elapsedReedShepp.count();
+  #endif
 
   // if twoD heuristic is activated determine shortest path
   // unconstrained with obstacles
@@ -527,12 +547,16 @@ void updateHFor3DNode(Node3D& start, const Node3D& goal, Node2D* nodes2D, float*
     // create a 2d goal node
     Node2D goal2d(goal.getX(), goal.getY(), 0, 0, nullptr);
     // run 2d astar and return the cost of the cheapest path for that node
+    #ifdef DEBUG_TIME_UPDATEH
     auto startAstarForHTime = std::chrono::high_resolution_clock::now();
+    #endif
     nodes2D[(int)start.getY() * width + (int)start.getX()].setG(
         aStar2DForUpdateHValueOf3DNode( goal2d,start2d, nodes2D, width, height, configurationSpace, visualization));
+    #ifdef DEBUG_TIME_UPDATEH
     auto stopAstarForHTime = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsedAstarForH = stopAstarForHTime - startAstarForHTime;
     runAstarForH += elapsedAstarForH.count();
+    #endif
   }
 
   if (Constants::twoD) {
@@ -545,12 +569,14 @@ void updateHFor3DNode(Node3D& start, const Node3D& goal, Node2D* nodes2D, float*
 
   // return the maximum of the heuristics, making the heuristic admissable
   start.setH(std::max(reedsSheppCost, std::max(dubinsCost, twoDCost)));
+  #ifdef DEBUG_TIME_UPDATEH
   auto stopAllTime = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsedAll = stopAllTime - startAllTime;
   runAllTime += elapsedAll.count();
   std::cout << "runReedSheppTime: " << runReedSheppTime << std::endl;
   std::cout << "runAstarForH: " << runAstarForH << std::endl;
   std::cout << "runAllTime: " << runAllTime << std::endl;
+  #endif
 }
 
 //###################################################
@@ -598,7 +624,6 @@ Node3D* Algorithm::dubinsShot(Node3D& start, const Node3D& goal, CollisionDetect
       x += Constants::dubinsStepSize;
       i++;
     } else {
-      //      std::cout << "Dubins shot collided, discarding the path" << "\n";
       // delete all nodes
       delete [] dubinsNodes;
       return nullptr;

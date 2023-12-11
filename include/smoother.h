@@ -37,7 +37,7 @@ class Smoother {
      \param i a parameter for counting the number of nodes
   */
   void tracePath(const Node3D* node, int i = 0, std::vector<Node3D> path = std::vector<Node3D>());
-
+  void tracePathAndReverse(const Node3D* node, int i, std::vector<Node3D> path);
   void tracePath2D(const Node2D* node, int i = 0, std::vector<Node2D> path = std::vector<Node2D>());
 
   /// returns the path of the smoother object

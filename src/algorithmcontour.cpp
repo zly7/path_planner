@@ -261,6 +261,11 @@ void AlgorithmContour::findKeyInformationForthrouthNarrowPairs(){
         centerVerticalUnitVector.y = -1*centerVerticalUnitVector.y;
       }
       keyInfo->centerVerticalUnitVector = centerVerticalUnitVector;
+      float tempT = Helper::normalizeHeadingRad(atan2(centerVerticalUnitVector.y,centerVerticalUnitVector.x));
+      Node3D centerVerticalPoint(centerPoint->getFloatX() , 
+                                              centerPoint->getFloatY() , 
+                                              tempT, 0, 0, nullptr);
+      keyInfo->centerVerticalPoint3D = centerVerticalPoint;
       Node2D* firstBoundPoint = new Node2D(firstPoint->getFloatX() + offsetForHalfVehicleWidth * unitWireVector.x, 
                                           firstPoint->getFloatY() + offsetForHalfVehicleWidth * unitWireVector.y);
       Node2D* secondBoundPoint = new Node2D(secondPoint->getFloatX() - offsetForHalfVehicleWidth * unitWireVector.x, 
@@ -428,7 +433,7 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
     }
     if(whetherDeepDebug){
       cv::Mat mapCopy;
-      float multiplier = 4;
+      float multiplier = AlgorithmContour::visualizeMultiplier;
       cv::resize(gridMap, mapCopy, cv::Size(), multiplier, multiplier, cv::INTER_NEAREST);
       cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
       cv::circle(mapCopy, cv::Point(circleCenterPoint->getFloatX()*multiplier, circleCenterPoint->getFloatY()*multiplier), 3, cv::Scalar(255, 0, 0), -1);//蓝色是圆心
@@ -487,12 +492,12 @@ void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &config
   for (keyInfoForThrouthNarrowPair* KIpair:keyInfoForThrouthNarrowPairs ) {
     KIpair->containingWaypointsFirstBPBackward=findNarrowPassSpace(configurationSpace,
         KIpair->wireUnitVector.getReverseVector(),KIpair->centerVerticalUnitVector.getReverseVector(),KIpair->firstBoundPoint,1);
-    KIpair->containingWaypointsFirstBPForward=findNarrowPassSpace(configurationSpace,
-        KIpair->wireUnitVector.getReverseVector(),KIpair->centerVerticalUnitVector,KIpair->firstBoundPoint,0);
+    // KIpair->containingWaypointsFirstBPForward=findNarrowPassSpace(configurationSpace,
+    //     KIpair->wireUnitVector.getReverseVector(),KIpair->centerVerticalUnitVector,KIpair->firstBoundPoint,0);
     KIpair->containingWaypointsSecondBPBackward=findNarrowPassSpace(configurationSpace,
         KIpair->wireUnitVector,KIpair->centerVerticalUnitVector.getReverseVector(),KIpair->secondBoundPoint,1);
-    KIpair->containingWaypointsSecondBPForward=findNarrowPassSpace(configurationSpace,
-        KIpair->wireUnitVector,KIpair->centerVerticalUnitVector,KIpair->secondBoundPoint,0);
+    // KIpair->containingWaypointsSecondBPForward=findNarrowPassSpace(configurationSpace,
+    //     KIpair->wireUnitVector,KIpair->centerVerticalUnitVector,KIpair->secondBoundPoint,0);
   }
 }
 
@@ -501,20 +506,20 @@ void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &config
 // 主要的可视化函数
 void AlgorithmContour::visualizePassSpaceBoundaryForThroughNarrowPair(keyInfoForThrouthNarrowPair* keyInfo, const cv::Mat& gridMap) {
     cv::Mat mapCopy;
-    float multiplier = 4;
+    float multiplier = AlgorithmContour::visualizeMultiplier;
     cv::resize(gridMap, mapCopy, cv::Size(), multiplier, multiplier, cv::INTER_NEAREST);
     cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
 
     // 绘制所有路径点
-    drawPoints(keyInfo->containingWaypointsFirstBPForward, mapCopy, cv::Scalar(255, 0, 0),multiplier); // 红色
-    cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
-    cv::waitKey(0); // 等待按键
+    // drawPoints(keyInfo->containingWaypointsFirstBPForward, mapCopy, cv::Scalar(255, 0, 0),multiplier); // 红色
+    // cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
+    // cv::waitKey(0); // 等待按键
     drawPoints(keyInfo->containingWaypointsFirstBPBackward, mapCopy, cv::Scalar(0, 255, 0),multiplier); // 绿色
     cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
     cv::waitKey(0); // 等待按键
-    drawPoints(keyInfo->containingWaypointsSecondBPForward, mapCopy, cv::Scalar(0, 0, 255),multiplier); // 蓝色
-    cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
-    cv::waitKey(0); // 等待按键
+    // drawPoints(keyInfo->containingWaypointsSecondBPForward, mapCopy, cv::Scalar(0, 0, 255),multiplier); // 蓝色
+    // cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
+    // cv::waitKey(0); // 等待按键
     drawPoints(keyInfo->containingWaypointsSecondBPBackward, mapCopy, cv::Scalar(255, 255, 0),multiplier); // 黄色
     cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
     cv::waitKey(0); // 等待按键
@@ -542,28 +547,28 @@ finalPassSpaceInOutSet AlgorithmContour::findNarrowPassSpaceInputSetOfNode3D(Col
       break;
     }
   }
-  int minLength2 = min(inputPair->containingWaypointsFirstBPForward.size(), inputPair->containingWaypointsSecondBPForward.size());
-  size1 = inputPair->containingWaypointsFirstBPForward.size();
-  size2 = inputPair->containingWaypointsSecondBPForward.size();
-  for(int i = 0; i < minLength2; i++){
-    Node3D* nodeFirst = &inputPair->containingWaypointsFirstBPForward[size1-i-1];
-    Node3D* nodeSecond = &inputPair->containingWaypointsSecondBPForward[size2-i-1];
-    std::vector<Node3D> resultVector = findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine(*nodeFirst,*nodeSecond,*inputPair->centerPoint,inputPair->centerVerticalUnitVector);
-    bool flag = true;
-    for(auto node:resultVector){
-      if(!configurationSpace.isTraversable(&node)){
-        flag = false;
-        break;
-      }
-    }
-    if(flag){
-      resultSet.outSet = resultVector;
-      break;
-    }
-  }
-  if(resultSet.inSet.size()==0 || resultSet.outSet.size()==0){
-     std::cerr << "error in function " << __func__ << " at line " << __LINE__ << ": can not find input set of node3D" << std::endl;
-  }
+  // int minLength2 = min(inputPair->containingWaypointsFirstBPForward.size(), inputPair->containingWaypointsSecondBPForward.size());
+  // size1 = inputPair->containingWaypointsFirstBPForward.size();
+  // size2 = inputPair->containingWaypointsSecondBPForward.size();
+  // for(int i = 0; i < minLength2; i++){
+  //   Node3D* nodeFirst = &inputPair->containingWaypointsFirstBPForward[size1-i-1];
+  //   Node3D* nodeSecond = &inputPair->containingWaypointsSecondBPForward[size2-i-1];
+  //   std::vector<Node3D> resultVector = findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine(*nodeFirst,*nodeSecond,*inputPair->centerPoint,inputPair->centerVerticalUnitVector);
+  //   bool flag = true;
+  //   for(auto node:resultVector){
+  //     if(!configurationSpace.isTraversable(&node)){
+  //       flag = false;
+  //       break;
+  //     }
+  //   }
+  //   if(flag){
+  //     resultSet.outSet = resultVector;
+  //     break;
+  //   }
+  // }
+  // if(resultSet.inSet.size()==0 || resultSet.outSet.size()==0){
+  //    std::cerr << "error in function " << __func__ << " at line " << __LINE__ << ": can not find input set of node3D" << std::endl;
+  // }
   return resultSet;
 }
 
@@ -634,7 +639,7 @@ std::vector<Node3D> AlgorithmContour::findInputSetOfNode3DByTwoVectorAndMiddleVe
     
     if(this->whetherDeepDebug2){
       cv::Mat mapCopy;
-      int multiplier = 8;
+      int multiplier = AlgorithmContour::visualizeMultiplier;
       cv::resize(gridMap, mapCopy, cv::Size(), multiplier, multiplier, cv::INTER_NEAREST);
       cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
       for (const auto& node : resultVector) {
@@ -665,4 +670,26 @@ void AlgorithmContour::findNarrowPassSpaceInputSetOfNode3DForAllPairs(CollisionD
   }
 }
 
+// std::vector<Node3D> AlgorithmContour::findArcByTwoPoints(const Node3D & firstPoint,const Node2D& middlePoint, const directionVector middleVerticalLine){
+//     Point_2 cgFirstPoint(firstPoint.getX(), firstPoint.getY());
+//     Point_2 cgMiddlePoint(middlePoint.getX(), middlePoint.getY());
+//     Vector_2 firstPointDirection(std::cos(firstPoint.getT() * M_PI / 180.0), std::sin(firstPoint.getT() * M_PI / 180.0));
+//     Vector_2 middlePointDirection(middleVerticalLine.x, middleVerticalLine.y);
+
+//     // Create lines
+//     Line_2 firstLine(cgFirstPoint, firstPointDirection.perpendicular(CGAL::CLOCKWISE));
+//     Line_2 middleLine(cgMiddlePoint, middlePointDirection.perpendicular(CGAL::CLOCKWISE));
+
+//     // Compute intersection (the arc center)
+//     CGAL::Object result = CGAL::intersection(firstLine, middleLine);
+
+//     if (const Point_2 *arcCenter = CGAL::object_cast<Point_2>(&result)) {
+//         // Convert the intersection point back to Node3D
+//         Node3D center;
+//     }
+// }
+
+// void AlgorithmContour::findContaingfFeasibleToCenterVerticalPoint(const Node3D & startPoint,CollisionDetection& configurationSpace){
+
+// }
 
