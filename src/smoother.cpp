@@ -92,16 +92,17 @@ void Smoother::tracePath(const Node3D* node, int i, std::vector<Node3D> path) {
   tracePath(node->getPred(), i, path);
 }
 
-void Smoother::tracePathAndReverse(const Node3D* node, int i, std::vector<Node3D> path) {
-  if (node == nullptr) {
-    std::reverse(path.begin(), path.end());
-    this->path.insert(this->path.end(), path.begin(), path.end());
-    return;
-  }
-
-  i++;
-  path.push_back(*node);
-  tracePathAndReverse(node->getPred(), i, path);
+void Smoother::tracePathAndReverse(const Node3D* node) {
+    if(this->path.size() > 0){//防止最后一个重复
+        this->path.pop_back();
+    }
+    std::vector<Node3D> tempPath;
+    while (node != nullptr) {
+        tempPath.push_back(*node);
+        node = node->getPred();
+    }
+    std::reverse(tempPath.begin(), tempPath.end());
+    this->path.insert(this->path.end(), tempPath.begin(), tempPath.end());
 }
 
 void Smoother::tracePath2D(const Node2D* node, int i, std::vector<Node2D> path2D) {

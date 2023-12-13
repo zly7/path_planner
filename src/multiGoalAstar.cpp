@@ -42,4 +42,20 @@ void multiGoalSet3D::updateVirtualCenterNode() {
     virtualCenterNode3D.setT(nearest->getT());
 }
 
+multiGoalSet3D multiGoalSet3D::fuzzyOneNodeToSet(const Node3D& node, float radius) {
+    multiGoalSet3D returnSet;
+    float centerX = node.getX();
+    float centerY = node.getY();
+    for(int i = -radius;i <=radius ;i++){
+        for(int j = -radius;j <=radius ;j++){
+            if(i*i+j*j <= radius*radius){
+                Node3D newNode(centerX+i,centerY+j,node.getT());
+                returnSet.addGoal(newNode);
+            }
+        }
+    }
+    return returnSet;
+}
+    
+
 }  // namespace HybridAStar

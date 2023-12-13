@@ -105,7 +105,7 @@ void Path::addSegment(const Node3D& node) {
 }
 
 // ________
-// ADD NODE
+// ADD NODE 添加最后的路径点
 void Path::addNode(const Node3D& node, int i) {
   visualization_msgs::Marker pathNode;
 
@@ -118,19 +118,19 @@ void Path::addNode(const Node3D& node, int i) {
   pathNode.header.stamp = ros::Time(0);
   pathNode.id = i;
   pathNode.type = visualization_msgs::Marker::SPHERE;
-  pathNode.scale.x = 0.1;
-  pathNode.scale.y = 0.1;
-  pathNode.scale.z = 0.1;
+  pathNode.scale.x = 1;
+  pathNode.scale.y = 1;
+  pathNode.scale.z = 1;
   pathNode.color.a = 1.0;
 
   if (smoothed) {
-    pathNode.color.r = Constants::pink.red;
-    pathNode.color.g = Constants::pink.green;
-    pathNode.color.b = Constants::pink.blue;
-  } else {
     pathNode.color.r = Constants::purple.red;
     pathNode.color.g = Constants::purple.green;
     pathNode.color.b = Constants::purple.blue;
+  } else {
+    pathNode.color.r = Constants::pink.red;
+    pathNode.color.g = Constants::pink.green;
+    pathNode.color.b = Constants::pink.blue;
   }
 
   pathNode.pose.position.x = node.getX() * Constants::cellSize;
@@ -187,7 +187,7 @@ void Path::add2DBox(const Node2D& node, int i){
     pathBox.action = 3;
   }
 
-  std::cout<<"  Box   " << node.getRadius() << " " << node.getX() << " " << node.getY() <<std::endl;
+  // std::cout<<"  Box   " << node.getRadius() << " " << node.getX() << " " << node.getY() <<std::endl;
   pathBox.header.frame_id = "path";
   pathBox.header.stamp = ros::Time(0);
   pathBox.id = i;

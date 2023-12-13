@@ -201,6 +201,7 @@ void AlgorithmContour::findThroughNarrowContourPair(const std::vector<Node2D> & 
         int aroundWaypointsIndex = 0;
         if (this->determineWhetherThrough2DPath(path, narrowPair,containingWaypointsTorecord,aroundWaypointsIndex)) {
             this->throughNarrowPairs.push_back(narrowPair);
+            this->aroundWaypointsIndexOfThroughNarrowPairs.push_back(aroundWaypointsIndex);
             std::reverse(containingWaypointsTorecord.begin(),containingWaypointsTorecord.end()); //拿到的path是从尾部trace过来的
             this->throughNarrowPairsWaypoints.push_back(containingWaypointsTorecord);
         }
@@ -309,7 +310,7 @@ void AlgorithmContour::findKeyInformationForthrouthNarrowPairs(){
         centerVerticalUnitVector.y = -1*centerVerticalUnitVector.y;
       }
       keyInfo->centerVerticalUnitVector = centerVerticalUnitVector;
-      float tempT = Helper::normalizeHeadingRad(atan2(centerVerticalUnitVector.y,centerVerticalUnitVector.x));
+      float tempT = Helper::normalizeHeadingRad(atan2f(centerVerticalUnitVector.y,centerVerticalUnitVector.x));
       Node3D centerVerticalPoint(centerPoint->getFloatX() , 
                                               centerPoint->getFloatY() , 
                                               tempT, 0, 0, nullptr);
@@ -323,7 +324,7 @@ void AlgorithmContour::findKeyInformationForthrouthNarrowPairs(){
       keyInfo->secondBoundPoint = secondBoundPoint;
   }
 };
-
+/*查看这个中垂线方向和路径的前进方向是否相同*/
 bool AlgorithmContour::samplePathAndjudgeAcuteAngel(std::vector<Node2D> & path,directionVector midperpendicular){
   float allDot = 0;
   for(uint i =0;i<path.size()-3;i++){
@@ -345,7 +346,42 @@ bool AlgorithmContour::samplePathAndjudgeAcuteAngel(std::vector<Node2D> & path,d
   }else{
     return false;
   }
+}
+bool AlgorithmContour::two3DPointsWhetherCloseAndReverseDirection(CollisionDetection& configurationSpace,
+    Node2D * middlePoint,directionVector& centerVerticalUnitVector, const Node3D & goal){
+  // Get coordinates
+    float x1 = middlePoint->getFloatX();
+    float y1 = middlePoint->getFloatY();
+    float x2 = goal.getX();
+    float y2 = goal.getY();
 
+    // Calculate Euclidean distance
+    float distance = sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+    if (distance >= Constants::theDistanceDerterminReverseMiddleDirection) {
+        return false; // Points are too far apart
+    }
+
+    int steps = int(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+    for (int i = 0; i <= steps; ++i) {
+        float t = static_cast<float>(i) / steps;
+        float x = x1 + t * (x2 - x1);
+        float y = y1 + t * (y2 - y1);
+        Node2D* nodeInterpolation = new Node2D(x, y);
+        if (!configurationSpace.isTraversable(nodeInterpolation)) {
+            return false; // Found a non-traversable point
+        }
+    }
+
+    float t =goal.getT();
+    directionVector goalDirection = {cos(t),sin(t)};
+
+    // Dot product of vectors
+    float dotProduct = goalDirection.x * centerVerticalUnitVector.x + goalDirection.y * centerVerticalUnitVector.y;
+    // Check if angle is acute (cosine is positive)
+    if (dotProduct <= 0) {
+        return true; // Angle is not acute
+    }
+    return false; 
 }
 
 
@@ -429,9 +465,10 @@ void drawPoints(const std::vector<Node3D>& points, cv::Mat& map, const cv::Scala
 }
 
 std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& configurationSpace,
-    const directionVector& radiusVectorToYuanxin,const directionVector& tangentVector,Node2D* startPoint, int whetherReverse)
+    const directionVector& radiusVectorToYuanxin,
+    const directionVector& tangentVector,Node2D* startPoint, int whetherReverse, int whetherCloseReverseGoal)
 {
-  if(whetherReverse!=1 && whetherReverse!=0){
+  if((whetherReverse!=1 && whetherReverse!=0) || (whetherCloseReverseGoal!=1 && whetherCloseReverseGoal!=0)){
     std::cerr<<"whetherReverse should be 1 or 0"<<std::endl;
     return std::vector<Node3D>();
   }
@@ -470,7 +507,7 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
       angleVehicleCurrent = Helper::normalizeHeadingRad(angleVehicleCurrent + cross*Constants::deltaHeadingRad);
       float pointX=circleCenterPoint->getFloatX()+radius*cos(angleRelativeToCircleCurrent);
       float pointY=circleCenterPoint->getFloatY()+radius*sin(angleRelativeToCircleCurrent);
-      Node3D NodeCurrentVehicle =  Node3D(pointX, pointY, Helper::normalizeHeadingRad(angleVehicleCurrent+M_PI*whetherReverse));
+      Node3D NodeCurrentVehicle =  Node3D(pointX, pointY, Helper::normalizeHeadingRad(angleVehicleCurrent+M_PI*whetherReverse + M_PI*whetherCloseReverseGoal));
       
       if(!configurationSpace.isTraversable(&NodeCurrentVehicle)){
         flag=false;
@@ -535,15 +572,19 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
   // return -Constants::minRadius/2;
 }
 //找到左上左下右上右下圆边界路径
-void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &configurationSpace)
+void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &configurationSpace,const Node3D & goal)
 {
   for (keyInfoForThrouthNarrowPair* KIpair:keyInfoForThrouthNarrowPairs ) {
+    if(two3DPointsWhetherCloseAndReverseDirection(configurationSpace,KIpair->centerPoint,KIpair->centerVerticalUnitVector,goal)){
+      KIpair->whetherCloseReverseToGoal = true;
+    }
+    int whetherCloseReverseToGoalSignals = KIpair->whetherCloseReverseToGoal?1:0;
     KIpair->containingWaypointsFirstBPBackward=findNarrowPassSpace(configurationSpace,
-        KIpair->wireUnitVector.getReverseVector(),KIpair->centerVerticalUnitVector.getReverseVector(),KIpair->firstBoundPoint,1);
+        KIpair->wireUnitVector.getReverseVector(),KIpair->centerVerticalUnitVector.getReverseVector(),KIpair->firstBoundPoint,1,whetherCloseReverseToGoalSignals);
     // KIpair->containingWaypointsFirstBPForward=findNarrowPassSpace(configurationSpace,
     //     KIpair->wireUnitVector.getReverseVector(),KIpair->centerVerticalUnitVector,KIpair->firstBoundPoint,0);
     KIpair->containingWaypointsSecondBPBackward=findNarrowPassSpace(configurationSpace,
-        KIpair->wireUnitVector,KIpair->centerVerticalUnitVector.getReverseVector(),KIpair->secondBoundPoint,1);
+        KIpair->wireUnitVector,KIpair->centerVerticalUnitVector.getReverseVector(),KIpair->secondBoundPoint,1,whetherCloseReverseToGoalSignals);
     // KIpair->containingWaypointsSecondBPForward=findNarrowPassSpace(configurationSpace,
     //     KIpair->wireUnitVector,KIpair->centerVerticalUnitVector,KIpair->secondBoundPoint,0);
   }
@@ -579,10 +620,11 @@ finalPassSpaceInOutSet AlgorithmContour::findNarrowPassSpaceInputSetOfNode3D(Col
   finalPassSpaceInOutSet resultSet;
   uint size1 = inputPair->containingWaypointsFirstBPBackward.size();
   uint size2 = inputPair->containingWaypointsSecondBPBackward.size();
-  for(uint i = 0; i < minLength; i++){
+  for(uint i = 0; i < minLength; i++){//这里需要迭代的原因是，中间可能有突出来的障碍物，但是这种情况很少见
     Node3D* nodeFirst = &inputPair->containingWaypointsFirstBPBackward[size1-i-1];
     Node3D* nodeSecond = &inputPair->containingWaypointsSecondBPBackward[size2-i-1];
-    std::vector<Node3D> resultVector = findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine(*nodeFirst,*nodeSecond,*inputPair->centerPoint,inputPair->centerVerticalUnitVector);
+    std::vector<Node3D> resultVector = findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine
+      (*nodeFirst,*nodeSecond,*inputPair->centerPoint,inputPair->centerVerticalUnitVector,inputPair->whetherCloseReverseToGoal);
     bool flag = true;
     for(auto node:resultVector){
       if(!configurationSpace.isTraversable(&node)){
@@ -644,7 +686,8 @@ static inline std::vector<Node3D> interpolatePath(Node3D start, Node3D end, floa
     return path;
 }
 
-std::vector<Node3D> AlgorithmContour::findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine(const Node3D & firstPoint,const Node3D & secondPoint,const Node2D & middlePoint,const directionVector middleVerticalLine){
+std::vector<Node3D> AlgorithmContour::findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine(const Node3D & firstPoint,const Node3D & secondPoint,
+  const Node2D & middlePoint,const directionVector middleVerticalLine,int whetherCloseReverseGoal){
    Node3D intersection;
 
     // 创建线段
@@ -661,6 +704,9 @@ std::vector<Node3D> AlgorithmContour::findInputSetOfNode3DByTwoVectorAndMiddleVe
       intersection.setY(static_cast<float>(CGAL::to_double(p->y())));
     }
     float angelOfIntersection = atan2f(middleVerticalLine.y,middleVerticalLine.x);
+    if(whetherCloseReverseGoal){
+      angelOfIntersection = Helper::normalizeHeadingRad(angelOfIntersection + M_PI);
+    }
     intersection.setT(Helper::normalizeHeadingRad(angelOfIntersection));
     if(this->whetherDeepDebug2){
       cv::Mat mapCopy;
@@ -685,32 +731,33 @@ std::vector<Node3D> AlgorithmContour::findInputSetOfNode3DByTwoVectorAndMiddleVe
     // 将两个路径合并
     resultVector.insert(resultVector.end(), secondPath.begin(), secondPath.end());
     
-    if(this->whetherDeepDebug2){
-      cv::Mat mapCopy;
-      int multiplier = AlgorithmContour::visualizeMultiplier;
-      cv::resize(gridMap, mapCopy, cv::Size(), multiplier, multiplier, cv::INTER_NEAREST);
-      cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
-      for (const auto& node : resultVector) {
-          // 节点的放大位置
-          cv::Point2f nodePos(node.getX() * multiplier, node.getY() * multiplier);
-
-          // 计算方向向量的终点
-          float length = 10; // 可以根据需要调整长度
-          cv::Point2f direction(cos(node.getT()) * length, sin(node.getT()) * length);
-          cv::Point2f endPoint = nodePos + direction;
-
-          // 绘制线段
-          cv::arrowedLine(mapCopy, nodePos, endPoint, cv::Scalar(0, 0, 255), 1,8,0,0.3);
-      }
-      cv::namedWindow("Pass Space Boundary Visualization", cv::WINDOW_NORMAL);
-      cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
-      cv::waitKey(0); // 等待按键
-    }
     return resultVector;
 
 }
 
+void AlgorithmContour::visualizeInsetForThroughNarrowPairs(std::vector<finalPassSpaceInOutSet> finalPassSpaceInOutSets,const cv::Mat & gridMap){
+  for( auto &inOutSet:finalPassSpaceInOutSets){
+    cv::Mat mapCopy;
+    int multiplier = AlgorithmContour::visualizeMultiplier;
+    cv::resize(gridMap, mapCopy, cv::Size(), multiplier, multiplier, cv::INTER_NEAREST);
+    cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
+    for (const auto& node : inOutSet.inSet) {
+        // 节点的放大位置
+        cv::Point2f nodePos(node.getX() * multiplier, node.getY() * multiplier);
 
+        // 计算方向向量的终点
+        float length = 10; // 可以根据需要调整长度
+        cv::Point2f direction(cos(node.getT()) * length, sin(node.getT()) * length);
+        cv::Point2f endPoint = nodePos + direction;
+
+        // 绘制线段
+        cv::arrowedLine(mapCopy, nodePos, endPoint, cv::Scalar(0, 0, 255), 1,8,0,0.3);
+    }
+    cv::namedWindow("Pass Space Boundary Visualization", cv::WINDOW_NORMAL);
+    cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
+    cv::waitKey(0); // 等待按键
+  }
+}
 
 void AlgorithmContour::findNarrowPassSpaceInputSetOfNode3DForAllPairs(CollisionDetection& configurationSpace){
   for (keyInfoForThrouthNarrowPair* KIpair:keyInfoForThrouthNarrowPairs ) {

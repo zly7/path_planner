@@ -38,7 +38,7 @@ static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
 static const bool manual = true;
 /// A flag for the visualization of 3D nodes (true = on; false = off)
-static const bool visualization = false && manual;
+static const bool visualization = true && manual;
 /// A flag for the visualization of 2D nodes (true = on; false = off)
 static const bool visualization2D = false && manual;
 /// A flag to toggle reversing (true = on; false = off)
@@ -209,7 +209,8 @@ static const float arcLengthForAstarSuccessor = 0.3;
 */
 static const float DIST_LIMIT = 1.5;
 static const float ALIGN_ANGLE_COS = cos(15/180 * M_PI);
-
+static const float theDistanceDerterminReverseMiddleDirection= 2 * Constants::each_meter_to_how_many_pixel;
+static const bool whetherFuzzyGoal = each_meter_to_how_many_pixel >= 6;
 
 }
 }

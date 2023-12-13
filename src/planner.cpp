@@ -306,27 +306,31 @@ void Planner::plan() {
       #endif
       algorithmContour.sortThroughNarrowPairsWaypoints();//按照路径前后重排序狭窄点
       algorithmContour.findKeyInformationForthrouthNarrowPairs();
-      algorithmContour.findNarrowPassSpaceForAllPairs(configurationSpace);
+      algorithmContour.findNarrowPassSpaceForAllPairs(configurationSpace,nGoal);
+      algorithmContour.findNarrowPassSpaceInputSetOfNode3DForAllPairs(configurationSpace);
       #ifdef DEBUG_TIME_ALGORITHMCONTOUR
-      for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
-        AlgorithmContour::visualizePassSpaceBoundaryForThroughNarrowPair(algorithmContour.keyInfoForThrouthNarrowPairs[i],algorithmContour.gridMap);
-      }
       for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(algorithmContour.throughNarrowPairs[i],
               algorithmContour.keyInfoForThrouthNarrowPairs[i],algorithmContour.gridMap);
       }
+      for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
+        AlgorithmContour::visualizePassSpaceBoundaryForThroughNarrowPair(algorithmContour.keyInfoForThrouthNarrowPairs[i],algorithmContour.gridMap);
+      }
+      AlgorithmContour::visualizeInsetForThroughNarrowPairs(algorithmContour.finalPassSpaceInOutSets,algorithmContour.gridMap);
       #endif
-      algorithmContour.findNarrowPassSpaceInputSetOfNode3DForAllPairs(configurationSpace);
-      Node3D tempStart = nStart;
-      Node3D* nSolution=nullptr;
+      Node3D tempStart;
+      Node3D* nSolution= nullptr;
       for(uint i = 0;i<algorithmContour.finalPassSpaceInOutSets.size();i++){
+        if(i==0){
+          tempStart = nStart;
+        }
         Node3D* nodes3D = new Node3D[length]();
         Node2D* nodes2DSplitSearch = new Node2D[width * height]();
         multiGoalSet3D goals = multiGoalSet3D();
         goals.addGoals(algorithmContour.finalPassSpaceInOutSets[i].inSet);
         nSolution = Algorithm::hybridAStarMultiGoals(tempStart, goals, nodes3D, nodes2DSplitSearch, width, height, 
             configurationSpace, dubinsLookup, visualization);
-        smoother.tracePathAndReverse(nSolution,0,smoother.getPath());//在h函数里面有可以省略后面两个参数的定义
+        smoother.tracePathAndReverse(nSolution);//在h函数里面有可以省略后面两个参数的定义
         Node3D* tempGoal = nullptr; //缓存目标节点
         Node3D startSecondStage = *nSolution;
         delete [] nodes3D;
@@ -336,28 +340,32 @@ void Planner::plan() {
         tempGoal= Algorithm::hybridAStar(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->centerVerticalPoint3D, nodes3Dt, nodes2DSplitSearcht, width, height, 
           configurationSpace, dubinsLookup, visualization);
         if(tempGoal!=nullptr ){
-          smoother.tracePathAndReverse(tempGoal->getPred(),0,smoother.getPath());
+          smoother.tracePathAndReverse(tempGoal->getPred());
         }
         if(tempGoal==nullptr){
           std::cout<<"在Set之间的dubinsShot搜索出现了问题"<<std::endl;
         }
-        smoother.tracePathAndReverse(nSolution,0,smoother.getPath());
         tempStart = *nSolution;
         delete [] nodes3Dt;
         delete [] nodes2DSplitSearcht;
-        if(i==algorithmContour.finalPassSpaceInOutSets.size()-1){//从最后一个pair的中垂点搜索到结束点
-          Node3D* nodes3D = new Node3D[length]();
-          Node2D* nodes2DSplitSearch = new Node2D[width * height]();
-          Node3D startFinalStage = *nSolution;
-          tempGoal= Algorithm::hybridAStar(algorithmContour.keyInfoForThrouthNarrowPairs[i]->centerVerticalPoint3D,
-              nGoal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization);
-          if(tempGoal!=nullptr ){//每次都会反向trace一下
-            smoother.tracePathAndReverse(tempGoal->getPred(),0,smoother.getPath());
-          }
-          delete [] nodes3D;
-          delete [] nodes2DSplitSearch;
-        }
       }
+
+      Node3D* nodes3D = new Node3D[length]();
+      Node2D* nodes2DSplitSearch = new Node2D[width * height]();
+      Node3D* tempGoal;
+      if (Constants::each_meter_to_how_many_pixel >= 6) {
+          multiGoalSet3D goalsMulFinal = multiGoalSet3D::fuzzyOneNodeToSet(nGoal,static_cast<float>(Constants::each_meter_to_how_many_pixel)/6);
+          auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? algorithmContour.keyInfoForThrouthNarrowPairs.back()->centerVerticalPoint3D : nStart;
+          tempGoal = Algorithm::hybridAStarMultiGoals(startGoal, goalsMulFinal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization);
+      } else {
+          auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? algorithmContour.keyInfoForThrouthNarrowPairs.back()->centerVerticalPoint3D : nStart;
+          tempGoal = Algorithm::hybridAStar(startGoal, nGoal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization);
+      }
+      if(tempGoal!=nullptr ){//每次都会反向trace一下
+        smoother.tracePathAndReverse(tempGoal);
+      }
+      delete [] nodes3D;
+      delete [] nodes2DSplitSearch;
       smoothedPath.updatePath(smoother.getPath());
       delete [] nodes2D;
 
@@ -387,8 +395,8 @@ void Planner::plan() {
     path.publishPath();
     path.publishPathNodes();
     path.publishPathVehicles();
-    // smoothedPath.publishPath();
-    // smoothedPath.publishPathNodes();
+    smoothedPath.publishPath();
+    smoothedPath.publishPathNodes();
     smoothedPath.publishPathVehicles();
     // visualization.publishNode3DCosts(nodes3D, width, height, depth);
     // visualization.publishNode2DCosts(nodes2D, width, height);

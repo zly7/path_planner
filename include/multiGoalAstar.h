@@ -19,6 +19,7 @@ class multiGoalSet3D {
     void addGoal(const Node3D& node);
     void addGoals(const std::set<Node3D>& nodeset);
     void addGoals(const std::vector<Node3D>& nodes);
+    static multiGoalSet3D fuzzyOneNodeToSet(const Node3D& node, float radius);
 
 private:
     void updateVirtualCenterNode();

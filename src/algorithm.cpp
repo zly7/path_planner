@@ -72,7 +72,7 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
   int iterations = 0;
   // VISUALIZATION DELAY
   ros::Duration d(0.003);
-
+  start.setPred(nullptr);//清空
   // OPEN LIST AS BOOST IMPLEMENTATION
   typedef boost::heap::binomial_heap<Node3D*,
           boost::heap::compare<CompareNodes>
@@ -103,7 +103,9 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
 
   // continue until O empty
   while (!O.empty()) {
+    #ifdef DEBUG_TIME_ASTAR3D
     auto startLoopTime = std::chrono::high_resolution_clock::now();
+    #endif
     // pop node with lowest cost from priority queue pop出堆的第一步
     nPred = O.top();
     // set index
@@ -138,13 +140,13 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
       for(auto &goal : goalSet.goals){
         if (*nPred == goal || iterations > Constants::iterations) {
           // DEBUG
-          std::cout<< iterations<<std::endl;
+          std::cout<<"总迭代次数: "<< iterations<<std::endl;
           std::cout<<"npred "<<nPred->getX()<<" "<<nPred->getY()<<std::endl;
           std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
           if(iterations > Constants::iterations){
-            std::cout<<"到达了最长的搜索迭代次数"<<std::endl;
+            std::cout<<"到达了最长的搜索迭代次数,未能找到目标点"<<std::endl;
           }else{
-            std::cout<<"当前搜索次数: "<<iterations<<std::endl;
+            std::cout<<"结束搜索总的搜索次数: "<<iterations<<std::endl;
           }
           return nPred;
         }
@@ -163,8 +165,7 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
         for (auto &goal : goalSet.goals){
           nSucc = dubinsShot(*nPred, goal, configurationSpace);
           if (nSucc != nullptr && *nSucc == goal) {  // 这里的相等就很妙，就是整数相等，整数映射空间
-          //DEBUG
-          // std::cout << "max diff " << max << std::endl;
+          std::cout << "通过dubinShot 命中结束点" << std::endl;
           std::cout<<"nSucc "<<nSucc->getX()<<" "<<nSucc->getY()<<std::endl;
           std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
           return nSucc;
