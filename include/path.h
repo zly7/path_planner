@@ -93,6 +93,8 @@ class Path {
   */
   void addVehicle(const Node3D& node, int i);
 
+  void tempUpdatePathNode(const std::vector<Node3D> &nodePath);
+
   // ______________
   // PUBLISH METHODS
 

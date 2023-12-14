@@ -28,6 +28,7 @@ Planner::Planner() {
 
   subGoal = n.subscribe("/move_base_simple/goal", 1, &Planner::setGoal, this);
   subStart = n.subscribe("/initialpose", 1, &Planner::setStart, this);
+  Node3D::initializeVectorsForForward();//在planner里面的构造器调用这个初始化方向的函数
 };
 
 //###################################################
@@ -292,7 +293,7 @@ void Planner::plan() {
       std::vector<Node2D> path2D=smoother.getPath2D();
       path.update2DPath(path2D);//这里是为了画出2D的路径
       path.publishPath2DNodes();
-      auto start = std::chrono::high_resolution_clock::now();
+      auto startTime = std::chrono::high_resolution_clock::now();
       AlgorithmContour algorithmContour;
       algorithmContour.findContour(grid);     
       algorithmContour.findNarrowContourPair();
@@ -337,7 +338,7 @@ void Planner::plan() {
         delete [] nodes2DSplitSearch;
         Node3D* nodes3Dt = new Node3D[length]();
         Node2D* nodes2DSplitSearcht = new Node2D[width * height]();
-        tempGoal= Algorithm::hybridAStar(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->centerVerticalPoint3D, nodes3Dt, nodes2DSplitSearcht, width, height, 
+        tempGoal= Algorithm::hybridAStar(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), nodes3Dt, nodes2DSplitSearcht, width, height, 
           configurationSpace, dubinsLookup, visualization);
         if(tempGoal!=nullptr ){
           smoother.tracePathAndReverse(tempGoal->getPred());
@@ -348,17 +349,26 @@ void Planner::plan() {
         tempStart = *nSolution;
         delete [] nodes3Dt;
         delete [] nodes2DSplitSearcht;
+        #ifdef DEBUG_TIME_ALGORITHMCONTOUR
+        std::cout<<"第"<<i<<"个Set搜索完毕"<<std::endl;
+        smoothedPath.tempUpdatePathNode(smoother.getPath());
+        smoothedPath.publishPathNodes();
+        #endif
       }
-
       Node3D* nodes3D = new Node3D[length]();
       Node2D* nodes2DSplitSearch = new Node2D[width * height]();
       Node3D* tempGoal;
+      #ifdef DEBUG_TIME_ALGORITHMCONTOUR
+        if(!configurationSpace.isTraversable(&nGoal)){
+          std::cout<<"目标设置有误，无法搜索"<<std::endl;
+        }
+      #endif
       if (Constants::each_meter_to_how_many_pixel >= 6) {
-          multiGoalSet3D goalsMulFinal = multiGoalSet3D::fuzzyOneNodeToSet(nGoal,static_cast<float>(Constants::each_meter_to_how_many_pixel)/6);
-          auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? algorithmContour.keyInfoForThrouthNarrowPairs.back()->centerVerticalPoint3D : nStart;
+          multiGoalSet3D goalsMulFinal = multiGoalSet3D::fuzzyOneNodeToSet(configurationSpace,nGoal,static_cast<float>(Constants::each_meter_to_how_many_pixel)/8);
+          auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? algorithmContour.keyInfoForThrouthNarrowPairs.back()->getSecondStageMiddleVerticalPoint() : nStart;
           tempGoal = Algorithm::hybridAStarMultiGoals(startGoal, goalsMulFinal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization);
       } else {
-          auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? algorithmContour.keyInfoForThrouthNarrowPairs.back()->centerVerticalPoint3D : nStart;
+          auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? algorithmContour.keyInfoForThrouthNarrowPairs.back()->getSecondStageMiddleVerticalPoint() : nStart;
           tempGoal = Algorithm::hybridAStar(startGoal, nGoal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization);
       }
       if(tempGoal!=nullptr ){//每次都会反向trace一下
@@ -370,7 +380,7 @@ void Planner::plan() {
       delete [] nodes2D;
 
       auto stop = std::chrono::high_resolution_clock::now();
-      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
       std::cout << "ALgorithmContour 使用时间: "<< duration.count() << "  ms" << std::endl;
     }else{
       std::cout<<"algorithm error"<<std::endl;

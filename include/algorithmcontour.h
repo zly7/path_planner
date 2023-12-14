@@ -55,6 +55,8 @@ namespace HybridAStar {
    std::vector<Node3D> containingWaypointsSecondBPBackward; ///沿着反方向路径走的圆弧上的点
    bool whetherCloseReverseToGoal = false;
 
+   Node3D getSecondStageMiddleVerticalPoint();
+
   };
   class finalPassSpaceInOutSet{
   public:
@@ -74,8 +76,8 @@ namespace HybridAStar {
     /// The deault constructor
     AlgorithmContour() {}
     const static bool WhetherDebug = true;
-    const static bool whetherDeepDebug = true;
-    const static bool whetherDeepDebug2 = false;
+    const static bool whetherDeepDebug = false; //是否进行半径的扩张可视化
+    const static bool whetherDeepDebug2 = false;//是否画出插值的点，但是现在因为有在外层的可视化，所以这个可以不用
     const static int visualizeMultiplier = 4; //可视化的时候放大的倍数
 
     cv::Mat gridMap;

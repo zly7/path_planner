@@ -5,26 +5,29 @@ using namespace HybridAStar;
 // CONSTANT VALUES
 // possible directions
 const int Node3D::dir = 3;
-// possible movements
-//const float Node3D::dy[] = { 0,        -0.032869,  0.032869};
-//const float Node3D::dx[] = { 0.62832,   0.62717,   0.62717};
-//const float Node3D::dt[] = { 0,         0.10472,   -0.10472};
+
 const float Node3D::resolution_mutiplier = Constants::each_meter_to_how_many_pixel;
 const float Node3D::arcLength = Constants::arcLengthForAstarSuccessor  * Constants::each_meter_to_how_many_pixel;
 const float Node3D::steeringAngle = M_PI * 6.75 / 180.0;
-// // R = 6, 6.75 DEG
-// const float Node3D::dy[] = { 0 * Node3D::resolution_mutiplier, -0.0415893* Node3D::resolution_mutiplier,  0.0415893* Node3D::resolution_mutiplier};
-// const float Node3D::dx[] = { 0.7068582* Node3D::resolution_mutiplier,   0.705224* Node3D::resolution_mutiplier,   0.705224* Node3D::resolution_mutiplier};
-// const float Node3D::dt[] = { 0, 0.1178097,   -0.1178097};
 
-// 6.75 DEG
-const float Node3D::dy[] = { 0, -Node3D::arcLength*sin(Node3D::steeringAngle), Node3D::arcLength*sin(Node3D::steeringAngle)};
-const float Node3D::dx[] = { Node3D::arcLength,   Node3D::arcLength*cos(Node3D::steeringAngle),  Node3D::arcLength*cos(Node3D::steeringAngle)};
-const float Node3D::dt[] = { 0,         Node3D::steeringAngle,   -Node3D::steeringAngle};
 
-//const float Node3D::dy[] = { 0,       -0.16578, 0.16578};
-//const float Node3D::dx[] = { 1.41372, 1.40067, 1.40067};
-//const float Node3D::dt[] = { 0,       0.2356194,   -0.2356194};
+
+std::mt19937 Node3D::gen(std::random_device{}());
+std::uniform_real_distribution<> Node3D::dis(0.8, 1.25);
+
+void Node3D::initializeVectorsForForward() {
+  if (dir == 3) {
+      dy =  { 0, -Node3D::arcLength*sin(Node3D::steeringAngle), Node3D::arcLength*sin(Node3D::steeringAngle)};
+      dx =  { Node3D::arcLength,   Node3D::arcLength*cos(Node3D::steeringAngle),  Node3D::arcLength*cos(Node3D::steeringAngle)};
+      dt = { 0,         Node3D::steeringAngle,   -Node3D::steeringAngle};
+  } else if (dir == 5) {
+      dy = { 0, -Node3D::arcLength*sin(Node3D::steeringAngle),-Node3D::arcLength*sin(Node3D::steeringAngle/2), 
+        Node3D::Node3D::arcLength*sin(Node3D::steeringAngle/2),Node3D::arcLength*sin(Node3D::steeringAngle)};
+      dx = { Node3D::arcLength,   Node3D::arcLength*cos(Node3D::steeringAngle), Node3D::arcLength*cos(Node3D::steeringAngle/2),
+        Node3D::arcLength*cos(Node3D::steeringAngle/2),Node3D::arcLength*cos(Node3D::steeringAngle)};
+      dt = { 0,         Node3D::steeringAngle,   Node3D::steeringAngle/2, -Node3D::steeringAngle/2, -Node3D::steeringAngle};
+  }
+}
 
 //###################################################
 //                                         IS ON GRID
@@ -50,18 +53,26 @@ bool Node3D::isInRange(const Node3D& goal) const {
 Node3D* Node3D::createSuccessor(const int i) {
   float xSucc;
   float ySucc;
-  float tSucc;
+  float tSucc; 
+  float tempDy[Node3D::dir];
+  float tempDx[Node3D::dir];
+  float randomValue = Node3D::dis(Node3D::gen);
+  // 对静态数组进行操作并除以随机数
+  for (int j = 0; j < 3; ++j) {
+      tempDy[j] = dy[j] / randomValue;
+      tempDx[j] = dx[j] / randomValue;
+  }
 
   // calculate successor positions forward
   if (i < 3) {
-    xSucc = x + dx[i] * cos(t) - dy[i] * sin(t);
-    ySucc = y + dx[i] * sin(t) + dy[i] * cos(t);
+    xSucc = x + tempDx[i] * cos(t) - tempDy[i] * sin(t);
+    ySucc = y + tempDx[i] * sin(t) + tempDy[i] * cos(t);
     tSucc = Helper::normalizeHeadingRad(t + dt[i]);
   }
   // backwards
   else {
-    xSucc = x - dx[i - 3] * cos(t) - dy[i - 3] * sin(t);
-    ySucc = y - dx[i - 3] * sin(t) + dy[i - 3] * cos(t);
+    xSucc = x - tempDx[i - 3] * cos(t) - tempDy[i - 3] * sin(t);
+    ySucc = y - tempDx[i - 3] * sin(t) + tempDy[i - 3] * cos(t);
     tSucc = Helper::normalizeHeadingRad(t - dt[i - 3]);
   }
 

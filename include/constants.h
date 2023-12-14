@@ -39,6 +39,7 @@ static const bool coutDEBUG = true;
 static const bool manual = true;
 /// A flag for the visualization of 3D nodes (true = on; false = off)
 static const bool visualization = true && manual;
+static const bool visualizationStartAndGoal = true && manual;
 /// A flag for the visualization of 2D nodes (true = on; false = off)
 static const bool visualization2D = false && manual;
 /// A flag to toggle reversing (true = on; false = off)
@@ -99,7 +100,7 @@ static const float factor2D = sqrt(5) / sqrt(2) + 1;
 /// [#] --- A movement cost penalty for turning (choosing non straight motion primitives)
 static const float penaltyTurning = 1.05;
 /// [#] --- A movement cost penalty for reversing (choosing motion primitives > 2)
-static const float penaltyReversing = 2.0;
+static const float penaltyReversing = 1.0;
 /// [#] --- A movement cost penalty for change of direction (changing from primitives < 3 to primitives > 2)
 static const float penaltyCOD = 2.0;
 /// [m] --- The distance to the goal when the analytical solution (Dubin's shot) first triggers

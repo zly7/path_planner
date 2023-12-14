@@ -75,7 +75,15 @@ void Path::updatePath(const std::vector<Node3D>& nodePath) {
   }
   return;
 }
-
+void Path::tempUpdatePathNode(const std::vector<Node3D>& nodePath) {
+  path.header.stamp = ros::Time::now();
+  int k = 0;
+  for (size_t i = 0; i < nodePath.size(); ++i) {
+    addNode(nodePath[i], k);
+    k++;
+  }
+  return;
+}
 void Path::update2DPath(const std::vector<Node2D>& nodePath) {
   path.header.stamp = ros::Time::now();
   int k = 0;

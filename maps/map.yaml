@@ -1,5 +1,5 @@
 # image: useful1205/map_1m_to_10pixel_1_zly.png
-image: TPCAP/TPCAP_5.png
+image: TPCAP/TPCAP_10.png
 resolution: 1
 origin: [0.0, 0.0, 0.0]
 occupied_thresh: 0.5

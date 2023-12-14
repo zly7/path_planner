@@ -32,6 +32,7 @@ class Visualize {
     pubNodes3D = n.advertise<geometry_msgs::PoseArray>("/visualizeNodes3DPoses", 100);
     pubNodes3Dreverse = n.advertise<geometry_msgs::PoseArray>("/visualizeNodes3DPosesReverse", 100);
     pubNodes3DCosts = n.advertise<visualization_msgs::MarkerArray>("/visualizeNodes3DCosts", 100);
+    pubNode3DStartAndGoal = n.advertise<visualization_msgs::Marker>("/visualizeNodes3DStartAndGoal", 100);
     pubNode2D = n.advertise<geometry_msgs::PoseStamped>("/visualizeNodes2DPose", 100);
     pubNodes2D = n.advertise<geometry_msgs::PoseArray>("/visualizeNodes2DPoses", 100);
     pubNodes2DCosts = n.advertise<visualization_msgs::MarkerArray>("/visualizeNodes2DCosts", 100);
@@ -65,7 +66,7 @@ class Visualize {
   // PUBLISH THE COST FOR A 2D NODE TO RViz
   /// Publishes the minimum of the cost of all nodes in a 2D grid cell
   void publishNode2DCosts(Node2D* nodes, int width, int height);
-
+  void publishNode3DStartAndGoal(Node3D& start, Node3D& goal);
  private:
   /// A handle to the ROS node
   ros::NodeHandle n;
@@ -77,6 +78,7 @@ class Visualize {
   ros::Publisher pubNodes3Dreverse;
   /// Publisher for an array of 3D cost with color gradient
   ros::Publisher pubNodes3DCosts;
+  ros::Publisher pubNode3DStartAndGoal;
   /// Publisher for a single 2D node
   ros::Publisher pubNode2D;
   /// Publisher for an array of 2D nodes

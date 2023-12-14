@@ -2,7 +2,7 @@
 #define NODE3D_H
 
 #include <cmath>
-
+#include <random>
 #include "constants.h"
 #include "helper.h"
 #include <iostream>
@@ -107,12 +107,15 @@ class Node3D {
   /// @brief 转弯angel
   static const float steeringAngle;
   /// Possible movements in the x direction
-  static const float dx[];
+  static std::vector<float> dx;
   /// Possible movements in the y direction
-  static const float dy[];
+  static std::vector<float> dy;
   /// Possible movements regarding heading theta
-  static const float dt[];
+  static std::vector<float> dt;
   static const float resolution_mutiplier;
+  static std::mt19937 gen; // 随机数生成器
+  static std::uniform_real_distribution<> dis; // 分布
+  static void initializeVectorsForForward(); // 初始化向量
 
  private:
   /// the x position

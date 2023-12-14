@@ -42,7 +42,7 @@ void multiGoalSet3D::updateVirtualCenterNode() {
     virtualCenterNode3D.setT(nearest->getT());
 }
 
-multiGoalSet3D multiGoalSet3D::fuzzyOneNodeToSet(const Node3D& node, float radius) {
+multiGoalSet3D multiGoalSet3D::fuzzyOneNodeToSet(const CollisionDetection & collectionDection,const Node3D& node, float radius) {
     multiGoalSet3D returnSet;
     float centerX = node.getX();
     float centerY = node.getY();
@@ -50,7 +50,9 @@ multiGoalSet3D multiGoalSet3D::fuzzyOneNodeToSet(const Node3D& node, float radiu
         for(int j = -radius;j <=radius ;j++){
             if(i*i+j*j <= radius*radius){
                 Node3D newNode(centerX+i,centerY+j,node.getT());
-                returnSet.addGoal(newNode);
+                if(collectionDection.isTraversable(&newNode)){
+                    returnSet.addGoal(newNode);
+                }
             }
         }
     }

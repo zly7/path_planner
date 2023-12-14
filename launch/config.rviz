@@ -179,7 +179,7 @@ Visualization Manager:
       Marker Topic: /sPathNodes
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -195,7 +195,7 @@ Visualization Manager:
       Marker Topic: /sPathVehicle
       Name: MarkerArray
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -289,6 +289,14 @@ Visualization Manager:
       Topic: /visualizeNodes3DPosesReverse
       Unreliable: false
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /visualizeNodes3DStartAndGoal
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -326,10 +334,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 7.00977897644043
+      Scale: 2.8647255897521973
       Target Frame: <Fixed Frame>
-      X: 54.31669616699219
-      Y: 56.77650833129883
+      X: 90.51607513427734
+      Y: 85.00230407714844
     Saved: ~
 Window Geometry:
   Displays:

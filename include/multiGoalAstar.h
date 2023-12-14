@@ -6,7 +6,7 @@
 #include "node3d.h"
 #include <numeric>  // For std::accumulate
 #include <algorithm>  // For std::min_element
-
+#include "collisiondetection.h"
 namespace HybridAStar {
 
 
@@ -19,7 +19,7 @@ class multiGoalSet3D {
     void addGoal(const Node3D& node);
     void addGoals(const std::set<Node3D>& nodeset);
     void addGoals(const std::vector<Node3D>& nodes);
-    static multiGoalSet3D fuzzyOneNodeToSet(const Node3D& node, float radius);
+    static multiGoalSet3D fuzzyOneNodeToSet(const CollisionDetection & collectionDection,const Node3D& node, float radius);
 
 private:
     void updateVirtualCenterNode();

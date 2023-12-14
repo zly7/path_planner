@@ -115,6 +115,39 @@ void Visualize::publishNode2DPoses(Node2D& node) {
 
   }
 }
+void Visualize::publishNode3DStartAndGoal(Node3D& start, Node3D& goal){
+  visualization_msgs::Marker marker;
+  marker.header.frame_id = "path";
+  marker.header.stamp = ros::Time::now();
+  marker.id = 0;
+  marker.type = visualization_msgs::Marker::ARROW;
+  marker.action = visualization_msgs::Marker::ADD;
+
+  // 设置起点箭头
+  marker.pose.position.x = start.getX() * Constants::cellSize;
+  marker.pose.position.y = start.getY() * Constants::cellSize;
+  marker.pose.position.z = 0;
+  marker.pose.orientation = tf::createQuaternionMsgFromYaw(start.getT());
+  marker.scale.x = 1;  // 箭头长度
+  marker.scale.y = 0.5; // 箭头宽度
+  marker.scale.z = 0; // 箭头高度
+  marker.color.a = 0.6; 
+  marker.color.r = 0.0;
+  marker.color.g = 0.0;
+  marker.color.b = 1.0; // 蓝色表示起点
+  pubNode3DStartAndGoal.publish(marker);
+
+  // 设置终点箭头
+  marker.id = 1; // 改变ID以区分不同的标记
+  marker.pose.position.x = goal.getX() * Constants::cellSize;
+  marker.pose.position.y = goal.getY() * Constants::cellSize;
+  marker.pose.position.z = 0;
+  marker.pose.orientation = tf::createQuaternionMsgFromYaw(goal.getT());
+  marker.color.r = 1.0;
+  marker.color.g = 0.0;
+  marker.color.b = 0.0; // 红色表示终点
+  pubNode3DStartAndGoal.publish(marker);
+}
 
 //###################################################
 //                                    COST HEATMAP 3D
@@ -289,3 +322,4 @@ void Visualize::publishNode2DCosts(Node2D* nodes, int width, int height) {
   // PUBLISH THE COSTCUBES
   pubNodes2DCosts.publish(costCubes);
 }
+

@@ -13,6 +13,15 @@ typedef Kernel::Segment_2 Segment_2;
 typedef Kernel::Line_2 Line_2;
 
 
+Node3D keyInfoForThrouthNarrowPair::getSecondStageMiddleVerticalPoint(){
+  float tempT;
+  if(this->whetherCloseReverseToGoal){
+    tempT = Helper::normalizeHeadingRad(centerVerticalPoint3D.getT() + M_PI);
+  }else{
+    tempT = centerVerticalPoint3D.getT();
+  }
+  return Node3D(centerVerticalPoint3D.getX(),centerVerticalPoint3D.getY(),tempT,0,0,nullptr);
+}
 std::vector<std::vector<Node2D*>> AlgorithmContour::findContour(nav_msgs::OccupancyGrid::Ptr grid){
   // Convert the occupancy grid to an OpenCV Mat
   cv::Mat img(grid->info.height, grid->info.width, CV_8UC1);
@@ -667,7 +676,7 @@ static inline std::vector<Node3D> interpolatePath(Node3D start, Node3D end, floa
     std::vector<Node3D> path;
 
     float distance = std::sqrt(std::pow(end.getX() - start.getX(), 2) + std::pow(end.getY() - start.getY(), 2));
-    int numberOfPoints = std::max(1, static_cast<int>(distance / gridSize * 1.5));
+    int numberOfPoints = std::max(1, static_cast<int>(distance / gridSize * 1.1));
     float algelGap = end.getT() - start.getT(); 
     if (algelGap > M_PI) {
         algelGap -= 2 * M_PI;

@@ -62,7 +62,9 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
                                CollisionDetection& configurationSpace,
                                float* dubinsLookup,
                                Visualize& visualization) {
-
+  if(Constants::visualizationStartAndGoal){
+    visualization.publishNode3DStartAndGoal(start, goalSet.virtualCenterNode3D);
+  }
   // PREDECESSOR AND SUCCESSOR INDEX
   int iPred, iSucc;
   float newG;
@@ -139,14 +141,13 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
       // GOAL TEST
       for(auto &goal : goalSet.goals){
         if (*nPred == goal || iterations > Constants::iterations) {
-          // DEBUG
           std::cout<<"总迭代次数: "<< iterations<<std::endl;
           std::cout<<"npred "<<nPred->getX()<<" "<<nPred->getY()<<std::endl;
           std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
           if(iterations > Constants::iterations){
             std::cout<<"到达了最长的搜索迭代次数,未能找到目标点"<<std::endl;
           }else{
-            std::cout<<"结束搜索总的搜索次数: "<<iterations<<std::endl;
+            std::cout<<"Hybrid3D结束搜索总的搜索次数: "<<iterations<<std::endl;
           }
           return nPred;
         }
@@ -158,7 +159,7 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
       
       // _______________________
       // SEARCH WITH DUBINS SHOT
-      if (Constants::dubinsShot && nPred->isInRange(goalSet.virtualCenterNode3D) && nPred->getPrim() < 3) {
+      if (Constants::dubinsShot && nPred->isInRange(goalSet.virtualCenterNode3D) ) {
         #ifdef DEBUG_TIME_ASTAR3D
         auto startDubinsShotTime = std::chrono::high_resolution_clock::now();
         #endif
@@ -189,11 +190,15 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
         iSucc = nSucc->setIdx(width, height);
 
         // ensure successor is on grid and traversable
-        // auto startisTraversableTime = std::chrono::high_resolution_clock::now();
+        #ifdef DEBUG_TIME_ASTAR3D
+        auto startisTraversableTime = std::chrono::high_resolution_clock::now();
+        #endif
         bool isTraversable = configurationSpace.isTraversable(nSucc);
-        // auto stopisTraversableTime = std::chrono::high_resolution_clock::now();
-        // std::chrono::duration<double> elapsedisTraversable = stopisTraversableTime - startisTraversableTime;
-        // allRuningTimeisTraversal += elapsedisTraversable.count();
+        #ifdef DEBUG_TIME_ASTAR3D
+        auto stopisTraversableTime = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsedisTraversable = stopisTraversableTime - startisTraversableTime;
+        allRuningTimeisTraversal += elapsedisTraversable.count();
+        #endif
         if (nSucc->isOnGrid(width, height) && isTraversable) {
 
           // ensure successor is not on closed list or it has the same index as the predecessor
