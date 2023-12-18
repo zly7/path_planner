@@ -14,6 +14,13 @@ typedef ompl::base::SE2StateSpace::StateType State;
 #include "collisiondetection.h"
 #include <cmath>
 #include "multiGoalAstar.h"
+#include <chrono>
+#include <boost/heap/binomial_heap.hpp>
+#include <CGAL/Circular_kernel_2.h>
+#include <CGAL/Circular_arc_2.h>
+#include <CGAL/Exact_circular_kernel_2.h>
+#include <cmath>
+#include <directionVector.h>  
 
 namespace HybridAStar {
 class Node3D;
@@ -72,7 +79,7 @@ class Algorithm {
                               Visualize& visualization);
 
    static Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
-
+   static Node3D* ArcShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
 };
 }
 #endif // ALGORITHM_H

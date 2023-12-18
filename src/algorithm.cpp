@@ -1,8 +1,14 @@
 // #define DEBUG_TIME_ASTAR3D
 // #define DEBUG_TIME_UPDATEH
 #include "algorithm.h"
-#include <chrono>
-#include <boost/heap/binomial_heap.hpp>
+
+typedef CGAL::Exact_circular_kernel_2 Kernel;
+typedef Kernel::Point_2 Point_2;
+typedef Kernel::Line_2 Line_2;
+typedef Kernel::Circle_2 Circle_2;
+typedef Kernel::Circular_arc_point_2   Circular_arc_point_2;
+typedef Kernel::Circular_arc_2 Circular_arc_2;
+typedef Kernel::Vector_2               Vector_2;
 
 using namespace HybridAStar;
 
@@ -69,7 +75,7 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
   int iPred, iSucc;
   float newG;
   // Number of possible directions, 3 for forward driving and an additional 3 for reversing
-  int dir = Constants::reverse ? 6 : 3;
+  int dir = Constants::reverse ? 2*Node3D::dir : Node3D::dir;
   // Number of iterations the algorithm has run for stopping based on Constants::iterations
   int iterations = 0;
   // VISUALIZATION DELAY
@@ -159,6 +165,17 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
       
       // _______________________
       // SEARCH WITH DUBINS SHOT
+      if (nPred->isInArcRange(goalSet.virtualCenterNode3D)){
+        for (auto &goal : goalSet.goals){
+          nSucc = ArcShot(*nPred, goal, configurationSpace);
+          if (nSucc != nullptr && *nSucc == goal) {  // 这里的相等就很妙，就是整数相等，整数映射空间
+          std::cout << "通过ArcShot 命中结束点" << std::endl;
+          std::cout<<"nSucc "<<nSucc->getX()<<" "<<nSucc->getY()<<std::endl;
+          std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
+          return nSucc;
+          }
+        }
+      }
       if (Constants::dubinsShot && nPred->isInRange(goalSet.virtualCenterNode3D) ) {
         #ifdef DEBUG_TIME_ASTAR3D
         auto startDubinsShotTime = std::chrono::high_resolution_clock::now();
@@ -177,8 +194,6 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
         std::chrono::duration<double> elapsed = stopDubinsShotTime - startDubinsShotTime;
         allRuningTimeDubinsShot += elapsed.count();
         #endif
-
-        
       }
 
       // ______________________________
@@ -638,4 +653,75 @@ Node3D* Algorithm::dubinsShot(Node3D& start, const Node3D& goal, CollisionDetect
 
   //  std::cout << "Dubins shot connected, returning the path" << "\n";
   return &dubinsNodes[i - 1];
+}
+
+Node3D* Algorithm::ArcShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace){
+
+   // 获取起点和终点的坐标及方向
+    Point_2 p1(start.getX(), start.getY()), p2(goal.getX(), goal.getY());
+    double theta1 = start.getT(), theta2 = goal.getT();
+
+    // 计算切线方向
+    Vector_2 dir1(std::cos(theta1), std::sin(theta1)), dir2(std::cos(theta2), std::sin(theta2));
+
+    // 构建切线
+    Line_2 tangent1(p1, p1 + dir1), tangent2(p2, p2 + dir2);
+
+    // 构建垂线
+    Line_2 perp1 = tangent1.perpendicular(p1), perp2 = tangent2.perpendicular(p2);
+
+    // 计算垂线交点（圆心）
+    CGAL::Object result = CGAL::intersection(perp1, perp2);
+    Point_2 center;
+    if (const Point_2 *ipoint = CGAL::object_cast<Point_2>(&result)) {
+        center = *ipoint;
+    } else {
+        // 垂线没有交点
+        return nullptr;
+    }
+    // 计算半径的平方
+    Kernel::FT radius = CGAL::squared_distance(center, p1);
+    Vector_2 radiusDirStart = center-p1;
+    Vector_2 radiusDirEnd = center-p2;
+    // 计算圆弧的起始角度和终止角度
+    double startAngle = std::atan2(CGAL::to_double(radiusDirStart.y()), CGAL::to_double(radiusDirStart.x()));
+    double endAngle = std::atan2(CGAL::to_double(radiusDirEnd.y()), CGAL::to_double(radiusDirEnd.x()));
+    double deltaAngle = endAngle - startAngle;
+    if(deltaAngle > M_PI) {
+        deltaAngle -= 2 * M_PI;
+    } else if(deltaAngle < -M_PI) {
+        deltaAngle += 2 * M_PI;
+    }
+
+    double eachAngle = Node3D::dx[0] / std::sqrt(CGAL::to_double(radius));
+    int numPoints = static_cast<int>(std::abs(deltaAngle) / eachAngle) + 2; // +2 for start and goal
+    Node3D* arcNodes = new Node3D[numPoints];
+
+    int i = 0;
+    for (double angle = 0; angle <= deltaAngle; angle += eachAngle) {
+        double currentAngle = angle+startAngle;
+        double x = CGAL::to_double(center.x()) + std::sqrt(CGAL::to_double(radius)) * std::cos(currentAngle);
+        double y = CGAL::to_double(center.y()) + std::sqrt(CGAL::to_double(radius)) * std::sin(currentAngle);
+        arcNodes[i].setX(x);
+        arcNodes[i].setY(y);
+        arcNodes[i].setT(Helper::normalizeHeadingRad(currentAngle));
+
+        // 设置前驱节点
+        if (i > 0) {
+            arcNodes[i].setPred(&arcNodes[i - 1]);
+        } else {
+            arcNodes[i].setPred(&start);
+        }
+
+        if (configurationSpace.isTraversable(&arcNodes[i])) {
+            i++;
+        } else {
+            delete [] arcNodes; // 清理资源
+            return nullptr;
+        }
+    }
+
+    arcNodes[i] = goal; // 最后一个点是目标点
+    arcNodes[i].setPred(&arcNodes[i - 1]);
+    return &arcNodes[i];
 }

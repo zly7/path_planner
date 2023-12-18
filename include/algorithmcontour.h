@@ -8,39 +8,9 @@
 #include "collisiondetection.h"
 #include "constants.h"
 #include <cmath>
+#include <directionVector.h>
 
 namespace HybridAStar {
-  class Node3D;
-  class Node2D;
-  class Visualize;
-  class directionVector{
-  public:
-    float x;
-    float y;
-    directionVector(float x,float y){
-      this->x = x;
-      this->y = y;
-    }
-    directionVector(){
-      this->x = 0;
-      this->y = 0;
-    }
-    void normalize() {
-        float length = sqrt(x * x + y * y);
-        if (length != 0) {
-            x /= length;
-            y /= length;
-        }
-    }
-    directionVector getReverseVector(){
-      directionVector reverseVector(-this->x,-this->y);
-      return reverseVector;
-    }
-    static directionVector getUnitVectorFromNode3D(const Node3D* node){
-      directionVector unitVector(cos(node->getT()),sin(node->getT()));
-      return unitVector;
-    }
-  };
   class keyInfoForThrouthNarrowPair{
    public:
    directionVector wireUnitVector;

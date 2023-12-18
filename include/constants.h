@@ -105,6 +105,8 @@ static const float penaltyReversing = 1.0;
 static const float penaltyCOD = 2.0;
 /// [m] --- The distance to the goal when the analytical solution (Dubin's shot) first triggers
 static const float dubinsShotDistance = 100 * sqrt(each_meter_to_how_many_pixel);
+/// [m]
+static const float arcShotDistance = 2 * length;
 /// [m] --- The step size for the analytical solution (Dubin's shot) primarily relevant for collision checking
 static const float dubinsStepSize = 1 * sqrt(each_meter_to_how_many_pixel);
 

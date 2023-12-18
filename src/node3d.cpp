@@ -14,6 +14,10 @@ const float Node3D::steeringAngle = M_PI * 6.75 / 180.0;
 
 std::mt19937 Node3D::gen(std::random_device{}());
 std::uniform_real_distribution<> Node3D::dis(0.8, 1.25);
+//之前声明但是没有初始化
+std::vector<float> Node3D::dx;
+std::vector<float> Node3D::dy;
+std::vector<float> Node3D::dt;
 
 void Node3D::initializeVectorsForForward() {
   if (dir == 3) {
@@ -47,6 +51,12 @@ bool Node3D::isInRange(const Node3D& goal) const {
   return (dx * dx) + (dy * dy) < Constants::dubinsShotDistance;
 }
 
+bool Node3D::isInArcRange(const Node3D& goal) const {
+  float dx = std::abs(x - goal.x) ;
+  float dy = std::abs(y - goal.y) ;
+  return (dx * dx) + (dy * dy) < Constants::arcShotDistance;
+}
+
 //###################################################
 //                                   CREATE SUCCESSOR
 //###################################################
@@ -58,22 +68,22 @@ Node3D* Node3D::createSuccessor(const int i) {
   float tempDx[Node3D::dir];
   float randomValue = Node3D::dis(Node3D::gen);
   // 对静态数组进行操作并除以随机数
-  for (int j = 0; j < 3; ++j) {
+  for (int j = 0; j < Node3D::dir; ++j) {
       tempDy[j] = dy[j] / randomValue;
       tempDx[j] = dx[j] / randomValue;
   }
 
   // calculate successor positions forward
-  if (i < 3) {
+  if (i < Node3D::dir) {
     xSucc = x + tempDx[i] * cos(t) - tempDy[i] * sin(t);
     ySucc = y + tempDx[i] * sin(t) + tempDy[i] * cos(t);
     tSucc = Helper::normalizeHeadingRad(t + dt[i]);
   }
   // backwards
   else {
-    xSucc = x - tempDx[i - 3] * cos(t) - tempDy[i - 3] * sin(t);
-    ySucc = y - tempDx[i - 3] * sin(t) + tempDy[i - 3] * cos(t);
-    tSucc = Helper::normalizeHeadingRad(t - dt[i - 3]);
+    xSucc = x - tempDx[i - Node3D::dir] * cos(t) - tempDy[i - Node3D::dir] * sin(t);
+    ySucc = y - tempDx[i - Node3D::dir] * sin(t) + tempDy[i - Node3D::dir] * cos(t);
+    tSucc = Helper::normalizeHeadingRad(t - dt[i - Node3D::dir]);
   }
 
   return new Node3D(xSucc, ySucc, tSucc, g, 0, this, i);
@@ -85,11 +95,11 @@ Node3D* Node3D::createSuccessor(const int i) {
 //###################################################
 void Node3D::updateG() {
   // forward driving
-  if (prim < 3) {
+  if (prim < Node3D::dir) {
     // penalize turning
     if (pred->prim != prim) {
       // penalize change of direction
-      if (pred->prim > 2) {
+      if (pred->prim > Node3D::dir-1) {
         g += dx[0] * Constants::penaltyTurning * Constants::penaltyCOD;
       } else {
         g += dx[0] * Constants::penaltyTurning;
@@ -103,7 +113,7 @@ void Node3D::updateG() {
     // penalize turning and reversing
     if (pred->prim != prim) {
       // penalize change of direction
-      if (pred->prim < 3) {
+      if (pred->prim < Node3D::dir) {
         g += dx[0] * Constants::penaltyTurning * Constants::penaltyReversing * Constants::penaltyCOD;
       } else {
         g += dx[0] * Constants::penaltyTurning * Constants::penaltyReversing;
