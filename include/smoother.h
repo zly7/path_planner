@@ -42,7 +42,7 @@ class Smoother {
 
   /// returns the path of the smoother object
   const std::vector<Node3D>& getPath() {return path;}
-
+  std::vector<Node3D>& getPathNotConst() {return path;}
   const std::vector<Node2D>& getPath2D() {return path2D;}
 
   /// obstacleCost - pushes the path away from obstacles

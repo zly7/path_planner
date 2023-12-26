@@ -1,4 +1,6 @@
 #define DEBUG_TIME_ALGORITHMCONTOUR
+// #define DEBUG_MANUAL_START_GOAL
+// #define DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
 #include "planner.h"
 
 using namespace HybridAStar;
@@ -17,7 +19,7 @@ Planner::Planner() {
   // TOPICS TO PUBLISH
   pubStart = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/start", 1);
 
-  pubNotification = n.advertise<std_msgs::Int32>("start_notification", 1);
+  pubNotification = n.advertise<std_msgs::Int32>("start_notification", 5);
   // ___________________
   // TOPICS TO SUBSCRIBE
   if (Constants::manual) {
@@ -49,10 +51,6 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map) {  // 这里显然�
   if (Constants::coutDEBUG) {
     std::cout << "I am seeing the map..." << std::endl;
   }
-  std_msgs::Int32 msg;
-  msg.data = point_index;  
-  pubNotification.publish(msg);
-
   grid = map;
   //update the configuration space with the current map
   configurationSpace.updateGrid(map);
@@ -98,7 +96,12 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map) {  // 这里显然�
     }
 
     plan();
+  }else{
+    std_msgs::Int32 msg;
+    msg.data = point_index;  
+    pubNotification.publish(msg);
   }
+
 }
 
 //###################################################
@@ -138,7 +141,6 @@ void Planner::setGoal(const geometry_msgs::PoseStamped::ConstPtr& end) {
   float x = end->pose.position.x / Constants::cellSize;
   float y = end->pose.position.y / Constants::cellSize;
   float t = tf::getYaw(end->pose.orientation);
-
   std::cout << "I am seeing a new goal x:" << x << " y:" << y << " t:" << Helper::toDeg(t) << std::endl;
 
   if (grid->info.height >= y && y >= 0 && grid->info.width >= x && x >= 0) {
@@ -174,6 +176,13 @@ void Planner::plan() {
     float x = goal.pose.position.x / Constants::cellSize;
     float y = goal.pose.position.y / Constants::cellSize;
     float t = tf::getYaw(goal.pose.orientation);
+    #ifdef DEBUG_MANUAL_START_GOAL
+    //175.3407135409799 93.5119645887796 8.11561365670069
+    x = 175.3407135409799;
+    y= 93.5119645887796;
+    t = Helper::normalizeHeadingRad(8.11561365670069);
+    #endif
+
     // set theta to a value (0,2PI]
     t = Helper::normalizeHeadingRad(t);
     const Node3D nGoal(x, y, t, 0, 0, nullptr);
@@ -188,6 +197,12 @@ void Planner::plan() {
     x = start.pose.pose.position.x / Constants::cellSize;
     y = start.pose.pose.position.y / Constants::cellSize;
     t = tf::getYaw(start.pose.pose.orientation);
+    #ifdef DEBUG_MANUAL_START_GOAL
+    // 93.5913486701897 112.71109644348091 6.522208587109621 
+    x = 93.5913486701897;
+    y = 112.71109644348091;
+    t = Helper::normalizeHeadingRad(6.522208587109621 );
+    #endif
     // set theta to a value (0,2PI]
     t = Helper::normalizeHeadingRad(t);
     Node3D nStart(x, y, t, 0, 0, nullptr);
@@ -211,6 +226,12 @@ void Planner::plan() {
     std_msgs::Int32 msg1;
     msg1.data = -1;  
     pubNotification.publish(msg1);
+    if(!configurationSpace.isTraversable(&nStart)){
+      std::cout<<"起始点不能通行"<<std::endl;
+    }
+    if (!configurationSpace.isTraversable(&nGoal)) {
+      std::cout<<"目标点不能通行"<<std::endl;
+    }
 
     if(Constants::algorithm == "split_hybrid_astar"){
       Node2D* nodes2D = new Node2D[width * height]();
@@ -340,6 +361,7 @@ void Planner::plan() {
         Node2D* nodes2DSplitSearcht = new Node2D[width * height]();
         tempGoal= Algorithm::hybridAStar(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), nodes3Dt, nodes2DSplitSearcht, width, height, 
           configurationSpace, dubinsLookup, visualization);
+        //tempGoal = Algorithm::ArcShot(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), configurationSpace);
         if(tempGoal!=nullptr ){
           smoother.tracePathAndReverse(tempGoal->getPred());
         }
@@ -349,7 +371,7 @@ void Planner::plan() {
         tempStart = *nSolution;
         delete [] nodes3Dt;
         delete [] nodes2DSplitSearcht;
-        #ifdef DEBUG_TIME_ALGORITHMCONTOUR
+        #ifdef DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
         std::cout<<"第"<<i<<"个Set搜索完毕"<<std::endl;
         smoothedPath.tempUpdatePathNode(smoother.getPath());
         smoothedPath.publishPathNodes();
@@ -364,7 +386,7 @@ void Planner::plan() {
         }
       #endif
       if (Constants::each_meter_to_how_many_pixel >= 6) {
-          multiGoalSet3D goalsMulFinal = multiGoalSet3D::fuzzyOneNodeToSet(configurationSpace,nGoal,static_cast<float>(Constants::each_meter_to_how_many_pixel)/8);
+          multiGoalSet3D goalsMulFinal = multiGoalSet3D::fuzzyOneNodeToSet(configurationSpace,nGoal);
           auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? algorithmContour.keyInfoForThrouthNarrowPairs.back()->getSecondStageMiddleVerticalPoint() : nStart;
           tempGoal = Algorithm::hybridAStarMultiGoals(startGoal, goalsMulFinal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization);
       } else {
@@ -374,14 +396,23 @@ void Planner::plan() {
       if(tempGoal!=nullptr ){//每次都会反向trace一下
         smoother.tracePathAndReverse(tempGoal);
       }
+      if(Constants::whetherFuzzyGoal){
+        // Node3D nonConstGoal{nGoal.getX(),nGoal.getY(),nGoal.getT(),0,0,nullptr};
+        std::vector<Node3D> interpolatedPath = Node3D::interpolateDirect(*tempGoal,nGoal,Constants::arcLengthForAstarSuccessor);
+        smoother.getPathNotConst().insert(smoother.getPathNotConst().end(), interpolatedPath.begin(), interpolatedPath.end());
+      }
       delete [] nodes3D;
       delete [] nodes2DSplitSearch;
-      smoothedPath.updatePath(smoother.getPath());
+      this->path.updatePath(smoother.getPath());
       delete [] nodes2D;
 
       auto stop = std::chrono::high_resolution_clock::now();
       auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
       std::cout << "ALgorithmContour 使用时间: "<< duration.count() << "  ms" << std::endl;
+      // SMOOTH THE PATH
+      smoother.smoothPath(voronoiDiagram);
+      // CREATE THE UPDATED PATH
+      smoothedPath.updatePath(smoother.getPath());
     }else{
       std::cout<<"algorithm error"<<std::endl;
     }
@@ -389,7 +420,6 @@ void Planner::plan() {
     ros::Time t1 = ros::Time::now();
     ros::Duration d(t1 - t0);
     std::cout << "TIME in ms: " << d * 1000 << std::endl;
-
     validStart=false;
     validGoal=false;
     point_index++;
@@ -422,6 +452,9 @@ void Planner::plan() {
 
     // delete [] nodes3D;
     // delete [] nodes2D;
+    std_msgs::Int32 msg;
+    msg.data = -2;  
+    pubNotification.publish(msg);
 
     
   } else {

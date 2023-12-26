@@ -86,7 +86,7 @@ class Node3D {
   // CUSTOM OPERATORS
   /// Custom operator to compare nodes. Nodes are equal if their x and y position as well as heading is similar.
   bool operator == (const Node3D& rhs) const;
-
+  bool isEqualWithTolerance (const Node3D& rhs) const;
   // RANGE CHECKING
   /// Determines whether it is appropriate to find a analytical solution.
   bool isInRange(const Node3D& goal) const;
@@ -118,6 +118,7 @@ class Node3D {
   static std::mt19937 gen; // 随机数生成器
   static std::uniform_real_distribution<> dis; // 分布
   static void initializeVectorsForForward(); // 初始化向量
+  static std::vector<Node3D> interpolateDirect(const Node3D& start, const Node3D& end, float interval);
 
  private:
   /// the x position

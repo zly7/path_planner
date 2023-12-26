@@ -38,7 +38,7 @@ static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
 static const bool manual = true;
 /// A flag for the visualization of 3D nodes (true = on; false = off)
-static const bool visualization = true && manual;
+static const bool visualization = false && manual;
 static const bool visualizationStartAndGoal = true && manual;
 /// A flag for the visualization of 2D nodes (true = on; false = off)
 static const bool visualization2D = false && manual;
@@ -100,11 +100,12 @@ static const float factor2D = sqrt(5) / sqrt(2) + 1;
 /// [#] --- A movement cost penalty for turning (choosing non straight motion primitives)
 static const float penaltyTurning = 1.05;
 /// [#] --- A movement cost penalty for reversing (choosing motion primitives > 2)
-static const float penaltyReversing = 1.0;
+static const float penaltyReversing = 1.05;
 /// [#] --- A movement cost penalty for change of direction (changing from primitives < 3 to primitives > 2)
 static const float penaltyCOD = 2.0;
 /// [m] --- The distance to the goal when the analytical solution (Dubin's shot) first triggers
-static const float dubinsShotDistance = 100 * sqrt(each_meter_to_how_many_pixel);
+static const float dubinsShotMAXDistance =  0.5 * length;
+static const float dubinsShotMINDistance = 10 * length;
 /// [m]
 static const float arcShotDistance = 2 * length;
 /// [m] --- The step size for the analytical solution (Dubin's shot) primarily relevant for collision checking
@@ -202,19 +203,24 @@ static float deltaRadius = 0.2 * each_meter_to_how_many_pixel;
 //小车尝试直线需要走的长度
 static float theMindistanceDetermineWhetherTheSameContourPoint = 0.6 * each_meter_to_how_many_pixel;
 static const float minContourPairDistance = width * 1;
-static const float maxContourPairDistance = width * 1.6;
+static const float maxContourPairDistance = width * 1.8;
+static const float maxNarrowSpaceArcLength = length * 1.25; // narrow space 延伸出去的弧度不能太长
 static const int howManyNode2DDeterminesWhetherThroughNarrowContourPair = 3;
+static const int howManyLevelInputPick  = 3; //衡量进入集合应该选取多少层圆弧上的节点
 static float offsetPercentForHalfVehicleWidth = 1.1;
 /// [m] --- The minimum distance between two nodes in the astar and its successor, the unit is meter
-static const float arcLengthForAstarSuccessor = 0.3;
+static const float arcLengthForAstarSuccessor = 0.3 * each_meter_to_how_many_pixel;
 
 /*
 */
 static const float DIST_LIMIT = 1.5;
 static const float ALIGN_ANGLE_COS = cos(15/180 * M_PI);
-static const float theDistanceDerterminReverseMiddleDirection= 2 * Constants::each_meter_to_how_many_pixel;
+static const float theDistanceDerterminReverseMiddleDirection= length * 1.5;
 static const bool whetherFuzzyGoal = each_meter_to_how_many_pixel >= 6;
 
+static const bool useArcShot = false;
+static const float tolerance = 0.2 * each_meter_to_how_many_pixel;
+static const float fuzzyLength = length * 0.25;//现在暂定车长的前后0.25倍
 }
 }
 #endif // CONSTANTS

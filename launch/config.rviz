@@ -97,8 +97,8 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
-      Color: 25; 255; 0
-      Enabled: false
+      Color: 0; 0; 0
+      Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -117,35 +117,36 @@ Visualization Manager:
       Shaft Length: 0.10000000149011612
       Topic: /path
       Unreliable: false
-      Value: false
-    - Class: rviz/MarkerArray
-      Enabled: false
-      Marker Topic: /pathNodes
-      Name: MarkerArray
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: false
+      Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Marker Topic: /path2DNodes
-      Name: MarkerArray
+      Marker Topic: /pathNodes
+      Name: pathNodes
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
-      Enabled: false
-      Marker Topic: /pathVehicle
-      Name: MarkerArray
+      Enabled: true
+      Marker Topic: /path2DNodes
+      Name: Path2DNodes
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
-      Value: false
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /pathVehicle
+      Name: pathVehicle
+      Namespaces:
+        "": true
+        border: true
+      Queue Size: 100
+      Value: true
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /pathBoxes
-      Name: MarkerArray
+      Name: pathBoxes
       Namespaces:
         {}
       Queue Size: 100
@@ -153,14 +154,14 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
-      Color: 25; 255; 0
+      Color: 0; 0; 255
       Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
       Line Style: Lines
       Line Width: 0.029999999329447746
-      Name: Path
+      Name: sPath
       Offset:
         X: 0
         Y: 0
@@ -177,23 +178,23 @@ Visualization Manager:
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /sPathNodes
-      Name: MarkerArray
+      Name: sPathNodes
       Namespaces:
         {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /sPath2DNodes
-      Name: MarkerArray
+      Name: sPath2DNodes
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /sPathVehicle
-      Name: MarkerArray
+      Name: sPathVehicle
       Namespaces:
         {}
       Queue Size: 100
@@ -294,7 +295,7 @@ Visualization Manager:
       Marker Topic: /visualizeNodes3DStartAndGoal
       Name: Marker
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -334,10 +335,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 2.8647255897521973
+      Scale: 13.550370216369629
       Target Frame: <Fixed Frame>
-      X: 90.51607513427734
-      Y: 85.00230407714844
+      X: 123.81388092041016
+      Y: 103.5613784790039
     Saved: ~
 Window Geometry:
   Displays:

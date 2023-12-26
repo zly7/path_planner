@@ -16,7 +16,7 @@ for (int i = 0; i < d; ++i) {
 }
 cv::namedWindow("Bool Array Visualization", cv::WINDOW_AUTOSIZE);
 cv::imshow("Bool Array Visualization", img);
-cv::resizeWindow("Bool Array Visualization", 500, 500); // 设置你希望的窗口宽度和高度
+cv::resizeWindow("Bool Array Visualization", 800, 800); // 设置你希望的窗口宽度和高度
 cv::waitKey(0);
 return;
 }
@@ -161,7 +161,6 @@ inline void collisionLookup(Constants::config* lookup) {
   int stepY;
   // grid
   bool cSpace[size * size];
-  std::vector<std::vector<bool>> cSpaceRecord;
   bool inside = false;
   int hcross1 = 0;
   int hcross2 = 0;
@@ -204,8 +203,9 @@ inline void collisionLookup(Constants::config* lookup) {
 
     p[3].x = c.x + Constants::length / 2 / cSize;
     p[3].y = c.y - Constants::width / 2 / cSize;
-
+    std::vector<std::vector<bool>> cSpaceRecord;
     for (int o = 0; o < Constants::headings; ++o) {
+
       if (DEBUG) { std::cout << "\ndegrees: " << theta * 180.f / M_PI << std::endl; }
 
       // initialize cSpace
@@ -245,7 +245,7 @@ inline void collisionLookup(Constants::config* lookup) {
         Y = (int)start.y;
         //      std::cout << "StartCell: " << X << "," << Y << std::endl;
         cSpace[Y * size + X] = true;
-        t.x = end.x - start.x;
+        /* t.x = end.x - start.x;
         t.y = end.y - start.y;
         stepX = sign(t.x);
         stepY = sign(t.y);
@@ -327,8 +327,14 @@ inline void collisionLookup(Constants::config* lookup) {
             cSpace[i * size + j] = true;
           }
         }
+      }*/
+        float lengthOfOneSide = std::sqrt(std::pow(end.x - start.x,2) + std::pow(end.y - start.y,2));
+        for(int i = 0; i < lengthOfOneSide; ++i){
+            float x = end.x + i * (start.x - end.x) / lengthOfOneSide;
+            float y = end.y + i * (start.y - end.y) / lengthOfOneSide;
+            cSpace[(int)y * size + (int)x] = true;
+        }
       }
-
       // GENERATE THE ACTUAL LOOKUP
       count = 0;
 
@@ -372,9 +378,8 @@ inline void collisionLookup(Constants::config* lookup) {
       }
     }
     if(DEBUG){
-      visualize2DSpace(cSpaceRecord, size);
+        visualize2DSpace(cSpaceRecord, size);
     }
-
   }
 
   std::cout << " done!" << std::endl;

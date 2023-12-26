@@ -143,6 +143,7 @@ void Path::addNode(const Node3D& node, int i) {
 
   pathNode.pose.position.x = node.getX() * Constants::cellSize;
   pathNode.pose.position.y = node.getY() * Constants::cellSize;
+  pathNode.pose.position.z = node.getT(); // 这里因为地图是2D的
   pathNodes.markers.push_back(pathNode);
 }
 
@@ -175,6 +176,9 @@ void Path::add2DNode(const Node2D& node, int i) {
     pathNode.color.r = Constants::black.red;
     pathNode.color.g = Constants::black.green;
     pathNode.color.b = Constants::black.blue;
+    pathNode.scale.x = 1.5;
+    pathNode.scale.y = 1.5;
+    pathNode.scale.z = 1.5;
   }
 
   pathNode.pose.position.x = node.getX() * Constants::cellSize;

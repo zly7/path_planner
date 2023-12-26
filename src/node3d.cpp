@@ -7,7 +7,7 @@ using namespace HybridAStar;
 const int Node3D::dir = 3;
 
 const float Node3D::resolution_mutiplier = Constants::each_meter_to_how_many_pixel;
-const float Node3D::arcLength = Constants::arcLengthForAstarSuccessor  * Constants::each_meter_to_how_many_pixel;
+const float Node3D::arcLength = Constants::arcLengthForAstarSuccessor;
 const float Node3D::steeringAngle = M_PI * 6.75 / 180.0;
 
 
@@ -45,16 +45,22 @@ bool Node3D::isOnGrid(const int width, const int height) const {
 //                                        IS IN RANGE
 //###################################################
 bool Node3D::isInRange(const Node3D& goal) const {
-  int random = rand() % 10 + 1;
-  float dx = std::abs(x - goal.x) / random;
-  float dy = std::abs(y - goal.y) / random;
-  return (dx * dx) + (dy * dy) < Constants::dubinsShotDistance;
+  float dx = std::abs(x - goal.x) ;
+  float dy = std::abs(y - goal.y) ;
+  float distance = (dx * dx) + (dy * dy);
+  return distance < Constants::dubinsShotMAXDistance && distance > Constants::dubinsShotMINDistance;
 }
 
 bool Node3D::isInArcRange(const Node3D& goal) const {
   float dx = std::abs(x - goal.x) ;
-  float dy = std::abs(y - goal.y) ;
-  return (dx * dx) + (dy * dy) < Constants::arcShotDistance;
+  float dy = std::abs(y - goal.y) ; //20度以内都是可以用ArcShot的
+  float deltaAngel = std::abs(t - goal.t);
+  if (deltaAngel > M_PI){
+    deltaAngel = 2 * M_PI - deltaAngel;
+  }
+  bool algelSimilar = 0.25 * deltaAngel<= Constants::deltaHeadingRad;
+
+  return (dx * dx) + (dy * dy) < Constants::arcShotDistance && algelSimilar;
 }
 
 //###################################################
@@ -133,4 +139,36 @@ bool Node3D::operator == (const Node3D& rhs) const {
          (int)y == (int)rhs.y &&
          (std::abs(t - rhs.t) <= Constants::deltaHeadingRad ||
           std::abs(t - rhs.t) >= Constants::deltaHeadingNegRad);
+}
+
+bool Node3D::isEqualWithTolerance (const Node3D& rhs) const {
+  return  std::abs(x-rhs.x)<=Constants::tolerance &&
+          std::abs(y-rhs.y)<=Constants::tolerance &&
+          (std::abs(t - rhs.t) <= Constants::deltaHeadingRad ||
+          std::abs(t - rhs.t) >= Constants::deltaHeadingNegRad);
+}
+
+std::vector<Node3D> Node3D::interpolateDirect(const Node3D& start, const Node3D& end, float interval) {
+  std::vector<Node3D> interpolatedNodes;
+
+  // 计算两点之间的距离
+  float distance = sqrt(pow(end.x - start.x, 2) + pow(end.y - start.y, 2));
+  int numPoints = distance / interval;
+  float deltaAngel = end.t-start.t;
+  if(deltaAngel >  M_PI){
+    deltaAngel -= 2 * M_PI;
+  }else if (deltaAngel < - M_PI){
+    deltaAngel += 2 * M_PI;
+  }
+  for (int i = 0; i <= numPoints; ++i) {
+      float ratio = (float)i / numPoints;
+      float x = start.x + ratio * (end.x - start.x);
+      float y = start.y + ratio * (end.y - start.y);
+      float t = start.t + ratio * deltaAngel;
+
+      interpolatedNodes.emplace_back(x, y, t);
+  }
+  interpolatedNodes.push_back(end);
+
+  return interpolatedNodes;
 }

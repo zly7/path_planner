@@ -144,19 +144,19 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
       O.pop();
 
       // _________
-      // GOAL TEST
+      // GOAL TEST //既然能走到这，nPred肯定是通的
       for(auto &goal : goalSet.goals){
-        if (*nPred == goal || iterations > Constants::iterations) {
+        if ((*nPred).isEqualWithTolerance(goal)) {
           std::cout<<"总迭代次数: "<< iterations<<std::endl;
           std::cout<<"npred "<<nPred->getX()<<" "<<nPred->getY()<<std::endl;
           std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
-          if(iterations > Constants::iterations){
-            std::cout<<"到达了最长的搜索迭代次数,未能找到目标点"<<std::endl;
-          }else{
-            std::cout<<"Hybrid3D结束搜索总的搜索次数: "<<iterations<<std::endl;
-          }
+          std::cout<<"Hybrid3D结束搜索总的搜索次数: "<<iterations<<std::endl;
           return nPred;
         }
+      }
+      if(iterations > Constants::iterations){
+        std::cout<<"到达了最长的搜索迭代次数,未能找到目标点"<<std::endl;
+        return nullptr;
       }
       
 
@@ -165,11 +165,12 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
       
       // _______________________
       // SEARCH WITH DUBINS SHOT
-      if (nPred->isInArcRange(goalSet.virtualCenterNode3D)){
+      if (Constants::useArcShot && nPred->isInArcRange(goalSet.virtualCenterNode3D )){
         for (auto &goal : goalSet.goals){
           nSucc = ArcShot(*nPred, goal, configurationSpace);
           if (nSucc != nullptr && *nSucc == goal) {  // 这里的相等就很妙，就是整数相等，整数映射空间
           std::cout << "通过ArcShot 命中结束点" << std::endl;
+          std::cout<< "start "<< start.getX()<<" "<<start.getY()<<std::endl;
           std::cout<<"nSucc "<<nSucc->getX()<<" "<<nSucc->getY()<<std::endl;
           std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
           return nSucc;
@@ -680,12 +681,20 @@ Node3D* Algorithm::ArcShot(Node3D& start, const Node3D& goal, CollisionDetection
         return nullptr;
     }
     // 计算半径的平方
-    Kernel::FT radius = CGAL::squared_distance(center, p1);
-    Vector_2 radiusDirStart = center-p1;
-    Vector_2 radiusDirEnd = center-p2;
+    Kernel::FT square_radius = CGAL::squared_distance(center, p1);
+    double radius = std::sqrt(CGAL::to_double(square_radius));
+    Vector_2 radiusDirStart = p1 - center;
+    Vector_2 radiusDirEnd = p2 - center;
+
     // 计算圆弧的起始角度和终止角度
     double startAngle = std::atan2(CGAL::to_double(radiusDirStart.y()), CGAL::to_double(radiusDirStart.x()));
     double endAngle = std::atan2(CGAL::to_double(radiusDirEnd.y()), CGAL::to_double(radiusDirEnd.x()));
+    double angelFromRadiusToVehicle = theta1 - Helper::normalizeHeadingRad(startAngle);
+    if(angelFromRadiusToVehicle > M_PI){
+        angelFromRadiusToVehicle -= 2 * M_PI;
+    } else if(angelFromRadiusToVehicle < -M_PI){
+        angelFromRadiusToVehicle += 2 * M_PI;
+    }
     double deltaAngle = endAngle - startAngle;
     if(deltaAngle > M_PI) {
         deltaAngle -= 2 * M_PI;
@@ -693,18 +702,18 @@ Node3D* Algorithm::ArcShot(Node3D& start, const Node3D& goal, CollisionDetection
         deltaAngle += 2 * M_PI;
     }
 
-    double eachAngle = Node3D::dx[0] / std::sqrt(CGAL::to_double(radius));
+    double eachAngle = Node3D::dx[0] / radius;
     int numPoints = static_cast<int>(std::abs(deltaAngle) / eachAngle) + 2; // +2 for start and goal
     Node3D* arcNodes = new Node3D[numPoints];
-
+    double mul = deltaAngle > 0 ? 1.0 : -1.0;
     int i = 0;
-    for (double angle = 0; angle <= deltaAngle; angle += eachAngle) {
-        double currentAngle = angle+startAngle;
-        double x = CGAL::to_double(center.x()) + std::sqrt(CGAL::to_double(radius)) * std::cos(currentAngle);
-        double y = CGAL::to_double(center.y()) + std::sqrt(CGAL::to_double(radius)) * std::sin(currentAngle);
+    for (double angle = 0; angle <= std::abs(deltaAngle); angle += eachAngle) {
+        double currentAngle = mul * angle+startAngle;
+        double x = CGAL::to_double(center.x()) + radius * std::cos(currentAngle);
+        double y = CGAL::to_double(center.y()) + radius * std::sin(currentAngle);
         arcNodes[i].setX(x);
         arcNodes[i].setY(y);
-        arcNodes[i].setT(Helper::normalizeHeadingRad(currentAngle));
+        arcNodes[i].setT(Helper::normalizeHeadingRad(currentAngle+angelFromRadiusToVehicle));
 
         // 设置前驱节点
         if (i > 0) {

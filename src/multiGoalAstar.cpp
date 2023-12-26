@@ -42,18 +42,25 @@ void multiGoalSet3D::updateVirtualCenterNode() {
     virtualCenterNode3D.setT(nearest->getT());
 }
 
-multiGoalSet3D multiGoalSet3D::fuzzyOneNodeToSet(const CollisionDetection & collectionDection,const Node3D& node, float radius) {
+multiGoalSet3D multiGoalSet3D::fuzzyOneNodeToSet(const CollisionDetection & collectionDection,const Node3D& node) {
     multiGoalSet3D returnSet;
     float centerX = node.getX();
     float centerY = node.getY();
-    for(int i = -radius;i <=radius ;i++){
-        for(int j = -radius;j <=radius ;j++){
-            if(i*i+j*j <= radius*radius){
-                Node3D newNode(centerX+i,centerY+j,node.getT());
-                if(collectionDection.isTraversable(&newNode)){
-                    returnSet.addGoal(newNode);
-                }
-            }
+    float vehicleAngle = node.getT();
+    float deltaDistance = 1; // 这里是1最好是一个格子都不漏
+    returnSet.addGoal(node);
+    for(float currentOffset = deltaDistance;currentOffset<Constants::fuzzyLength;currentOffset+=deltaDistance){
+        float currentX = centerX + currentOffset * cos(vehicleAngle);
+        float currentY = centerY + currentOffset * sin(vehicleAngle);
+        Node3D currentForwardNode(currentX,currentY,vehicleAngle);
+        if(collectionDection.isTraversable(&currentForwardNode)){
+            returnSet.addGoal(currentForwardNode);
+        }
+        currentX = centerX - currentOffset * cos(vehicleAngle);
+        currentY = centerY - currentOffset * sin(vehicleAngle);
+        Node3D currentBackwardNode(currentX,currentY,vehicleAngle);
+        if(collectionDection.isTraversable(&currentBackwardNode)){
+            returnSet.addGoal(currentBackwardNode);
         }
     }
     return returnSet;

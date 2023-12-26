@@ -356,6 +356,7 @@ bool AlgorithmContour::samplePathAndjudgeAcuteAngel(std::vector<Node2D> & path,d
     return false;
   }
 }
+/*是否将中垂线反向*/
 bool AlgorithmContour::two3DPointsWhetherCloseAndReverseDirection(CollisionDetection& configurationSpace,
     Node2D * middlePoint,directionVector& centerVerticalUnitVector, const Node3D & goal){
   // Get coordinates
@@ -379,6 +380,7 @@ bool AlgorithmContour::two3DPointsWhetherCloseAndReverseDirection(CollisionDetec
         if (!configurationSpace.isTraversable(nodeInterpolation)) {
             return false; // Found a non-traversable point
         }
+        delete nodeInterpolation;
     }
 
     float t =goal.getT();
@@ -510,7 +512,9 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
     finalCirclePath.clear();
     float currentRotatedAngel = 0;
     for(currentRotatedAngel=0;currentRotatedAngel<Constants::maxAngleRag;currentRotatedAngel+=Constants::deltaHeadingRad){
-      
+      if(radius * currentRotatedAngel > Constants::maxNarrowSpaceArcLength){
+        break;
+      }
       angleRelativeToCircleCurrent = Helper::normalizeHeadingRad(angleVehicleCurrent +cross*M_PI/2 + M_PI )+ cross*Constants::deltaHeadingRad;//这里会默认切
       //上面需要+pi的原因是你需要找到指出圆心的向量的方向
       angleVehicleCurrent = Helper::normalizeHeadingRad(angleVehicleCurrent + cross*Constants::deltaHeadingRad);
@@ -629,6 +633,8 @@ finalPassSpaceInOutSet AlgorithmContour::findNarrowPassSpaceInputSetOfNode3D(Col
   finalPassSpaceInOutSet resultSet;
   uint size1 = inputPair->containingWaypointsFirstBPBackward.size();
   uint size2 = inputPair->containingWaypointsSecondBPBackward.size();
+  std::vector<Node3D> inSetAllNode;
+  int successIndex = 0;
   for(uint i = 0; i < minLength; i++){//这里需要迭代的原因是，中间可能有突出来的障碍物，但是这种情况很少见
     Node3D* nodeFirst = &inputPair->containingWaypointsFirstBPBackward[size1-i-1];
     Node3D* nodeSecond = &inputPair->containingWaypointsSecondBPBackward[size2-i-1];
@@ -642,32 +648,14 @@ finalPassSpaceInOutSet AlgorithmContour::findNarrowPassSpaceInputSetOfNode3D(Col
       }
     }
     if(flag){
-      resultSet.inSet = resultVector;
+      inSetAllNode.insert(inSetAllNode.end(),resultVector.begin(),resultVector.end());
+      successIndex++;
+    }
+    if(successIndex >=Constants::howManyLevelInputPick){
       break;
     }
   }
-  // int minLength2 = min(inputPair->containingWaypointsFirstBPForward.size(), inputPair->containingWaypointsSecondBPForward.size());
-  // size1 = inputPair->containingWaypointsFirstBPForward.size();
-  // size2 = inputPair->containingWaypointsSecondBPForward.size();
-  // for(int i = 0; i < minLength2; i++){
-  //   Node3D* nodeFirst = &inputPair->containingWaypointsFirstBPForward[size1-i-1];
-  //   Node3D* nodeSecond = &inputPair->containingWaypointsSecondBPForward[size2-i-1];
-  //   std::vector<Node3D> resultVector = findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine(*nodeFirst,*nodeSecond,*inputPair->centerPoint,inputPair->centerVerticalUnitVector);
-  //   bool flag = true;
-  //   for(auto node:resultVector){
-  //     if(!configurationSpace.isTraversable(&node)){
-  //       flag = false;
-  //       break;
-  //     }
-  //   }
-  //   if(flag){
-  //     resultSet.outSet = resultVector;
-  //     break;
-  //   }
-  // }
-  // if(resultSet.inSet.size()==0 || resultSet.outSet.size()==0){
-  //    std::cerr << "error in function " << __func__ << " at line " << __LINE__ << ": can not find input set of node3D" << std::endl;
-  // }
+  resultSet.inSet = inSetAllNode;
   return resultSet;
 }
 
@@ -734,11 +722,24 @@ std::vector<Node3D> AlgorithmContour::findInputSetOfNode3DByTwoVectorAndMiddleVe
       cv::imshow("visual the middle point", mapCopy); // 显示图像
       cv::waitKey(0); // 等待按键
     }
-    std::vector<Node3D> resultVector = interpolatePath(firstPoint, intersection, 1.0);
+    std::vector<Node3D> firstPath = interpolatePath(firstPoint, intersection, 1.0);
     // 计算从 Intersection 到 SecondPoint 的路径
     std::vector<Node3D> secondPath = interpolatePath(intersection,secondPoint, 1.0);
-    // 将两个路径合并
-    resultVector.insert(resultVector.end(), secondPath.begin(), secondPath.end());
+    std::vector<Node3D> resultVector;
+    // 反转 firstPath 以确保靠近 intersection 的点在前
+    std::reverse(firstPath.begin(), firstPath.end());
+
+    size_t firstPathIndex = 0;
+    size_t secondPathIndex = 0;
+    // 这里是确保越靠近中心的点在vector的前面
+    while (firstPathIndex < firstPath.size() || secondPathIndex < secondPath.size()) {
+        if (firstPathIndex < firstPath.size()) {
+            resultVector.push_back(firstPath[firstPathIndex++]);
+        }
+        if (secondPathIndex < secondPath.size()) {
+            resultVector.push_back(secondPath[secondPathIndex++]);
+        }
+    }
     
     return resultVector;
 

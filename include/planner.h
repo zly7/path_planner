@@ -70,6 +70,7 @@ class Planner {
   ros::NodeHandle n;
   /// A publisher publishing the start position for RViz
   ros::Publisher pubStart;
+  /// @brief 和测试框架相关
   ros::Publisher pubNotification;
   /// A subscriber for receiving map updates
   ros::Subscriber subMap;
