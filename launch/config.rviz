@@ -6,7 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /PoseArray3DReverse1
       Splitter Ratio: 0.5
     Tree Height: 340
   - Class: rviz/Selection
@@ -131,7 +130,7 @@ Visualization Manager:
       Marker Topic: /path2DNodes
       Name: Path2DNodes
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -139,8 +138,7 @@ Visualization Manager:
       Marker Topic: /pathVehicle
       Name: pathVehicle
       Namespaces:
-        "": true
-        border: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -202,7 +200,7 @@ Visualization Manager:
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /sPathBoxes
-      Name: MarkerArray
+      Name: sPathBoxes
       Namespaces:
         {}
       Queue Size: 100
@@ -293,7 +291,15 @@ Visualization Manager:
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /visualizeNodes3DStartAndGoal
-      Name: Marker
+      Name: startAndGoal
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /visualizeNodes3DCosts
+      Name: 3DCosts
       Namespaces:
         "": true
       Queue Size: 100
@@ -335,10 +341,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 13.550370216369629
+      Scale: 1.9520787000656128
       Target Frame: <Fixed Frame>
-      X: 123.81388092041016
-      Y: 103.5613784790039
+      X: 151.10450744628906
+      Y: 83.46232604980469
     Saved: ~
 Window Geometry:
   Displays:

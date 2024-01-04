@@ -77,6 +77,17 @@ class CollisionDetection {
 
     return cost <= 0;
   }
+  /*'''更加精确的2D点的判断，用于是否需要反向'''*/
+  bool isTraversablePreciseFor2D(const Node2D* node) const {
+    float x = node->getFloatX();
+    float y = node->getFloatY();
+    for(int j = 0 ; j <Constants::headings; j ++){
+      if(configurationTest(x, y, j*Constants::deltaHeadingRad+Constants::deltaHeadingRad/2)){
+        return true;
+      }
+    }
+    return false;
+  }
 
   template<typename T> bool isObstacleThisPoint(const T* node) const {
     // std::cout<<" idx: "<<node->getIdx()<<" grid:"<<!grid->data[node->getIdx()]<<std::endl;

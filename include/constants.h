@@ -38,7 +38,7 @@ static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
 static const bool manual = true;
 /// A flag for the visualization of 3D nodes (true = on; false = off)
-static const bool visualization = false && manual;
+static const bool visualization = true && manual;
 static const bool visualizationStartAndGoal = true && manual;
 /// A flag for the visualization of 2D nodes (true = on; false = off)
 static const bool visualization2D = false && manual;
@@ -46,6 +46,7 @@ static const bool visualization2D = false && manual;
 static const bool reverse = true;
 /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
 static const bool dubinsShot = true;
+static const float useDubinsShotMinDeltaAngel = (120.0/180.0) * M_PI ;
 /// A flag to toggle the Dubin's heuristic, this should be false, if reversing is enabled (true = on; false = off)
 static const bool dubins = false;
 /*!
@@ -67,11 +68,16 @@ static const double bloating = 0;
 static const double each_meter_to_how_many_pixel = 10;
 /// [m] --- The width of the vehicle
 static const double width = 1.942 * each_meter_to_how_many_pixel + 2 * bloating;
+
+static const bool useRearAsCenter = true;
+static const double frontHangLength = 0.960 * each_meter_to_how_many_pixel;
+static const double wheelBase = 2.8 * each_meter_to_how_many_pixel;
+static const double rearHangLength = 0.929 * each_meter_to_how_many_pixel;
 /// [m] --- The length of the vehicle
-static const double length = 4.689 *each_meter_to_how_many_pixel + 2 * bloating;
+static const double length = frontHangLength + wheelBase + rearHangLength + 2 * bloating;
 /// [m] --- The minimum turning radius of the vehicle
 // static const float r = 0.5 * each_meter_to_how_many_pixel; 
-static const float r = 2 * each_meter_to_how_many_pixel;
+static const float r = 3.0059 * each_meter_to_how_many_pixel;
 /// [m] --- The number of discretizations in heading
 static const int headings = 72;
 /// [°] --- The discretization value of the heading (goal condition)
@@ -104,8 +110,8 @@ static const float penaltyReversing = 1.05;
 /// [#] --- A movement cost penalty for change of direction (changing from primitives < 3 to primitives > 2)
 static const float penaltyCOD = 2.0;
 /// [m] --- The distance to the goal when the analytical solution (Dubin's shot) first triggers
-static const float dubinsShotMAXDistance =  0.5 * length;
-static const float dubinsShotMINDistance = 10 * length;
+static const float dubinsShotMAXDistance =  10 * length;
+static const float dubinsShotMINDistance = 0.5 * length;
 /// [m]
 static const float arcShotDistance = 2 * length;
 /// [m] --- The step size for the analytical solution (Dubin's shot) primarily relevant for collision checking
@@ -131,7 +137,8 @@ static const int dubinsArea = dubinsWidth * dubinsWidth;
 // COLLISION LOOKUP SPECIFIC
 
 /// [m] -- The bounding box size length and width to precompute all possible headings
-static const int bbSize = std::ceil((sqrt(width * width + length* length) + 4) / cellSize);
+// static const int bbSize = std::ceil((sqrt(width * width + length* length) + 4) / cellSize);
+static const int bbSize = std::ceil((sqrt(width * width + 2*2*(wheelBase+frontHangLength)*(wheelBase+frontHangLength)) + 4));
 /// [#] --- The sqrt of the number of discrete positions per cell
 static const int positionResolution = 4;
 /// [#] --- The number of discrete positions per cell
@@ -197,13 +204,13 @@ static float maxAngleRag = M_PI * 75 /180 ;
 //小车可以达到的最大转向角对应的半径长度,这个半径的长度应该是车辆的最小转弯半径
 static float minRadius = r;
 
-static float  maxRadus = 10 * r;
+static float  maxRadus = std::min(6 * r, 30* (float)each_meter_to_how_many_pixel);
 //小车每次尝试增加的半径长度
-static float deltaRadius = 0.2 * each_meter_to_how_many_pixel;
+static float deltaRadius = 0.1 * r;
 //小车尝试直线需要走的长度
 static float theMindistanceDetermineWhetherTheSameContourPoint = 0.6 * each_meter_to_how_many_pixel;
 static const float minContourPairDistance = width * 1;
-static const float maxContourPairDistance = width * 1.8;
+static const float maxContourPairDistance = width * 1.6;
 static const float maxNarrowSpaceArcLength = length * 1.25; // narrow space 延伸出去的弧度不能太长
 static const int howManyNode2DDeterminesWhetherThroughNarrowContourPair = 3;
 static const int howManyLevelInputPick  = 3; //衡量进入集合应该选取多少层圆弧上的节点
@@ -214,13 +221,15 @@ static const float arcLengthForAstarSuccessor = 0.3 * each_meter_to_how_many_pix
 /*
 */
 static const float DIST_LIMIT = 1.5;
-static const float ALIGN_ANGLE_COS = cos(15/180 * M_PI);
+static const float ALIGN_ANGLE_COS = cos(15.0/180.0 * M_PI);
 static const float theDistanceDerterminReverseMiddleDirection= length * 1.5;
 static const bool whetherFuzzyGoal = each_meter_to_how_many_pixel >= 6;
 
 static const bool useArcShot = false;
 static const float tolerance = 0.2 * each_meter_to_how_many_pixel;
 static const float fuzzyLength = length * 0.25;//现在暂定车长的前后0.25倍
+static const bool useAutoTest = true;
+static const float findNarrowSpaceMoveDistance = deltaHeadingRad * minRadius;
 }
 }
 #endif // CONSTANTS

@@ -71,7 +71,11 @@ class Node3D {
   /// set the cost-to-come (heuristic value)
   void setH(const float& h) { this->h = h; }
   /// set and get the index of the node in the 3D grid
-  int setIdx(int width, int height) { this->idx = (int)(t / Constants::deltaHeadingRad) * width * height + (int)(y) * width + (int)(x); return idx;}
+  int setIdx(int width, int height) { //极端情况下有可能越界和headings正好相等
+    // this->idx = std::min((int)(t / Constants::deltaHeadingRad),Constants::headings-1)* width * height + (int)(y) * width + (int)(x); return idx;
+    this->idx = std::min((int)(t / Constants::deltaHeadingRad),Constants::headings-1) + (int)(y) * Constants::headings + (int)(x)* Constants::headings * height; return idx;
+  }
+  void setPrim(int prim) { this->prim = prim; }
   /// open the node
   void open() { o = true; c = false;}
   /// close the node

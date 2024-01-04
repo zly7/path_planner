@@ -211,7 +211,7 @@ void AlgorithmContour::findThroughNarrowContourPair(const std::vector<Node2D> & 
         if (this->determineWhetherThrough2DPath(path, narrowPair,containingWaypointsTorecord,aroundWaypointsIndex)) {
             this->throughNarrowPairs.push_back(narrowPair);
             this->aroundWaypointsIndexOfThroughNarrowPairs.push_back(aroundWaypointsIndex);
-            std::reverse(containingWaypointsTorecord.begin(),containingWaypointsTorecord.end()); //拿到的path是从尾部trace过来的
+            // std::reverse(containingWaypointsTorecord.begin(),containingWaypointsTorecord.end()); //拿到的path是从尾部trace过来的，最后决定在外层reverse
             this->throughNarrowPairsWaypoints.push_back(containingWaypointsTorecord);
         }
     }
@@ -286,12 +286,15 @@ void AlgorithmContour::sortThroughNarrowPairsWaypoints(){
 
   // 根据排序后的索引创建一个新的 waypoints 向量
   std::vector<std::vector<Node2D>> sortedWaypoints(throughNarrowPairsWaypoints.size());
+  std::vector<std::pair<Node2D*, Node2D*>> sortedThroughNarrowPairs(throughNarrowPairsWaypoints.size());
   for (size_t i = 0; i < indices.size(); ++i) {
       sortedWaypoints[i] = throughNarrowPairsWaypoints[indices[i]];
+      sortedThroughNarrowPairs[i] = throughNarrowPairs[indices[i]];
   }
 
   // 更新原来的 waypoints 向量
   throughNarrowPairsWaypoints = sortedWaypoints;
+  throughNarrowPairs = sortedThroughNarrowPairs;
 }
 
 void AlgorithmContour::findKeyInformationForthrouthNarrowPairs(){
@@ -331,6 +334,7 @@ void AlgorithmContour::findKeyInformationForthrouthNarrowPairs(){
 
       keyInfo->firstBoundPoint = firstBoundPoint;
       keyInfo->secondBoundPoint = secondBoundPoint;
+      index++;
   }
 };
 /*查看这个中垂线方向和路径的前进方向是否相同*/
@@ -364,20 +368,24 @@ bool AlgorithmContour::two3DPointsWhetherCloseAndReverseDirection(CollisionDetec
     float y1 = middlePoint->getFloatY();
     float x2 = goal.getX();
     float y2 = goal.getY();
-
+    // float t1 = Helper::normalizeHeadingRad(atan2(centerVerticalUnitVector.y,centerVerticalUnitVector.x));
+    // float t2 = goal.getT();
+    // float deltaAngle = Helper::normalizeHeadingRad(t2 - t1);
     // Calculate Euclidean distance
     float distance = sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
     if (distance >= Constants::theDistanceDerterminReverseMiddleDirection) {
         return false; // Points are too far apart
     }
 
-    int steps = int(pow(x2 - x1, 2) + pow(y2 - y1, 2));
+    int steps = int(sqrt((pow(x2 - x1, 2) + pow(y2 - y1, 2))));
     for (int i = 0; i <= steps; ++i) {
-        float t = static_cast<float>(i) / steps;
-        float x = x1 + t * (x2 - x1);
-        float y = y1 + t * (y2 - y1);
+        float ratio = static_cast<float>(i) / steps;
+        float x = x1 + ratio * (x2 - x1);
+        float y = y1 + ratio * (y2 - y1);
         Node2D* nodeInterpolation = new Node2D(x, y);
-        if (!configurationSpace.isTraversable(nodeInterpolation)) {
+        if (!configurationSpace.isTraversablePreciseFor2D(nodeInterpolation)) {
+            std::cout << "在判断是否应该反向目标点的函数里面直线的插值不能通过，这种情况应该极少出现！" << std::endl;
+            delete nodeInterpolation;
             return false; // Found a non-traversable point
         }
         delete nodeInterpolation;
@@ -417,7 +425,7 @@ void AlgorithmContour::visualizeNarrowPairs(std::vector<std::pair<Node2D*,Node2D
         int col = i % howManyCols;
         mapCopy.copyTo(bigImage(cv::Rect(col * singleWidth, row * singleHeight, singleWidth, singleHeight)));
     }
-      cv::Size newSize(600, 600*gridMap.cols/gridMap.rows);
+      cv::Size newSize(900, 900*gridMap.rows/gridMap.cols);
       cv::Mat resizedImage;
       cv::resize(bigImage, resizedImage, newSize);
       cv::imshow("Resized Narrow Pairs Visualization", resizedImage);
@@ -483,13 +491,14 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
     std::cerr<<"whetherReverse should be 1 or 0"<<std::endl;
     return std::vector<Node3D>();
   }
+
   float radius=Constants::minRadius;
   float maxRadius = Constants::maxRadus;
   std::vector<Node3D> finalCirclePath;
   std::vector<Node3D> qulifiedNode3DList20Degree;
   std::vector<Node3D> qulifiedNode3DList30Degree;
   std::vector<Node3D> qulifiedNode3DList45Degree;
-
+  bool flagWhetherFindMinArc = false; //判断有可能需要直线
   //如果超过最大半径就尝试直线
   while (radius<=maxRadius)
   {
@@ -511,13 +520,14 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
       
     finalCirclePath.clear();
     float currentRotatedAngel = 0;
-    for(currentRotatedAngel=0;currentRotatedAngel<Constants::maxAngleRag;currentRotatedAngel+=Constants::deltaHeadingRad){
+    float deltaAngel = Constants::findNarrowSpaceMoveDistance/radius;////做一个自适应的angel增加
+    for(currentRotatedAngel=0;currentRotatedAngel<Constants::maxAngleRag;currentRotatedAngel+=deltaAngel){
       if(radius * currentRotatedAngel > Constants::maxNarrowSpaceArcLength){
         break;
       }
-      angleRelativeToCircleCurrent = Helper::normalizeHeadingRad(angleVehicleCurrent +cross*M_PI/2 + M_PI )+ cross*Constants::deltaHeadingRad;//这里会默认切
+      angleRelativeToCircleCurrent = Helper::normalizeHeadingRad(angleVehicleCurrent +cross*M_PI/2 + M_PI )+ deltaAngel;//这里会默认切
       //上面需要+pi的原因是你需要找到指出圆心的向量的方向
-      angleVehicleCurrent = Helper::normalizeHeadingRad(angleVehicleCurrent + cross*Constants::deltaHeadingRad);
+      angleVehicleCurrent = Helper::normalizeHeadingRad(angleVehicleCurrent + deltaAngel);
       float pointX=circleCenterPoint->getFloatX()+radius*cos(angleRelativeToCircleCurrent);
       float pointY=circleCenterPoint->getFloatY()+radius*sin(angleRelativeToCircleCurrent);
       Node3D NodeCurrentVehicle =  Node3D(pointX, pointY, Helper::normalizeHeadingRad(angleVehicleCurrent+M_PI*whetherReverse + M_PI*whetherCloseReverseGoal));
@@ -544,8 +554,9 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
       return finalCirclePath;
     }else{
       radius+=Constants::deltaRadius;
-      if(currentRotatedAngel > (1/9)*M_PI && qulifiedNode3DList20Degree.size()==0){
+      if(currentRotatedAngel > (1.0/9.0)*M_PI && qulifiedNode3DList20Degree.size()==0){
         qulifiedNode3DList20Degree = finalCirclePath;
+        flagWhetherFindMinArc = true;
       }
       if(currentRotatedAngel > 0.125*M_PI && qulifiedNode3DList30Degree.size()==0){
         qulifiedNode3DList30Degree = finalCirclePath;
@@ -555,7 +566,7 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
       }
     }
   }
-  if(finalCirclePath.size()==0){
+  if(flagWhetherFindMinArc == true){ //至少有一个半径找到了20度
     if(qulifiedNode3DList45Degree.size()!=0){
       return qulifiedNode3DList45Degree;
     }else if(qulifiedNode3DList30Degree.size()!=0){
@@ -566,23 +577,18 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
       return finalCirclePath;
     }
   }else{//这里应该会是进行直线搜索
+    std::cout << "进行直线搜索" << std::endl;
+    finalCirclePath.clear();
+    float angleVehicleCurrent = atan2f(tangentVector.y,tangentVector.x);
+    for(float l = -Constants::length/2;l<=Constants::length/2;l+=1){
+      float pointX=startPoint->getFloatX()+l*tangentVector.x;
+      float pointY=startPoint->getFloatY()+l*tangentVector.y;
+      Node3D NodeCurrentVehicle =  Node3D(pointX, pointY, Helper::normalizeHeadingRad(angleVehicleCurrent+M_PI*whetherReverse + M_PI*whetherCloseReverseGoal));
+      finalCirclePath.push_back(NodeCurrentVehicle);
+    }
     return finalCirclePath;
   }
-  // bool flag=true;
-  // for(int x=0;x<Constants::straightLength&&flag;x+=(Constants::straightLength/100)){
-  //     float pointX=startPoint->getFloatX()+x*centerVerticalUnitVector.x;
-  //     float pointY=startPoint->getFloatY()+x*centerVerticalUnitVector.y;
-  //     Node2D nNode =  Node2D(pointX, pointY);
-  //     if(!configurationSpace.isTraversable(&nNode)){
-  //       flag=false;
-  //       break;
-  //     }
-  // }
-  // if(flag){
-  //   return 0;
-  // }
   
-  // return -Constants::minRadius/2;
 }
 //找到左上左下右上右下圆边界路径
 void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &configurationSpace,const Node3D & goal)
@@ -591,15 +597,26 @@ void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &config
     if(two3DPointsWhetherCloseAndReverseDirection(configurationSpace,KIpair->centerPoint,KIpair->centerVerticalUnitVector,goal)){
       KIpair->whetherCloseReverseToGoal = true;
     }
+    directionVector CVUR = KIpair->centerVerticalUnitVector.getReverseVector();
     int whetherCloseReverseToGoalSignals = KIpair->whetherCloseReverseToGoal?1:0;
+    Node2D * realStartPoint = new Node2D(KIpair->firstBoundPoint->getFloatX(),
+                                            KIpair->firstBoundPoint->getFloatY());
+    if(whetherCloseReverseToGoalSignals == 0 && Constants::useRearAsCenter == 1){
+      realStartPoint->setFloatx(realStartPoint->getFloatX()+CVUR.x*Constants::wheelBase);
+      realStartPoint->setFloaty(realStartPoint->getFloatY()+CVUR.y*Constants::wheelBase);
+    }
     KIpair->containingWaypointsFirstBPBackward=findNarrowPassSpace(configurationSpace,
-        KIpair->wireUnitVector.getReverseVector(),KIpair->centerVerticalUnitVector.getReverseVector(),KIpair->firstBoundPoint,1,whetherCloseReverseToGoalSignals);
-    // KIpair->containingWaypointsFirstBPForward=findNarrowPassSpace(configurationSpace,
-    //     KIpair->wireUnitVector.getReverseVector(),KIpair->centerVerticalUnitVector,KIpair->firstBoundPoint,0);
+        KIpair->wireUnitVector.getReverseVector(),CVUR,realStartPoint,1,whetherCloseReverseToGoalSignals);
+    delete realStartPoint;
+    realStartPoint = new Node2D(KIpair->secondBoundPoint->getFloatX(),
+                                            KIpair->secondBoundPoint->getFloatY());
+    if(whetherCloseReverseToGoalSignals == 0 && Constants::useRearAsCenter == 1){
+      realStartPoint->setFloatx(realStartPoint->getFloatX()+CVUR.x*Constants::wheelBase);
+      realStartPoint->setFloaty(realStartPoint->getFloatY()+CVUR.y*Constants::wheelBase);
+    }
     KIpair->containingWaypointsSecondBPBackward=findNarrowPassSpace(configurationSpace,
-        KIpair->wireUnitVector,KIpair->centerVerticalUnitVector.getReverseVector(),KIpair->secondBoundPoint,1,whetherCloseReverseToGoalSignals);
-    // KIpair->containingWaypointsSecondBPForward=findNarrowPassSpace(configurationSpace,
-    //     KIpair->wireUnitVector,KIpair->centerVerticalUnitVector,KIpair->secondBoundPoint,0);
+        KIpair->wireUnitVector,CVUR,realStartPoint,1,whetherCloseReverseToGoalSignals);
+    delete realStartPoint;
   }
 }
 

@@ -1,6 +1,7 @@
-#define DEBUG_TIME_ALGORITHMCONTOUR
+#define DEBUG_VISUAL_ALGORITHMCONTOUR
 // #define DEBUG_MANUAL_START_GOAL
 // #define DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
+#define DEBUG_VISUAL_COSTMAP
 #include "planner.h"
 
 using namespace HybridAStar;
@@ -20,6 +21,9 @@ Planner::Planner() {
   pubStart = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/start", 1);
 
   pubNotification = n.advertise<std_msgs::Int32>("start_notification", 5);
+  if(Constants::useAutoTest){
+    timerForAutoTest = n.createTimer(ros::Duration(1.0), &Planner::timerForAutoTestCallback, this);
+  }
   // ___________________
   // TOPICS TO SUBSCRIBE
   if (Constants::manual) {
@@ -32,6 +36,14 @@ Planner::Planner() {
   subStart = n.subscribe("/initialpose", 1, &Planner::setStart, this);
   Node3D::initializeVectorsForForward();//在planner里面的构造器调用这个初始化方向的函数
 };
+
+void Planner::timerForAutoTestCallback(const ros::TimerEvent& event){
+  if(!whetherStartTest){
+    std_msgs::Int32 msg;
+    msg.data = point_index;  
+    pubNotification.publish(msg);
+  }
+}
 
 //###################################################
 //                                       LOOKUPTABLES
@@ -108,6 +120,7 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map) {  // 这里显然�
 //                                   INITIALIZE START
 //###################################################
 void Planner::setStart(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& initial) {
+  whetherStartTest = true;
   float x = initial->pose.pose.position.x / Constants::cellSize;  //在这主打一个转换
   float y = initial->pose.pose.position.y / Constants::cellSize;
   float t = tf::getYaw(initial->pose.pose.orientation);
@@ -137,6 +150,7 @@ void Planner::setStart(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr&
 //                                    INITIALIZE GOAL
 //###################################################
 void Planner::setGoal(const geometry_msgs::PoseStamped::ConstPtr& end) {
+  whetherStartTest = true;
   // retrieving goal position
   float x = end->pose.position.x / Constants::cellSize;
   float y = end->pose.position.y / Constants::cellSize;
@@ -177,31 +191,25 @@ void Planner::plan() {
     float y = goal.pose.position.y / Constants::cellSize;
     float t = tf::getYaw(goal.pose.orientation);
     #ifdef DEBUG_MANUAL_START_GOAL
-    //175.3407135409799 93.5119645887796 8.11561365670069
-    x = 175.3407135409799;
-    y= 93.5119645887796;
-    t = Helper::normalizeHeadingRad(8.11561365670069);
+    //TPCAP22:162,146,0
+    x = 162;
+    y = 146;
+    t = Helper::normalizeHeadingRad(0);
     #endif
 
     // set theta to a value (0,2PI]
     t = Helper::normalizeHeadingRad(t);
     const Node3D nGoal(x, y, t, 0, 0, nullptr);
     const Node2D nGoal2D(x, y, 0, 0, nullptr);
-    // __________
-    // DEBUG GOAL
-      //  const Node3D nGoal(21,8,4.71239, 0, 0, nullptr);
-
-
-    // _________________________
     // retrieving start position
     x = start.pose.pose.position.x / Constants::cellSize;
     y = start.pose.pose.position.y / Constants::cellSize;
     t = tf::getYaw(start.pose.pose.orientation);
     #ifdef DEBUG_MANUAL_START_GOAL
-    // 93.5913486701897 112.71109644348091 6.522208587109621 
-    x = 93.5913486701897;
-    y = 112.71109644348091;
-    t = Helper::normalizeHeadingRad(6.522208587109621 );
+    // TPCAP22:36,130, 1.5 PI 
+    x = 36;
+    y = 130;
+    t = Helper::normalizeHeadingRad(1.5 * M_PI);
     #endif
     // set theta to a value (0,2PI]
     t = Helper::normalizeHeadingRad(t);
@@ -308,29 +316,33 @@ void Planner::plan() {
     }else if(Constants::algorithm == "contour_hybrid_astar"){
 
       Node2D* nodes2D = new Node2D[width * height]();
+      auto startTime = std::chrono::high_resolution_clock::now();
       Node2D* nSolution2D = Algorithm::aStar2D(nStart2D, nGoal2D, nodes2D, width, height, configurationSpace, visualization);
-
       smoother.tracePath2D(nSolution2D);
       std::vector<Node2D> path2D=smoother.getPath2D();
       path.update2DPath(path2D);//这里是为了画出2D的路径
       path.publishPath2DNodes();
-      auto startTime = std::chrono::high_resolution_clock::now();
+      auto stop = std::chrono::high_resolution_clock::now();
+      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      std::cout << "2D A* 使用时间: "<< duration.count() << "  ms" << std::endl;
+      startTime = std::chrono::high_resolution_clock::now();
       AlgorithmContour algorithmContour;
       algorithmContour.findContour(grid);     
       algorithmContour.findNarrowContourPair();
+      std::reverse(path2D.begin(),path2D.end());
       algorithmContour.findThroughNarrowContourPair(path2D);
-      #ifdef DEBUG_TIME_ALGORITHMCONTOUR
+      algorithmContour.sortThroughNarrowPairsWaypoints();//按照路径前后重排序狭窄点
+      #ifdef DEBUG_VISUAL_ALGORITHMCONTOUR
       AlgorithmContour::visualizeNarrowPairs(algorithmContour.narrowPairs,algorithmContour.gridMap);
       for(int i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizePathAndItNarrowPair(algorithmContour.throughNarrowPairsWaypoints[i],
               algorithmContour.throughNarrowPairs[i],algorithmContour.gridMap);
       }
       #endif
-      algorithmContour.sortThroughNarrowPairsWaypoints();//按照路径前后重排序狭窄点
       algorithmContour.findKeyInformationForthrouthNarrowPairs();
       algorithmContour.findNarrowPassSpaceForAllPairs(configurationSpace,nGoal);
       algorithmContour.findNarrowPassSpaceInputSetOfNode3DForAllPairs(configurationSpace);
-      #ifdef DEBUG_TIME_ALGORITHMCONTOUR
+      #ifdef DEBUG_VISUAL_ALGORITHMCONTOUR
       for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(algorithmContour.throughNarrowPairs[i],
               algorithmContour.keyInfoForThrouthNarrowPairs[i],algorithmContour.gridMap);
@@ -341,34 +353,47 @@ void Planner::plan() {
       AlgorithmContour::visualizeInsetForThroughNarrowPairs(algorithmContour.finalPassSpaceInOutSets,algorithmContour.gridMap);
       #endif
       Node3D tempStart;
-      Node3D* nSolution= nullptr;
+
       for(uint i = 0;i<algorithmContour.finalPassSpaceInOutSets.size();i++){
         if(i==0){
           tempStart = nStart;
         }
+        Node3D* nSolution1= nullptr;
         Node3D* nodes3D = new Node3D[length]();
         Node2D* nodes2DSplitSearch = new Node2D[width * height]();
         multiGoalSet3D goals = multiGoalSet3D();
         goals.addGoals(algorithmContour.finalPassSpaceInOutSets[i].inSet);
-        nSolution = Algorithm::hybridAStarMultiGoals(tempStart, goals, nodes3D, nodes2DSplitSearch, width, height, 
+        nSolution1 = Algorithm::hybridAStarMultiGoals(tempStart, goals, nodes3D, nodes2DSplitSearch, width, height, 
             configurationSpace, dubinsLookup, visualization);
-        smoother.tracePathAndReverse(nSolution);//在h函数里面有可以省略后面两个参数的定义
-        Node3D* tempGoal = nullptr; //缓存目标节点
-        Node3D startSecondStage = *nSolution;
+        smoother.tracePathAndReverse(nSolution1);//在h函数里面有可以省略后面两个参数的定义
+        #ifdef DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
+        smoothedPath.tempUpdatePathNode(smoother.getPath());
+        smoothedPath.publishPathNodes();
+        #endif
+        #ifdef DEBUG_VISUAL_COSTMAP
+        visualization.publishNode3DCosts(nodes3D, width, height, depth);
+        visualization.publishNode2DCosts(nodes2DSplitSearch, width, height);
+        #endif
+        Node3D* nSolution2 = nullptr; //缓存目标节点
+        Node3D startSecondStage = *nSolution1;
         delete [] nodes3D;
         delete [] nodes2DSplitSearch;
         Node3D* nodes3Dt = new Node3D[length]();
         Node2D* nodes2DSplitSearcht = new Node2D[width * height]();
-        tempGoal= Algorithm::hybridAStar(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), nodes3Dt, nodes2DSplitSearcht, width, height, 
+        nSolution2= Algorithm::hybridAStar(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), nodes3Dt, nodes2DSplitSearcht, width, height, 
           configurationSpace, dubinsLookup, visualization);
         //tempGoal = Algorithm::ArcShot(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), configurationSpace);
-        if(tempGoal!=nullptr ){
-          smoother.tracePathAndReverse(tempGoal->getPred());
+        if(nSolution2!=nullptr ){
+          smoother.tracePathAndReverse(nSolution2->getPred());
         }
-        if(tempGoal==nullptr){
+        if(nSolution2==nullptr){
           std::cout<<"在Set之间的dubinsShot搜索出现了问题"<<std::endl;
         }
-        tempStart = *nSolution;
+        tempStart = *nSolution2;
+        #ifdef DEBUG_VISUAL_COSTMAP
+        visualization.publishNode3DCosts(nodes3Dt, width, height, depth);
+        visualization.publishNode2DCosts(nodes2DSplitSearcht, width, height);
+        #endif
         delete [] nodes3Dt;
         delete [] nodes2DSplitSearcht;
         #ifdef DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
@@ -380,35 +405,37 @@ void Planner::plan() {
       Node3D* nodes3D = new Node3D[length]();
       Node2D* nodes2DSplitSearch = new Node2D[width * height]();
       Node3D* tempGoal;
-      #ifdef DEBUG_TIME_ALGORITHMCONTOUR
+      #ifdef DEBUG_VISUAL_ALGORITHMCONTOUR
         if(!configurationSpace.isTraversable(&nGoal)){
           std::cout<<"目标设置有误，无法搜索"<<std::endl;
         }
       #endif
       if (Constants::each_meter_to_how_many_pixel >= 6) {
           multiGoalSet3D goalsMulFinal = multiGoalSet3D::fuzzyOneNodeToSet(configurationSpace,nGoal);
-          auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? algorithmContour.keyInfoForThrouthNarrowPairs.back()->getSecondStageMiddleVerticalPoint() : nStart;
+          auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? smoother.getPath().back(): nStart;//最后这个节点这里是带方向的
           tempGoal = Algorithm::hybridAStarMultiGoals(startGoal, goalsMulFinal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization);
       } else {
-          auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? algorithmContour.keyInfoForThrouthNarrowPairs.back()->getSecondStageMiddleVerticalPoint() : nStart;
+          auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? smoother.getPath().back() : nStart;
           tempGoal = Algorithm::hybridAStar(startGoal, nGoal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization);
       }
       if(tempGoal!=nullptr ){//每次都会反向trace一下
         smoother.tracePathAndReverse(tempGoal);
+      }else{
+        std::cout<<"在进入最后一段搜索的时候tempgoal是nullptr"<<std::endl;
       }
       if(Constants::whetherFuzzyGoal){
         // Node3D nonConstGoal{nGoal.getX(),nGoal.getY(),nGoal.getT(),0,0,nullptr};
         std::vector<Node3D> interpolatedPath = Node3D::interpolateDirect(*tempGoal,nGoal,Constants::arcLengthForAstarSuccessor);
         smoother.getPathNotConst().insert(smoother.getPathNotConst().end(), interpolatedPath.begin(), interpolatedPath.end());
       }
+      this->path.updatePath(smoother.getPath());
       delete [] nodes3D;
       delete [] nodes2DSplitSearch;
-      this->path.updatePath(smoother.getPath());
       delete [] nodes2D;
 
-      auto stop = std::chrono::high_resolution_clock::now();
-      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
-      std::cout << "ALgorithmContour 使用时间: "<< duration.count() << "  ms" << std::endl;
+      stop = std::chrono::high_resolution_clock::now();
+      duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      std::cout << "ALgorithmContour 第二阶段使用时间: "<< duration.count() << "  ms" << std::endl;
       // SMOOTH THE PATH
       smoother.smoothPath(voronoiDiagram);
       // CREATE THE UPDATED PATH
@@ -438,8 +465,7 @@ void Planner::plan() {
     smoothedPath.publishPath();
     smoothedPath.publishPathNodes();
     smoothedPath.publishPathVehicles();
-    // visualization.publishNode3DCosts(nodes3D, width, height, depth);
-    // visualization.publishNode2DCosts(nodes2D, width, height);
+
     
     // if(Constants::algorithm == "split_hybrid_astar"){
     //   path.publishPath2DNodes();

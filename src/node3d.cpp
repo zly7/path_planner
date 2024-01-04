@@ -47,8 +47,14 @@ bool Node3D::isOnGrid(const int width, const int height) const {
 bool Node3D::isInRange(const Node3D& goal) const {
   float dx = std::abs(x - goal.x) ;
   float dy = std::abs(y - goal.y) ;
-  float distance = (dx * dx) + (dy * dy);
-  return distance < Constants::dubinsShotMAXDistance && distance > Constants::dubinsShotMINDistance;
+  float distance = sqrt((dx * dx) + (dy * dy));
+  float deltaAngel = std::abs(t - goal.t);
+  if (deltaAngel > M_PI){
+    deltaAngel = 2 * M_PI - deltaAngel;
+  }
+  return distance < Constants::dubinsShotMAXDistance && 
+    distance > Constants::dubinsShotMINDistance &&
+    deltaAngel > Constants::useDubinsShotMinDeltaAngel;
 }
 
 bool Node3D::isInArcRange(const Node3D& goal) const {
@@ -155,6 +161,7 @@ std::vector<Node3D> Node3D::interpolateDirect(const Node3D& start, const Node3D&
   float distance = sqrt(pow(end.x - start.x, 2) + pow(end.y - start.y, 2));
   int numPoints = distance / interval;
   float deltaAngel = end.t-start.t;
+  int primToInherit = start.prim;
   if(deltaAngel >  M_PI){
     deltaAngel -= 2 * M_PI;
   }else if (deltaAngel < - M_PI){
@@ -167,6 +174,7 @@ std::vector<Node3D> Node3D::interpolateDirect(const Node3D& start, const Node3D&
       float t = start.t + ratio * deltaAngel;
 
       interpolatedNodes.emplace_back(x, y, t);
+      interpolatedNodes.back().prim = primToInherit;//这里主要是为了不影响是正着走还是反着走
   }
   interpolatedNodes.push_back(end);
 

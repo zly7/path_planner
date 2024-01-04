@@ -8,19 +8,19 @@ using namespace HybridAStar;
 //###################################################
 
 void Path::clear() {
-  Node3D node;
+  // Node3D node;
   path.poses.clear();
   pathNodes.markers.clear();
   pathVehicles.markers.clear();
   path2DNodes.markers.clear();
   pathBoxes.markers.clear();
-  addNode(node, 0);
-  addVehicle(node, 1);
-  publishPath();
-  publishPathNodes();
-  publishPathVehicles();
-  publishPath2DNodes();
-  publishPathBoxes();
+  // addNode(node, 0);
+  // addVehicle(node, 1);
+  // publishPath();
+  // publishPathNodes();
+  // publishPathVehicles();
+  // publishPath2DNodes();
+  // publishPathBoxes();
 }
 
 ////###################################################
@@ -143,7 +143,11 @@ void Path::addNode(const Node3D& node, int i) {
 
   pathNode.pose.position.x = node.getX() * Constants::cellSize;
   pathNode.pose.position.y = node.getY() * Constants::cellSize;
-  pathNode.pose.position.z = node.getT(); // 这里因为地图是2D的
+  if(node.getPrim() < Node3D::dir){
+    pathNode.pose.position.z = 1;
+  }else{
+    pathNode.pose.position.z = -1;
+  }
   pathNodes.markers.push_back(pathNode);
 }
 
@@ -284,17 +288,35 @@ void Path::addVehicle(const Node3D& node, int i) {
   geometry_msgs::Point p1, p2, p3, p4;
   double length = Constants::length;
   double width = Constants::width;
-  p1.x = length / 2;   // 前端，中心右侧
-  p1.y = -width / 2;   // 中心下方
+  if(Constants::useRearAsCenter){
+      double frontOffset = Constants::frontHangLength + Constants::wheelBase;
+      double backOffset = Constants::rearHangLength;
 
-  p2.x = length / 2;   // 前端，中心右侧
-  p2.y = width / 2;    // 中心上方
+      // Calculate the half width of the vehicle for left and right offsets
+      double halfWidth = Constants::width / 2;
+      p1.x = frontOffset;
+      p1.y = - halfWidth;
+      p2.x = frontOffset;
+      p2.y = halfWidth;
+      p3.x = - backOffset;
+      p3.y = halfWidth;
+      p4.x = - backOffset;
+      p4.y = - halfWidth;
 
-  p3.x = -length / 2;  // 后端，中心左侧
-  p3.y = width / 2;    // 中心上方
+  }else{
+    p1.x = length / 2;   // 前端，中心右侧
+    p1.y = -width / 2;   // 中心下方
 
-  p4.x = -length / 2;  // 后端，中心左侧
-  p4.y = -width / 2;   // 中心下方
+    p2.x = length / 2;   // 前端，中心右侧
+    p2.y = width / 2;    // 中心上方
+
+    p3.x = -length / 2;  // 后端，中心左侧
+    p3.y = width / 2;    // 中心上方
+
+    p4.x = -length / 2;  // 后端，中心左侧
+    p4.y = -width / 2;   // 中心下方
+  }
+
  // 假设你已经有了车辆的朝向角 theta
   double theta = node.getT(); // 获取车辆的朝向
 
@@ -309,6 +331,9 @@ void Path::addVehicle(const Node3D& node, int i) {
 
       p->x = cosTheta * x - sinTheta * y + node.getX();
       p->y = sinTheta * x + cosTheta * y + node.getY();
+      if(std::isnan(p->x) || std::isnan(p->y)){
+        std::cout<<"画图函数接收到nan不合理"<<std::endl;
+      }
   }
 
   // 添加顶点到Marker

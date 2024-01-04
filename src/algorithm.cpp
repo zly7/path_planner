@@ -95,12 +95,11 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
   O.push(&start);
   iPred = start.setIdx(width, height); //这里的3D指的是带有xyt的节点，最后一个t是yaw角，
   nodes3D[iPred] = start;
-
+  std::cout<<"start "<<start.getX()<<" "<<start.getY()<< " " << start.getT()<<std::endl;
   // NODE POINTER
   Node3D* nPred;
   Node3D* nSucc;
 
-  // float max = 0.f;
   #ifdef DEBUG_TIME_ASTAR3D
   int currentLoop = 0;
   double allRuningTime = 0;
@@ -148,8 +147,8 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
       for(auto &goal : goalSet.goals){
         if ((*nPred).isEqualWithTolerance(goal)) {
           std::cout<<"总迭代次数: "<< iterations<<std::endl;
-          std::cout<<"npred "<<nPred->getX()<<" "<<nPred->getY()<<std::endl;
-          std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
+          std::cout<<"npred "<<nPred->getX()<<" "<<nPred->getY()<< " " << nPred->getT()<<std::endl;
+          std::cout<<"goal "<<goal.getX()<<" "<<goal.getY() << ""<< goal.getT()<<std::endl; 
           std::cout<<"Hybrid3D结束搜索总的搜索次数: "<<iterations<<std::endl;
           return nPred;
         }
@@ -613,7 +612,7 @@ Node3D* Algorithm::dubinsShot(Node3D& start, const Node3D& goal, CollisionDetect
   DubinsPath path;
   // calculate the path
   dubins_init(q0, q1, Constants::r, &path);
-
+  int primToInherit = start.getPrim();
   int i = 0;
   float x = 0.f;
   float length = dubins_path_length(&path);
@@ -628,7 +627,7 @@ Node3D* Algorithm::dubinsShot(Node3D& start, const Node3D& goal, CollisionDetect
     dubinsNodes[i].setX(q[0]);
     dubinsNodes[i].setY(q[1]);
     dubinsNodes[i].setT(Helper::normalizeHeadingRad(q[2]));
-
+    dubinsNodes[i].setPrim(primToInherit);//为了能让prim正确继承是向前还是向后
     // collision check
     if (configurationSpace.isTraversable(&dubinsNodes[i])) {
 

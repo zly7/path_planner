@@ -65,6 +65,8 @@ class Planner {
   */
   void plan();
 
+  void timerForAutoTestCallback(const ros::TimerEvent& event);
+
  private:
   /// The node handle
   ros::NodeHandle n;
@@ -110,6 +112,9 @@ class Planner {
   float* dubinsLookup = new float [Constants::headings * Constants::headings * Constants::dubinsWidth * Constants::dubinsWidth];
 
   int point_index=0;
+
+  ros::Timer timerForAutoTest;
+  bool whetherStartTest = false;
 };
 }
 #endif // PLANNER_H

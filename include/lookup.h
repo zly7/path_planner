@@ -185,24 +185,49 @@ inline void collisionLookup(Constants::config* lookup) {
 
   for (int q = 0; q < positions; ++q) {
     // set the starting angle to zero;
-    theta = Constants::deltaHeadingRad / 2;
+    theta = Constants::deltaHeadingRad / 2;//不用这么加半度，因为开始算的时候就是0度作为中心计算的;后来发现就是要加半个delta，因为在checkcollision的时候是向下取整
+
     
 
     // set points of rectangle
     c.x = (double)size / 2 + points[q].x; // zly:this maybe the center
     c.y = (double)size / 2 + points[q].y;
+    if(Constants::useRearAsCenter){
+      double frontOffset = Constants::frontHangLength + Constants::wheelBase;
+      double backOffset = Constants::rearHangLength;
 
-    p[0].x = c.x - Constants::length / 2 / cSize;
-    p[0].y = c.y - Constants::width / 2 / cSize;
+      // Calculate the half width of the vehicle for left and right offsets
+      double halfWidth = Constants::width / 2 / cSize;
 
-    p[1].x = c.x - Constants::length / 2 / cSize;
-    p[1].y = c.y + Constants::width / 2 / cSize;
+      // Front left point
+      p[0].x = c.x + frontOffset;
+      p[0].y = c.y - halfWidth;
 
-    p[2].x = c.x + Constants::length / 2 / cSize;
-    p[2].y = c.y + Constants::width / 2 / cSize;
+      // Front right point
+      p[1].x = c.x + frontOffset;
+      p[1].y = c.y + halfWidth;
 
-    p[3].x = c.x + Constants::length / 2 / cSize;
-    p[3].y = c.y - Constants::width / 2 / cSize;
+      // Rear right point
+      p[2].x = c.x - backOffset;
+      p[2].y = c.y + halfWidth;
+
+      // Rear left point
+      p[3].x = c.x - backOffset;
+      p[3].y = c.y - halfWidth;
+    }else{
+      p[0].x = c.x - Constants::length / 2 / cSize;
+      p[0].y = c.y - Constants::width / 2 / cSize;
+
+      p[1].x = c.x - Constants::length / 2 / cSize;
+      p[1].y = c.y + Constants::width / 2 / cSize;
+
+      p[2].x = c.x + Constants::length / 2 / cSize;
+      p[2].y = c.y + Constants::width / 2 / cSize;
+
+      p[3].x = c.x + Constants::length / 2 / cSize;
+      p[3].y = c.y - Constants::width / 2 / cSize;
+    }
+
     std::vector<std::vector<bool>> cSpaceRecord;
     for (int o = 0; o < Constants::headings; ++o) {
 
