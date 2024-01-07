@@ -38,7 +38,7 @@ static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
 static const bool manual = true;
 /// A flag for the visualization of 3D nodes (true = on; false = off)
-static const bool visualization = true && manual;
+static const bool visualization = false && manual;
 static const bool visualizationStartAndGoal = true && manual;
 /// A flag for the visualization of 2D nodes (true = on; false = off)
 static const bool visualization2D = false && manual;
@@ -46,6 +46,7 @@ static const bool visualization2D = false && manual;
 static const bool reverse = true;
 /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
 static const bool dubinsShot = true;
+static const bool randomDubinsShot = true && dubinsShot;
 static const float useDubinsShotMinDeltaAngel = (120.0/180.0) * M_PI ;
 /// A flag to toggle the Dubin's heuristic, this should be false, if reversing is enabled (true = on; false = off)
 static const bool dubins = false;
@@ -62,7 +63,8 @@ static const bool twoD = true;
 // GENERAL CONSTANTS
 
 /// [#] --- Limits the maximum search depth of the algorithm, possibly terminating without the solution
-static const int iterations = 30000;
+static const int iterations = 200000;
+static const int iterationsToPrint = 10000;
 /// [m] --- Uniformly adds a padding around the vehicle
 static const double bloating = 0;
 static const double each_meter_to_how_many_pixel = 10;
@@ -213,11 +215,11 @@ static const float minContourPairDistance = width * 1;
 static const float maxContourPairDistance = width * 1.6;
 static const float maxNarrowSpaceArcLength = length * 1.25; // narrow space 延伸出去的弧度不能太长
 static const int howManyNode2DDeterminesWhetherThroughNarrowContourPair = 3;
-static const int howManyLevelInputPick  = 3; //衡量进入集合应该选取多少层圆弧上的节点
+static const int howManyLevelInputPick  = 7; //衡量进入集合应该选取多少层圆弧上的节点
 static float offsetPercentForHalfVehicleWidth = 1.1;
 /// [m] --- The minimum distance between two nodes in the astar and its successor, the unit is meter
 static const float arcLengthForAstarSuccessor = 0.3 * each_meter_to_how_many_pixel;
-
+static const int toleranceForCollisionCheck = 3;//有些地图太过狭窄，让判断容易忽略反向的问题
 /*
 */
 static const float DIST_LIMIT = 1.5;

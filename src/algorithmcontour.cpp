@@ -72,7 +72,7 @@ std::vector<std::vector<Node2D*>> AlgorithmContour::findContour(nav_msgs::Occupa
   for (auto& c : refineContours) {
     std::vector<Node2D*> contour;
     for (auto& p : c) {
-      Node2D* node = new Node2D((float)p.x+0.5, (float)p.y+0.5);//opencv 寻找角点的时候会选择内部的像素点，然后还有问题就是像素点的值本质上是左下角的int值。所以转化成float的时候全部加0.5
+      Node2D* node = new Node2D(((float)p.x)+0.5, ((float)p.y)+0.5);//opencv 寻找角点的时候会选择内部的像素点，然后还有问题就是像素点的值本质上是左下角的int值。所以转化成float的时候全部加0.5
       contour.push_back(node);
     }
     result.push_back(contour);
@@ -383,7 +383,7 @@ bool AlgorithmContour::two3DPointsWhetherCloseAndReverseDirection(CollisionDetec
         float x = x1 + ratio * (x2 - x1);
         float y = y1 + ratio * (y2 - y1);
         Node2D* nodeInterpolation = new Node2D(x, y);
-        if (!configurationSpace.isTraversablePreciseFor2D(nodeInterpolation)) {
+        if (!configurationSpace.isTraversablePreciseFor2DWithTolerance(nodeInterpolation)) {
             std::cout << "在判断是否应该反向目标点的函数里面直线的插值不能通过，这种情况应该极少出现！" << std::endl;
             delete nodeInterpolation;
             return false; // Found a non-traversable point
@@ -525,14 +525,14 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
       if(radius * currentRotatedAngel > Constants::maxNarrowSpaceArcLength){
         break;
       }
-      angleRelativeToCircleCurrent = Helper::normalizeHeadingRad(angleVehicleCurrent +cross*M_PI/2 + M_PI )+ deltaAngel;//这里会默认切
+      angleRelativeToCircleCurrent = Helper::normalizeHeadingRad(angleVehicleCurrent +cross*M_PI/2 + M_PI )+ cross * deltaAngel;//这里会默认切
       //上面需要+pi的原因是你需要找到指出圆心的向量的方向
-      angleVehicleCurrent = Helper::normalizeHeadingRad(angleVehicleCurrent + deltaAngel);
+      angleVehicleCurrent = Helper::normalizeHeadingRad(angleVehicleCurrent + cross * deltaAngel);
       float pointX=circleCenterPoint->getFloatX()+radius*cos(angleRelativeToCircleCurrent);
       float pointY=circleCenterPoint->getFloatY()+radius*sin(angleRelativeToCircleCurrent);
       Node3D NodeCurrentVehicle =  Node3D(pointX, pointY, Helper::normalizeHeadingRad(angleVehicleCurrent+M_PI*whetherReverse + M_PI*whetherCloseReverseGoal));
       
-      if(!configurationSpace.isTraversable(&NodeCurrentVehicle)){
+      if(!configurationSpace.isTraversableWithTolerance(&NodeCurrentVehicle,1)){
         flag=false;
         break;
       }else{
@@ -578,13 +578,37 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
     }
   }else{//这里应该会是进行直线搜索
     std::cout << "进行直线搜索" << std::endl;
-    finalCirclePath.clear();
     float angleVehicleCurrent = atan2f(tangentVector.y,tangentVector.x);
-    for(float l = -Constants::length/2;l<=Constants::length/2;l+=1){
-      float pointX=startPoint->getFloatX()+l*tangentVector.x;
-      float pointY=startPoint->getFloatY()+l*tangentVector.y;
-      Node3D NodeCurrentVehicle =  Node3D(pointX, pointY, Helper::normalizeHeadingRad(angleVehicleCurrent+M_PI*whetherReverse + M_PI*whetherCloseReverseGoal));
-      finalCirclePath.push_back(NodeCurrentVehicle);
+    float offsetForStraightLine = Constants::width * 0.01;//往圆心的反方向偏离一点距离
+    Node2D tempStart{startPoint->getFloatX(), startPoint->getFloatY()};
+    directionVector offestDirectionVector = {-radiusVectorToYuanxin.x,-radiusVectorToYuanxin.y};
+    bool successFlag = true;
+    float allOffset = 0;
+    while(true){
+      successFlag = true;
+      finalCirclePath.clear();
+      for(float l = 0;l<=Constants::length/2;l+=Constants::findNarrowSpaceMoveDistance){//增加的距离应该和findnarrowspace的契合,这里不应该能倒退，因为是startPoint
+        float pointX=tempStart.getFloatX()+l*tangentVector.x;
+        float pointY=tempStart.getFloatY()+l*tangentVector.y;
+        Node3D NodeCurrentVehicle =  Node3D(pointX, pointY, Helper::normalizeHeadingRad(angleVehicleCurrent+M_PI*whetherReverse + M_PI*whetherCloseReverseGoal));
+        if(!configurationSpace.isTraversableWithTolerance(&NodeCurrentVehicle,1)){
+          std::cout << "直接使用直线生成的时候NarrowSpace的时候有误,增加偏移量" << std::endl;
+          tempStart.setFloatx(tempStart.getFloatX()+offsetForStraightLine*offestDirectionVector.x);
+          tempStart.setFloaty(tempStart.getFloatY()+offsetForStraightLine*offestDirectionVector.y);
+          successFlag = false;
+          allOffset += offsetForStraightLine;
+          break;
+        }
+        finalCirclePath.push_back(NodeCurrentVehicle);
+      }
+      if(successFlag == true){
+        break;
+      }else{
+        if(allOffset > Constants::width * 0.1){
+          std::cout << "直接使用直线生成的时候NarrowSpace的时候有误,增加偏移量超过了最大值" << std::endl;
+          break;
+        }
+      }
     }
     return finalCirclePath;
   }
@@ -657,9 +681,14 @@ finalPassSpaceInOutSet AlgorithmContour::findNarrowPassSpaceInputSetOfNode3D(Col
     Node3D* nodeSecond = &inputPair->containingWaypointsSecondBPBackward[size2-i-1];
     std::vector<Node3D> resultVector = findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine
       (*nodeFirst,*nodeSecond,*inputPair->centerPoint,inputPair->centerVerticalUnitVector,inputPair->whetherCloseReverseToGoal);
+    // nodeFirst = &inputPair->containingWaypointsFirstBPBackward[i]; //把前面层圆弧的点也加进去
+    // nodeSecond = &inputPair->containingWaypointsSecondBPBackward[i];
+    // std::vector<Node3D> resultVector2 = findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine
+    //   (*nodeFirst,*nodeSecond,*inputPair->centerPoint,inputPair->centerVerticalUnitVector,inputPair->whetherCloseReverseToGoal);
     bool flag = true;
     for(auto node:resultVector){
-      if(!configurationSpace.isTraversable(&node)){
+      if(!configurationSpace.isTraversableWithTolerance(&node,5)){
+        std::cout << "在找到输入集的函数里面直线的插值不能通过！" << std::endl;
         flag = false;
         break;
       }
@@ -671,6 +700,9 @@ finalPassSpaceInOutSet AlgorithmContour::findNarrowPassSpaceInputSetOfNode3D(Col
     if(successIndex >=Constants::howManyLevelInputPick){
       break;
     }
+  }
+  if(inSetAllNode.size() == 0){
+    std::cout << "插值集合是空，非常危险！" << std::endl;
   }
   resultSet.inSet = inSetAllNode;
   return resultSet;

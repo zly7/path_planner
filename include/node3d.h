@@ -104,6 +104,9 @@ class Node3D {
   // SUCCESSOR CREATION
   /// Creates a successor in the continous space.
   Node3D* createSuccessor(const int i);
+  float get2DDistance(Node3D rhs){
+    return sqrt((x-rhs.getX())*(x-rhs.getX())+(y-rhs.getY())*(y-rhs.getY()));
+  }
 
   // CONSTANT VALUES
   /// Number of possible directions

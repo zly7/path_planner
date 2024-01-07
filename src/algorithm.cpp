@@ -141,24 +141,27 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
       nodes3D[iPred].close();
       // remove node from open list
       O.pop();
-
       // _________
       // GOAL TEST //既然能走到这，nPred肯定是通的
-      for(auto &goal : goalSet.goals){
-        if ((*nPred).isEqualWithTolerance(goal)) {
-          std::cout<<"总迭代次数: "<< iterations<<std::endl;
-          std::cout<<"npred "<<nPred->getX()<<" "<<nPred->getY()<< " " << nPred->getT()<<std::endl;
-          std::cout<<"goal "<<goal.getX()<<" "<<goal.getY() << ""<< goal.getT()<<std::endl; 
-          std::cout<<"Hybrid3D结束搜索总的搜索次数: "<<iterations<<std::endl;
-          return nPred;
+      if(nPred->get2DDistance(goalSet.virtualCenterNode3D) < Constants::length){//至少一个车长采用检查goalSet是不是到了吧
+        for(auto &goal : goalSet.goals){
+          if ((*nPred).isEqualWithTolerance(goal)) {
+            std::cout<<"总迭代次数: "<< iterations<<std::endl;
+            std::cout<<"npred "<<nPred->getX()<<" "<<nPred->getY()<< " " << nPred->getT()<<std::endl;
+            std::cout<<"goal "<<goal.getX()<<" "<<goal.getY() << ""<< goal.getT()<<std::endl; 
+            std::cout<<"Hybrid3D结束搜索总的搜索次数: "<<iterations<<std::endl;
+            return nPred;
+          }
         }
       }
+      
       if(iterations > Constants::iterations){
         std::cout<<"到达了最长的搜索迭代次数,未能找到目标点"<<std::endl;
         return nullptr;
       }
-      
-
+      if(((iterations+1) / Constants::iterationsToPrint)!= iterations / Constants::iterationsToPrint){
+        std::cout<<"Hybrid3D已经过了 "<<iterations << " 次搜索未搜索到结果"<<std::endl;
+      }
       // ____________________
       // CONTINUE WITH SEARCH
       
@@ -180,14 +183,25 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
         #ifdef DEBUG_TIME_ASTAR3D
         auto startDubinsShotTime = std::chrono::high_resolution_clock::now();
         #endif
-        for (auto &goal : goalSet.goals){
-          nSucc = dubinsShot(*nPred, goal, configurationSpace);
-          if (nSucc != nullptr && *nSucc == goal) {  // 这里的相等就很妙，就是整数相等，整数映射空间
-          std::cout << "通过dubinShot 命中结束点" << std::endl;
-          std::cout<<"nSucc "<<nSucc->getX()<<" "<<nSucc->getY()<<std::endl;
-          std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
-          return nSucc;
+        if(Constants::randomDubinsShot){
+          Node3D randomDubinNode = goalSet.getRandomGoal();
+          nSucc = dubinsShot(*nPred, randomDubinNode, configurationSpace);
+          if (nSucc != nullptr && *nSucc == randomDubinNode) { 
+            std::cout << "通过dubinShot 命中结束点" << std::endl;
+            std::cout<<"nSucc "<<nSucc->getX()<<" "<<nSucc->getY()<<std::endl;
+            std::cout<<"goal "<<randomDubinNode.getX()<<" "<<randomDubinNode.getY()<<std::endl; 
+            return nSucc;
           }
+        }else{
+          for (auto &goal : goalSet.goals){
+            nSucc = dubinsShot(*nPred, goal, configurationSpace);
+            if (nSucc != nullptr && *nSucc == goal) {  // 这里的相等就很妙，就是整数相等，整数映射空间
+              std::cout << "通过dubinShot 命中结束点" << std::endl;
+              std::cout<<"nSucc "<<nSucc->getX()<<" "<<nSucc->getY()<<std::endl;
+              std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
+              return nSucc;
+            }
+         }
         }
         #ifdef DEBUG_TIME_ASTAR3D
         auto stopDubinsShotTime = std::chrono::high_resolution_clock::now();

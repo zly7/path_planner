@@ -1,7 +1,7 @@
 #define DEBUG_VISUAL_ALGORITHMCONTOUR
 // #define DEBUG_MANUAL_START_GOAL
 // #define DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
-#define DEBUG_VISUAL_COSTMAP
+// #define DEBUG_VISUAL_COSTMAP
 #include "planner.h"
 
 using namespace HybridAStar;
@@ -191,9 +191,11 @@ void Planner::plan() {
     float y = goal.pose.position.y / Constants::cellSize;
     float t = tf::getYaw(goal.pose.orientation);
     #ifdef DEBUG_MANUAL_START_GOAL
-    //TPCAP22:162,146,0
-    x = 162;
-    y = 146;
+    //TPCAP22:173,145,0
+    //TPCAP5:128.2587064677 80.0000000000 8.0694652727
+    //TPCAP8:179.0049751244 80.0000000000 8.1156136567
+    x = 173;
+    y = 145;
     t = Helper::normalizeHeadingRad(0);
     #endif
 
@@ -206,10 +208,12 @@ void Planner::plan() {
     y = start.pose.pose.position.y / Constants::cellSize;
     t = tf::getYaw(start.pose.pose.orientation);
     #ifdef DEBUG_MANUAL_START_GOAL
-    // TPCAP22:36,130, 1.5 PI 
-    x = 36;
-    y = 130;
-    t = Helper::normalizeHeadingRad(1.5 * M_PI);
+    // TPCAP22:68 184 4.71
+    //TPCAP5:80.0000000000 134.7263681592 3.6742185844 
+    //TPCAP8:80.0000000000 109.3532338308 6.5222085871 
+    x = 68;
+    y = 184;
+    t = Helper::normalizeHeadingRad(4.71);
     #endif
     // set theta to a value (0,2PI]
     t = Helper::normalizeHeadingRad(t);
@@ -332,16 +336,21 @@ void Planner::plan() {
       std::reverse(path2D.begin(),path2D.end());
       algorithmContour.findThroughNarrowContourPair(path2D);
       algorithmContour.sortThroughNarrowPairsWaypoints();//按照路径前后重排序狭窄点
+      stop  = std::chrono::high_resolution_clock::now();
+      duration += std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
       #ifdef DEBUG_VISUAL_ALGORITHMCONTOUR
       AlgorithmContour::visualizeNarrowPairs(algorithmContour.narrowPairs,algorithmContour.gridMap);
-      for(int i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
+      for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizePathAndItNarrowPair(algorithmContour.throughNarrowPairsWaypoints[i],
               algorithmContour.throughNarrowPairs[i],algorithmContour.gridMap);
       }
       #endif
+      startTime = std::chrono::high_resolution_clock::now();
       algorithmContour.findKeyInformationForthrouthNarrowPairs();
       algorithmContour.findNarrowPassSpaceForAllPairs(configurationSpace,nGoal);
       algorithmContour.findNarrowPassSpaceInputSetOfNode3DForAllPairs(configurationSpace);
+      stop  = std::chrono::high_resolution_clock::now();
+      duration += std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
       #ifdef DEBUG_VISUAL_ALGORITHMCONTOUR
       for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(algorithmContour.throughNarrowPairs[i],
@@ -352,6 +361,7 @@ void Planner::plan() {
       }
       AlgorithmContour::visualizeInsetForThroughNarrowPairs(algorithmContour.finalPassSpaceInOutSets,algorithmContour.gridMap);
       #endif
+      startTime = std::chrono::high_resolution_clock::now();
       Node3D tempStart;
 
       for(uint i = 0;i<algorithmContour.finalPassSpaceInOutSets.size();i++){
@@ -405,7 +415,7 @@ void Planner::plan() {
       Node3D* nodes3D = new Node3D[length]();
       Node2D* nodes2DSplitSearch = new Node2D[width * height]();
       Node3D* tempGoal;
-      #ifdef DEBUG_VISUAL_ALGORITHMCONTOUR
+      #ifdef DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
         if(!configurationSpace.isTraversable(&nGoal)){
           std::cout<<"目标设置有误，无法搜索"<<std::endl;
         }
@@ -434,8 +444,8 @@ void Planner::plan() {
       delete [] nodes2D;
 
       stop = std::chrono::high_resolution_clock::now();
-      duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
-      std::cout << "ALgorithmContour 第二阶段使用时间: "<< duration.count() << "  ms" << std::endl;
+      duration += std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      std::cout << "ALgorithmContour总花时间: "<< duration.count() << "  ms" << std::endl;
       // SMOOTH THE PATH
       smoother.smoothPath(voronoiDiagram);
       // CREATE THE UPDATED PATH
@@ -446,7 +456,7 @@ void Planner::plan() {
  
     ros::Time t1 = ros::Time::now();
     ros::Duration d(t1 - t0);
-    std::cout << "TIME in ms: " << d * 1000 << std::endl;
+    std::cout << "整个流程连带可视化和人关闭窗口时间 in ms: " << d * 1000 << std::endl;
     validStart=false;
     validGoal=false;
     point_index++;

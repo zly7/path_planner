@@ -65,6 +65,13 @@ multiGoalSet3D multiGoalSet3D::fuzzyOneNodeToSet(const CollisionDetection & coll
     }
     return returnSet;
 }
+Node3D multiGoalSet3D::getRandomGoal() {
+    if (goals.empty()) {
+        return Node3D();
+    }
+    int randomIndex = rand() % goals.size();
+    return goals[randomIndex];   
+}
     
 
 }  // namespace HybridAStar

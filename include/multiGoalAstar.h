@@ -20,7 +20,7 @@ class multiGoalSet3D {
     void addGoals(const std::set<Node3D>& nodeset);
     void addGoals(const std::vector<Node3D>& nodes);
     static multiGoalSet3D fuzzyOneNodeToSet(const CollisionDetection & collectionDection,const Node3D& node);
-
+    Node3D getRandomGoal();
 private:
     void updateVirtualCenterNode();
 };

@@ -266,9 +266,9 @@ void Path::addVehicle(const Node3D& node, int i) {
     pathVehicle.color.g = Constants::teal.green;
     pathVehicle.color.b = Constants::teal.blue;
   }
-
-  pathVehicle.pose.position.x = node.getX() * Constants::cellSize;
-  pathVehicle.pose.position.y = node.getY() * Constants::cellSize;
+  float offersetOfVehicleCube = Constants::length / 2 - Constants::rearHangLength;
+  pathVehicle.pose.position.x = node.getX() + offersetOfVehicleCube * cos(node.getT());
+  pathVehicle.pose.position.y = node.getY() + offersetOfVehicleCube * sin(node.getT());
   pathVehicle.pose.orientation = tf::createQuaternionMsgFromYaw(node.getT());
   pathVehicles.markers.push_back(pathVehicle);
 
@@ -279,10 +279,10 @@ void Path::addVehicle(const Node3D& node, int i) {
   border.id = i+2000;//to make the id not the same as the vehicle
   border.type = visualization_msgs::Marker::LINE_LIST;
   border.scale.x = 0.2; // 线条的厚度
-  border.color.r = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
-  border.color.g = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
-  border.color.b = static_cast<double>(std::rand()) / static_cast<double>(RAND_MAX);
-  border.color.a = 0.5; 
+  border.color.r = Constants::black.red;
+  border.color.g = Constants::black.green;
+  border.color.b = Constants::black.blue;
+  border.color.a = 0.25; 
 
   // 计算矩形边框的四个顶点
   geometry_msgs::Point p1, p2, p3, p4;

@@ -45,7 +45,7 @@ namespace HybridAStar {
   public:
     /// The deault constructor
     AlgorithmContour() {}
-    const static bool WhetherDebug = true;
+    const static bool WhetherDebug = false;
     const static bool whetherDeepDebug = false; //是否进行半径的扩张可视化
     const static bool whetherDeepDebug2 = false;//是否画出插值的点，但是现在因为有在外层的可视化，所以这个可以不用
     const static int visualizeMultiplier = 2; //可视化的时候放大的倍数

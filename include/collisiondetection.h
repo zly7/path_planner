@@ -36,6 +36,7 @@ inline void getConfiguration(const Node3D* node, float& x, float& y, float& t) {
 */
 class CollisionDetection {
  public:
+  bool whetherVisualize = false;
   /// Constructor
   CollisionDetection();
 
@@ -88,6 +89,28 @@ class CollisionDetection {
     }
     return false;
   }
+  /*'''更加精确的2D点的判断，用于是否需要反向.但是有可以容忍的地方'''*/
+  bool isTraversablePreciseFor2DWithTolerance(const Node2D* node) const {
+    float x = node->getFloatX();
+    float y = node->getFloatY();
+    for(int j = 0 ; j <Constants::headings; j ++){
+      if(configurationTestWithTolerace(x, y, j*Constants::deltaHeadingRad+Constants::deltaHeadingRad/2)){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /*'''3D 是有可以容忍的地方'''*/
+  bool isTraversableWithTolerance(const Node3D* node, int tolerance = -1) const {
+    float x = node->getX();
+    float y = node->getY();
+    float t = node->getT();
+    if(configurationTestWithTolerace(x, y, t, tolerance)){
+      return true;
+    }
+    return false;
+  }
 
   template<typename T> bool isObstacleThisPoint(const T* node) const {
     // std::cout<<" idx: "<<node->getIdx()<<" grid:"<<!grid->data[node->getIdx()]<<std::endl;
@@ -112,12 +135,15 @@ class CollisionDetection {
      \return true if it is in C_free, else false
   */
   bool configurationTest(float x, float y, float t) const;
+  bool configurationTestWithTolerace(float x, float y, float t, int tolerance = -1) const;
   void visualizeGrid(nav_msgs::OccupancyGrid::Ptr grid, int gridSize, int gridWidth, int gridHeight) const;
 
   /*!
      \brief updates the grid with the world map
   */
   void updateGrid(nav_msgs::OccupancyGrid::Ptr map) {grid = map;} 
+  void visualizeGridAndVehicle(float x, float y, float t) const;
+
 
  private:
   /// The occupancy grid
