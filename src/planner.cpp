@@ -1,7 +1,8 @@
-#define DEBUG_VISUAL_ALGORITHMCONTOUR
+// #define DEBUG_VISUAL_ALGORITHMCONTOUR
 // #define DEBUG_MANUAL_START_GOAL
 // #define DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
 // #define DEBUG_VISUAL_COSTMAP
+#define DEBUG_SAVE_PICTURE
 #include "planner.h"
 
 using namespace HybridAStar;
@@ -113,7 +114,17 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map) {  // 这里显然�
     msg.data = point_index;  
     pubNotification.publish(msg);
   }
-
+  // sleep(15);
+  // float centerX = 20*Constants::each_meter_to_how_many_pixel;
+  // float centerY = 20*Constants::each_meter_to_how_many_pixel;
+  // float radius = Constants::r;int indexT = 0;
+  // for(float angel = 0;angel<2*M_PI;angel+=M_PI/20){
+  //   float currentVehicleAngel = Helper::normalizeHeadingRad(angel+M_PI/2);
+  //   Node3D node(centerX+radius*cos(angel),centerY+radius*sin(angel),currentVehicleAngel,0,0,nullptr);
+  //   path.addVehicle(node,indexT++);
+  //   path.publishPathVehicles();
+  //   sleep(1);
+  // }
 }
 
 //###################################################
@@ -361,6 +372,9 @@ void Planner::plan() {
       }
       AlgorithmContour::visualizeInsetForThroughNarrowPairs(algorithmContour.finalPassSpaceInOutSets,algorithmContour.gridMap);
       #endif
+      #ifdef  DEBUG_SAVE_PICTURE
+      algorithmContour.savePicturePathAndItNarrowPair();
+      #endif  
       startTime = std::chrono::high_resolution_clock::now();
       Node3D tempStart;
 

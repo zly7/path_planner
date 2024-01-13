@@ -122,7 +122,7 @@ Visualization Manager:
       Marker Topic: /pathNodes
       Name: pathNodes
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -153,7 +153,7 @@ Visualization Manager:
       Buffer Length: 1
       Class: rviz/Path
       Color: 0; 0; 255
-      Enabled: true
+      Enabled: false
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -172,31 +172,31 @@ Visualization Manager:
       Shaft Length: 0.10000000149011612
       Topic: /sPath
       Unreliable: false
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: true
-      Marker Topic: /sPathNodes
-      Name: sPathNodes
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
       Enabled: false
-      Marker Topic: /sPath2DNodes
-      Name: sPath2DNodes
+      Marker Topic: /sPathNodes
+      Name: sPathNodes
       Namespaces:
         {}
       Queue Size: 100
       Value: false
     - Class: rviz/MarkerArray
       Enabled: true
+      Marker Topic: /sPath2DNodes
+      Name: sPath2DNodes
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: false
       Marker Topic: /sPathVehicle
       Name: sPathVehicle
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /sPathBoxes
@@ -293,7 +293,7 @@ Visualization Manager:
       Marker Topic: /visualizeNodes3DStartAndGoal
       Name: startAndGoal
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
@@ -301,7 +301,7 @@ Visualization Manager:
       Marker Topic: /visualizeNodes3DCosts
       Name: 3DCosts
       Namespaces:
-        "": true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
@@ -341,10 +341,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Scale: 1.9520787000656128
+      Scale: 1.6930924654006958
       Target Frame: <Fixed Frame>
-      X: 151.10450744628906
-      Y: 83.46232604980469
+      X: 169.16033935546875
+      Y: 122.40172576904297
     Saved: ~
 Window Geometry:
   Displays:

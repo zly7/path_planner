@@ -143,6 +143,7 @@ void Path::addNode(const Node3D& node, int i) {
 
   pathNode.pose.position.x = node.getX() * Constants::cellSize;
   pathNode.pose.position.y = node.getY() * Constants::cellSize;
+  pathNode.pose.position.z = node.getT();
   if(node.getPrim() < Node3D::dir){
     pathNode.pose.position.z = 1;
   }else{
@@ -278,7 +279,7 @@ void Path::addVehicle(const Node3D& node, int i) {
   border.ns = "border";
   border.id = i+2000;//to make the id not the same as the vehicle
   border.type = visualization_msgs::Marker::LINE_LIST;
-  border.scale.x = 0.2; // 线条的厚度
+  border.scale.x = 0.4; // 线条的厚度
   border.color.r = Constants::black.red;
   border.color.g = Constants::black.green;
   border.color.b = Constants::black.blue;
@@ -289,11 +290,11 @@ void Path::addVehicle(const Node3D& node, int i) {
   double length = Constants::length;
   double width = Constants::width;
   if(Constants::useRearAsCenter){
-      double frontOffset = Constants::frontHangLength + Constants::wheelBase;
-      double backOffset = Constants::rearHangLength;
+      double frontOffset = Constants::frontHangLength + Constants::wheelBase - Constants::drwaOffset;
+      double backOffset = Constants::rearHangLength - Constants::drwaOffset;
 
       // Calculate the half width of the vehicle for left and right offsets
-      double halfWidth = Constants::width / 2;
+      double halfWidth = Constants::width / 2 - Constants::drwaOffset;
       p1.x = frontOffset;
       p1.y = - halfWidth;
       p2.x = frontOffset;

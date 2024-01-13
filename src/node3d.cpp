@@ -8,7 +8,7 @@ const int Node3D::dir = 3;
 
 const float Node3D::resolution_mutiplier = Constants::each_meter_to_how_many_pixel;
 const float Node3D::arcLength = Constants::arcLengthForAstarSuccessor;
-const float Node3D::steeringAngle = M_PI * 6.75 / 180.0;
+const float Node3D::steeringAngle = Node3D::arcLength / Constants::radiusForAstarSuccessor;
 
 
 

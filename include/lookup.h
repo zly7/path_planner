@@ -144,26 +144,14 @@ inline void collisionLookup(Constants::config* lookup) {
   // ____________________________
   // VARIABLES FOR GRID TRAVERSAL
   // vector for grid traversal
-  point t;
   point start;
   point end;
   // cell index
   int X;
   int Y;
-  // t value for crossing vertical and horizontal boundary
-  double tMaxX;
-  double tMaxY;
-  // t value for width/heigth of cell
-  double tDeltaX;
-  double tDeltaY;
-  // positive or negative step direction
-  int stepX;
-  int stepY;
   // grid
   bool cSpace[size * size];
   bool inside = false;
-  int hcross1 = 0;
-  int hcross2 = 0;
 
   // _____________________________
   // VARIABLES FOR LOOKUP CREATION
@@ -177,8 +165,8 @@ inline void collisionLookup(Constants::config* lookup) {
     for (int j = 0; j < positionResolution; ++j) {
       // points[positionResolution * i + j].x = 1.f / positionResolution * j + 1.f / (2 * positionResolution);
       // points[positionResolution * i + j].y = 1.f / positionResolution * i + 1.f / (2 * positionResolution);
-      points[positionResolution * i + j].x = 1.f / positionResolution * j ;
-      points[positionResolution * i + j].y = 1.f / positionResolution * i ;
+      points[positionResolution * i + j].x = 1.f / positionResolution * j + 1/(2.f * positionResolution);
+      points[positionResolution * i + j].y = 1.f / positionResolution * i + 1/(2.f * positionResolution);
     }
   }
 
@@ -354,9 +342,10 @@ inline void collisionLookup(Constants::config* lookup) {
         }
       }*/
         float lengthOfOneSide = std::sqrt(std::pow(end.x - start.x,2) + std::pow(end.y - start.y,2));
-        for(int i = 0; i < lengthOfOneSide; ++i){
-            float x = end.x + i * (start.x - end.x) / lengthOfOneSide;
-            float y = end.y + i * (start.y - end.y) / lengthOfOneSide;
+        int lengthOfOneSideInt = std::ceil(lengthOfOneSide);
+        for(int i = 0; i <= lengthOfOneSideInt ; ++i){ //这里留有一点点的富余
+            float x = end.x + i * (start.x - end.x) / (float)lengthOfOneSideInt;
+            float y = end.y + i * (start.y - end.y) / (float)lengthOfOneSideInt;
             cSpace[(int)y * size + (int)x] = true;
         }
       }

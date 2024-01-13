@@ -1,5 +1,5 @@
 #include "algorithmcontour.h"
-
+#include <ros/package.h>
 #include <boost/heap/binomial_heap.hpp>
 #include <CGAL/Cartesian.h>
 #include <CGAL/Segment_2.h>
@@ -404,70 +404,115 @@ bool AlgorithmContour::two3DPointsWhetherCloseAndReverseDirection(CollisionDetec
 }
 
 
-void AlgorithmContour::visualizeNarrowPairs(std::vector<std::pair<Node2D*,Node2D*>> narrowPairs,const cv::Mat & gridMap){
+void AlgorithmContour::visualizeNarrowPairs(std::vector<std::pair<Node2D*,Node2D*>> narrowPairs, const cv::Mat & gridMap){
     int pairsCount = narrowPairs.size();
-    int howManyCols = (int)ceil(sqrt(pairsCount));
+    int howManyCols = std::min((int)ceil(sqrt(pairsCount)), 3);
     int rows = ceil(pairsCount / ((float)howManyCols));
+    rows = std::min(rows, 3);
+
     int singleWidth = gridMap.cols;
     int singleHeight = gridMap.rows;
-    cv::Mat bigImage(rows * singleHeight, howManyCols * singleWidth, CV_8UC3);
+    int pairsPerImage = rows * howManyCols;
+    int totalImages = ceil(pairsCount / (float)pairsPerImage);
 
-    for (int i = 0; i < pairsCount; ++i) {
-        // 创建地图副本
-        cv::Mat mapCopy;
-        cv::cvtColor(gridMap, mapCopy, cv::COLOR_GRAY2BGR);
-        // 绘制点
-        cv::circle(mapCopy, cv::Point(narrowPairs[i].first->getFloatX(), narrowPairs[i].first->getFloatY()), 3, cv::Scalar(0, 0, 255), -1);
-        cv::circle(mapCopy, cv::Point(narrowPairs[i].second->getFloatX(), narrowPairs[i].second->getFloatY()), 3, cv::Scalar(255, 0, 0), -1);
+    for (int img = 0; img < totalImages; ++img) {
+        cv::Mat bigImage(rows * singleHeight, howManyCols * singleWidth, CV_8UC3);
 
-        // 计算当前图像应该放在大图像的位置
-        int row = i / howManyCols;
-        int col = i % howManyCols;
-        mapCopy.copyTo(bigImage(cv::Rect(col * singleWidth, row * singleHeight, singleWidth, singleHeight)));
+        for (int i = img * pairsPerImage; i < std::min((img + 1) * pairsPerImage, pairsCount); ++i) {
+            cv::Mat mapCopy;
+            cv::cvtColor(gridMap, mapCopy, cv::COLOR_GRAY2BGR);
+            
+            cv::circle(mapCopy, cv::Point(narrowPairs[i].first->getFloatX(), narrowPairs[i].first->getFloatY()), Constants::each_meter_to_how_many_pixel*0.5, cv::Scalar(0, 0, 255), -1);
+            cv::circle(mapCopy, cv::Point(narrowPairs[i].second->getFloatX(), narrowPairs[i].second->getFloatY()), Constants::each_meter_to_how_many_pixel*0.5, cv::Scalar(255, 0, 0), -1);
+
+            int row = (i % pairsPerImage) / howManyCols;
+            int col = (i % pairsPerImage) % howManyCols;
+            mapCopy.copyTo(bigImage(cv::Rect(col * singleWidth, row * singleHeight, singleWidth, singleHeight)));
+        }
+
+        cv::Size newSize(700, 700 * gridMap.rows / gridMap.cols);
+        cv::Mat resizedImage;
+        cv::resize(bigImage, resizedImage, newSize);
+        cv::imshow("Resized Narrow Pairs Visualization Image " + std::to_string(img), resizedImage);
+        cv::waitKey(0);
     }
-      cv::Size newSize(900, 900*gridMap.rows/gridMap.cols);
-      cv::Mat resizedImage;
-      cv::resize(bigImage, resizedImage, newSize);
-      cv::imshow("Resized Narrow Pairs Visualization", resizedImage);
-      cv::waitKey(0);
-
 }
 
+
 void AlgorithmContour::visualizePathAndItNarrowPair(std::vector<Node2D> & path, std::pair<Node2D*, Node2D*> narrowPair, const cv::Mat & gridMap){
+    float mul = AlgorithmContour::visualizeMultiplier;  // 放大倍数
     cv::Mat mapCopy;
-    cv::cvtColor(gridMap, mapCopy, cv::COLOR_GRAY2BGR);
-    
-    cv::circle(mapCopy, cv::Point(narrowPair.first->getFloatX(), narrowPair.first->getFloatY()), 3, cv::Scalar(0, 0, 255), -1);
-    cv::circle(mapCopy, cv::Point(narrowPair.second->getFloatX(), narrowPair.second->getFloatY()), 3, cv::Scalar(255, 0, 0), -1);
-
+    cv::resize(gridMap, mapCopy, cv::Size(), mul, mul, cv::INTER_LINEAR);
+    cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
+    cv::circle(mapCopy, cv::Point(narrowPair.first->getFloatX() * mul, narrowPair.first->getFloatY() * mul), 3, cv::Scalar(0, 0, 255), -1);
+    cv::circle(mapCopy, cv::Point(narrowPair.second->getFloatX() * mul, narrowPair.second->getFloatY() * mul), 3, cv::Scalar(255, 0, 0), -1);
     for(uint i = 0; i < path.size(); i++){
-        cv::circle(mapCopy, cv::Point(path[i].getFloatX(), path[i].getFloatY()), 2, cv::Scalar(0, 255, 0), -1);
+        cv::circle(mapCopy, cv::Point(path[i].getFloatX() * mul, path[i].getFloatY() * mul), 2, cv::Scalar(0, 255, 0), -1);
     }
-
+    cv::Size newSize(500 * gridMap.cols / gridMap.rows , 500 );
+    cv::resize(mapCopy, mapCopy, newSize);
     cv::imshow("Path and Narrow Pairs Visualization", mapCopy);
     cv::waitKey(0);
 }
 
+void AlgorithmContour::savePicturePathAndItNarrowPair(std::vector<Node2D> path2D) {
+    float mul = AlgorithmContour::visualizeMultiplier; // 放大倍数
+    cv::Mat mapCopy;
+    cv::resize(this->gridMap, mapCopy, cv::Size(), mul, mul, cv::INTER_LINEAR);
+    cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
+    cv::bitwise_not(mapCopy, mapCopy);
+    // 遍历所有 narrow pairs 和对应的路径
+    for(uint i=0;i<path2D.size();i++){
+        cv::circle(mapCopy, cv::Point(path2D[i].getFloatX() * mul, path2D[i].getFloatY() * mul), 2, cv::Scalar(0, 255, 0), -1);
+    }
+    for(uint i = 0; i < throughNarrowPairs.size(); i++) {
+        std::pair<Node2D*, Node2D*> narrowPair = throughNarrowPairs[i];
+        std::vector<Node2D> & path = throughNarrowPairsWaypoints[i];
+
+        // 绘制 narrow pair
+        cv::circle(mapCopy, cv::Point(narrowPair.first->getFloatX() * mul, narrowPair.first->getFloatY() * mul), 6, cv::Scalar(0, 0, 255), -1);
+        cv::circle(mapCopy, cv::Point(narrowPair.second->getFloatX() * mul, narrowPair.second->getFloatY() * mul), 6, cv::Scalar(255, 0, 0), -1);
+
+        // 绘制路径
+        for(uint j = 0; j < path.size(); j++) {
+            cv::circle(mapCopy, cv::Point(path[j].getFloatX() * mul, path[j].getFloatY() * mul), 2, cv::Scalar(0, 255, 0), -1);
+        }
+    }
+    // std::string packagePath = ros::package::getPath("hybrid_astar");
+    std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
+    std::string imagePath = packagePath + "/picture/PathAndNarrowPairsVisualization.jpg";
+    // 调整图像大小并保存
+    cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
+    cv::resize(mapCopy, mapCopy, newSize);
+    cv::imwrite(imagePath, mapCopy);
+}
+
 void AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(std::pair<Node2D*, Node2D*> narrowPair, keyInfoForThrouthNarrowPair* keyInfo, const cv::Mat & gridMap) {
     cv::Mat mapCopy;
-    cv::cvtColor(gridMap, mapCopy, cv::COLOR_GRAY2BGR);
+    float mul = AlgorithmContour::visualizeMultiplier;  // 放大倍数
+    cv::resize(gridMap, mapCopy, cv::Size(), mul, mul, cv::INTER_LINEAR);
+    cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
+    // 绘制窄对的点，考虑放大倍数
+    cv::circle(mapCopy, cv::Point(narrowPair.first->getFloatX() * mul, narrowPair.first->getFloatY() * mul), 1.5, cv::Scalar(0, 0, 255), -1);
+    cv::circle(mapCopy, cv::Point(narrowPair.second->getFloatX() * mul, narrowPair.second->getFloatY() * mul), 1.5, cv::Scalar(255, 0, 0), -1);
+    cv::circle(mapCopy, cv::Point(keyInfo->centerPoint->getFloatX() * mul, keyInfo->centerPoint->getFloatY() * mul), 1.5, cv::Scalar(0, 255, 0), -1);
+    cv::circle(mapCopy, cv::Point(keyInfo->firstBoundPoint->getFloatX() * mul, keyInfo->firstBoundPoint->getFloatY() * mul), 1.5, cv::Scalar(0, 255, 0), -1);
+    cv::circle(mapCopy, cv::Point(keyInfo->secondBoundPoint->getFloatX() * mul, keyInfo->secondBoundPoint->getFloatY() * mul), 1.5, cv::Scalar(0, 255, 0), -1);
 
-    // 绘制窄对的点
-    cv::circle(mapCopy, cv::Point(narrowPair.first->getFloatX(), narrowPair.first->getFloatY()), 1.5, cv::Scalar(0, 0, 255), -1);
-    cv::circle(mapCopy, cv::Point(narrowPair.second->getFloatX(), narrowPair.second->getFloatY()), 1.5, cv::Scalar(255, 0, 0), -1);
-    cv::circle(mapCopy, cv::Point(keyInfo->centerPoint->getFloatX(), keyInfo->centerPoint->getFloatY()), 1.5, cv::Scalar(0, 255, 0), -1);
-    cv::circle(mapCopy, cv::Point(keyInfo->firstBoundPoint->getFloatX(), keyInfo->firstBoundPoint->getFloatY()), 1.5, cv::Scalar(0, 255, 0), -1);
-    cv::circle(mapCopy, cv::Point(keyInfo->secondBoundPoint->getFloatX(), keyInfo->secondBoundPoint->getFloatY()), 1.5, cv::Scalar(0, 255, 0), -1);
-    // 绘制中垂线
-    cv::Point center(keyInfo->centerPoint->getFloatX(), keyInfo->centerPoint->getFloatY());
-    cv::Point centerVerticalEnd(center.x + Constants::each_meter_to_how_many_pixel * keyInfo->centerVerticalUnitVector.x, center.y + Constants::each_meter_to_how_many_pixel * keyInfo->centerVerticalUnitVector.y);
-    cv::line(mapCopy, center, centerVerticalEnd, cv::Scalar(255, 255, 0), 1);
+    // 绘制中垂线，考虑放大倍数
+    cv::Point center(keyInfo->centerPoint->getFloatX() * mul, keyInfo->centerPoint->getFloatY() * mul);
+    cv::Point centerVerticalEnd(center.x + Constants::each_meter_to_how_many_pixel * keyInfo->centerVerticalUnitVector.x * mul, center.y + Constants::each_meter_to_how_many_pixel * keyInfo->centerVerticalUnitVector.y * mul);
+    cv::line(mapCopy, center, centerVerticalEnd, cv::Scalar(255, 255, 0), 2);
+    // 调整图像大小，考虑放大倍数
+    cv::Size newSize(500 * gridMap.cols / gridMap.rows , 500 );
+    cv::resize(mapCopy, mapCopy, newSize);
 
-    cv::resize(mapCopy, mapCopy, cv::Size(600, 600));
     // 显示图像
     cv::imshow("Key Information Visualization", mapCopy);
     cv::waitKey(0);
 }
+
+
 
 // 绘制向量中的点
 void drawPoints(const std::vector<Node3D>& points, cv::Mat& map, const cv::Scalar& color, float positionMul) {
@@ -654,15 +699,9 @@ void AlgorithmContour::visualizePassSpaceBoundaryForThroughNarrowPair(keyInfoFor
     cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
 
     // 绘制所有路径点
-    // drawPoints(keyInfo->containingWaypointsFirstBPForward, mapCopy, cv::Scalar(255, 0, 0),multiplier); // 红色
-    // cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
-    // cv::waitKey(0); // 等待按键
     drawPoints(keyInfo->containingWaypointsFirstBPBackward, mapCopy, cv::Scalar(0, 255, 0),multiplier); // 绿色
     cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
     cv::waitKey(0); // 等待按键
-    // drawPoints(keyInfo->containingWaypointsSecondBPForward, mapCopy, cv::Scalar(0, 0, 255),multiplier); // 蓝色
-    // cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
-    // cv::waitKey(0); // 等待按键
     drawPoints(keyInfo->containingWaypointsSecondBPBackward, mapCopy, cv::Scalar(255, 255, 0),multiplier); // 黄色
     cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
     cv::waitKey(0); // 等待按键

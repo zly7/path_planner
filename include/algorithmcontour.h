@@ -88,6 +88,8 @@ namespace HybridAStar {
     // void findContaingfFeasibleToCenterVerticalPoint(const Node3D & startPoint,CollisionDetection& configurationSpace);
     // static std::vector<Node3D> findArcByTwoPoints(const Node3D & firstPoint,const Node2D& middlePoint, const directionVector middleVerticalLine);
 
+    //save picture
+    void savePicturePathAndItNarrowPair(std::vector<Node2D> path2D);
     inline void RemoveWallConnection(const std::vector<cv::Point2f>& contour,
                                       const cv::Point2f& add_p,
                                       std::size_t& refined_idx)
@@ -112,6 +114,8 @@ namespace HybridAStar {
           return false;
       }
     };
+
+
 
 }
 #endif // ALGORITHM_CONTOUR_H
