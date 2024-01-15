@@ -212,7 +212,7 @@ static float deltaRadius = 0.1 * r;
 //小车尝试直线需要走的长度
 static float theMindistanceDetermineWhetherTheSameContourPoint = 0.6 * each_meter_to_how_many_pixel;
 static const float minContourPairDistance = width * 1;
-static const float maxContourPairDistance = width * 1.6;
+static const float maxContourPairDistance = width * 1.65;
 static const float maxNarrowSpaceArcLength = length * 1.25; // narrow space 延伸出去的弧度不能太长
 static const int howManyNode2DDeterminesWhetherThroughNarrowContourPair = 3;
 static const int howManyLevelInputPick  = 5; //衡量进入集合应该选取多少层圆弧上的节点

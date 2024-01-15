@@ -1,4 +1,4 @@
-// #define DEBUG_VISUAL_ALGORITHMCONTOUR
+#define DEBUG_VISUAL_ALGORITHMCONTOUR
 // #define DEBUG_MANUAL_START_GOAL
 // #define DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
 // #define DEBUG_VISUAL_COSTMAP
@@ -350,7 +350,7 @@ void Planner::plan() {
       stop  = std::chrono::high_resolution_clock::now();
       duration += std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
       #ifdef DEBUG_VISUAL_ALGORITHMCONTOUR
-      AlgorithmContour::visualizeNarrowPairs(algorithmContour.narrowPairs,algorithmContour.gridMap);
+      //AlgorithmContour::visualizeNarrowPairs(algorithmContour.narrowPairs,algorithmContour.gridMap);
       for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizePathAndItNarrowPair(algorithmContour.throughNarrowPairsWaypoints[i],
               algorithmContour.throughNarrowPairs[i],algorithmContour.gridMap);
@@ -373,7 +373,9 @@ void Planner::plan() {
       AlgorithmContour::visualizeInsetForThroughNarrowPairs(algorithmContour.finalPassSpaceInOutSets,algorithmContour.gridMap);
       #endif
       #ifdef  DEBUG_SAVE_PICTURE
-      algorithmContour.savePicturePathAndItNarrowPair();
+      algorithmContour.savePicturePathAndItNarrowPair(path2D);
+      algorithmContour.savePictureNarrowSpaceBoundary();
+      algorithmContour.savePictureNarrowSpaceInputSet();
       #endif  
       startTime = std::chrono::high_resolution_clock::now();
       Node3D tempStart;

@@ -90,6 +90,8 @@ namespace HybridAStar {
 
     //save picture
     void savePicturePathAndItNarrowPair(std::vector<Node2D> path2D);
+    void savePictureNarrowSpaceBoundary();
+    void savePictureNarrowSpaceInputSet();
     inline void RemoveWallConnection(const std::vector<cv::Point2f>& contour,
                                       const cv::Point2f& add_p,
                                       std::size_t& refined_idx)

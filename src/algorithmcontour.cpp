@@ -17,10 +17,13 @@ Node3D keyInfoForThrouthNarrowPair::getSecondStageMiddleVerticalPoint(){
   float tempT;
   if(this->whetherCloseReverseToGoal){
     tempT = Helper::normalizeHeadingRad(centerVerticalPoint3D.getT() + M_PI);
+    return Node3D(centerVerticalPoint3D.getX(),centerVerticalPoint3D.getY(),tempT,0,0,nullptr);
   }else{
     tempT = centerVerticalPoint3D.getT();
+    float x = centerVerticalPoint3D.getX() - Constants::wheelBase * cos(tempT);
+    float y = centerVerticalPoint3D.getY() - Constants::wheelBase * sin(tempT);
+    return Node3D(x,y,tempT,0,0,nullptr);
   }
-  return Node3D(centerVerticalPoint3D.getX(),centerVerticalPoint3D.getY(),tempT,0,0,nullptr);
 }
 std::vector<std::vector<Node2D*>> AlgorithmContour::findContour(nav_msgs::OccupancyGrid::Ptr grid){
   // Convert the occupancy grid to an OpenCV Mat
@@ -146,6 +149,15 @@ void AlgorithmContour::findNarrowContourPair(){
     }
       // 将新生成的中间节点加入到 allNodes
     allNodes.insert(allNodes.end(), middleNodes.begin(), middleNodes.end());
+    for (size_t i = 0; i < allNodes.size(); ++i) {
+        for (size_t j = i + 1; j < allNodes.size(); ++j) {
+            float distance = allNodes[i]->distanceTo(allNodes[j]);
+            if (distance > minDistance && distance < maxDistance) {
+                this->narrowPairs.emplace_back(allNodes[i], allNodes[j]);
+            }
+        }
+    }
+   /*
    // 步骤1: 创建映射
     std::unordered_map<Node2D*, std::pair<float, Node2D*>> closestPairs;
 
@@ -200,6 +212,7 @@ void AlgorithmContour::findNarrowContourPair(){
             this->narrowPairs.emplace_back(pair.first, pair.second.second);
         }
     }
+    */
     return;
 }
 //筛选出穿过路径的有效的狭窄点对
@@ -209,6 +222,27 @@ void AlgorithmContour::findThroughNarrowContourPair(const std::vector<Node2D> & 
         std::vector<Node2D> containingWaypointsTorecord;
         int aroundWaypointsIndex = 0;
         if (this->determineWhetherThrough2DPath(path, narrowPair,containingWaypointsTorecord,aroundWaypointsIndex)) {
+            Node2D * nodeRepeat1 = narrowPair.first;
+            Node2D * nodeRepeat2 = narrowPair.second;
+            bool whetherSkip = false;
+            for( uint i = 0;i < this->throughNarrowPairs.size();i++){
+              std::pair<Node2D*, Node2D*> nodePair = this->throughNarrowPairs[i];
+              if(nodeRepeat1 == nodePair.first || nodeRepeat1 == nodePair.second || nodeRepeat2 == nodePair.first || nodeRepeat2 == nodePair.second){
+                if(nodeRepeat1->distanceTo(nodeRepeat2) > nodePair.first->distanceTo(nodePair.second)){
+                  whetherSkip = true;
+                  break;
+                }else{
+                  this->throughNarrowPairs.erase(this->throughNarrowPairs.begin()+i);
+                  this->aroundWaypointsIndexOfThroughNarrowPairs.erase(this->aroundWaypointsIndexOfThroughNarrowPairs.begin()+i);
+                  this->throughNarrowPairsWaypoints.erase(this->throughNarrowPairsWaypoints.begin()+i);
+                  break;
+                }
+
+              }
+            }
+            if(whetherSkip){
+              continue;
+            }
             this->throughNarrowPairs.push_back(narrowPair);
             this->aroundWaypointsIndexOfThroughNarrowPairs.push_back(aroundWaypointsIndex);
             // std::reverse(containingWaypointsTorecord.begin(),containingWaypointsTorecord.end()); //拿到的path是从尾部trace过来的，最后决定在外层reverse
@@ -483,6 +517,7 @@ void AlgorithmContour::savePicturePathAndItNarrowPair(std::vector<Node2D> path2D
     std::string imagePath = packagePath + "/picture/PathAndNarrowPairsVisualization.jpg";
     // 调整图像大小并保存
     cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
+    cv::flip(mapCopy, mapCopy, 0);
     cv::resize(mapCopy, mapCopy, newSize);
     cv::imwrite(imagePath, mapCopy);
 }
@@ -700,11 +735,29 @@ void AlgorithmContour::visualizePassSpaceBoundaryForThroughNarrowPair(keyInfoFor
 
     // 绘制所有路径点
     drawPoints(keyInfo->containingWaypointsFirstBPBackward, mapCopy, cv::Scalar(0, 255, 0),multiplier); // 绿色
-    cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
-    cv::waitKey(0); // 等待按键
     drawPoints(keyInfo->containingWaypointsSecondBPBackward, mapCopy, cv::Scalar(255, 255, 0),multiplier); // 黄色
+    cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
+    cv::resize(mapCopy, mapCopy, newSize);
     cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
     cv::waitKey(0); // 等待按键
+}
+void AlgorithmContour::savePictureNarrowSpaceBoundary(){
+    float mul = AlgorithmContour::visualizeMultiplier; // 放大倍数
+    cv::Mat mapCopy;
+    cv::resize(this->gridMap, mapCopy, cv::Size(), mul, mul, cv::INTER_LINEAR);
+    cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
+    cv::bitwise_not(mapCopy, mapCopy);
+    for(keyInfoForThrouthNarrowPair* keyInfo:keyInfoForThrouthNarrowPairs) {
+        drawPoints(keyInfo->containingWaypointsFirstBPBackward, mapCopy, cv::Scalar(0, 0, 255),mul);
+        drawPoints(keyInfo->containingWaypointsSecondBPBackward, mapCopy, cv::Scalar(255,0, 0),mul);
+    }
+    std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
+    std::string imagePath = packagePath + "/picture/PNarrowSpaceBoundaryVisualization.jpg";
+    // 调整图像大小并保存
+    cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
+    cv::flip(mapCopy, mapCopy, 0);
+    cv::resize(mapCopy, mapCopy, newSize);
+    cv::imwrite(imagePath, mapCopy);
 }
 
 
@@ -851,10 +904,39 @@ void AlgorithmContour::visualizeInsetForThroughNarrowPairs(std::vector<finalPass
         // 绘制线段
         cv::arrowedLine(mapCopy, nodePos, endPoint, cv::Scalar(0, 0, 255), 1,8,0,0.3);
     }
+    cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
+    cv::resize(mapCopy, mapCopy, newSize);
     cv::namedWindow("Pass Space Boundary Visualization", cv::WINDOW_NORMAL);
     cv::imshow("Pass Space Boundary Visualization", mapCopy); // 显示图像
     cv::waitKey(0); // 等待按键
   }
+}
+void AlgorithmContour::savePictureNarrowSpaceInputSet(){
+    float mul = AlgorithmContour::visualizeMultiplier; // 放大倍数
+    cv::Mat mapCopy;
+    cv::resize(this->gridMap, mapCopy, cv::Size(), mul, mul, cv::INTER_LINEAR);
+    cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
+    cv::bitwise_not(mapCopy, mapCopy);
+    for( auto &inOutSet:finalPassSpaceInOutSets){
+      for (const auto& node : inOutSet.inSet) {
+          // 节点的放大位置
+          cv::Point2f nodePos(node.getX() * mul, node.getY() * mul);
+
+          // 计算方向向量的终点
+          float length = 10; // 可以根据需要调整长度
+          cv::Point2f direction(cos(node.getT()) * length, sin(node.getT()) * length);
+          cv::Point2f endPoint = nodePos + direction;
+          // 绘制线段
+          cv::arrowedLine(mapCopy, nodePos, endPoint, cv::Scalar(0, 0, 255), 1,8,0,0.3);
+      }
+    }
+    std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
+    std::string imagePath = packagePath + "/picture/NarrowSpaceInputSetVisualization.jpg";
+    // 调整图像大小并保存
+    cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
+    cv::flip(mapCopy, mapCopy, 0);
+    cv::resize(mapCopy, mapCopy, newSize);
+    cv::imwrite(imagePath, mapCopy);
 }
 
 void AlgorithmContour::findNarrowPassSpaceInputSetOfNode3DForAllPairs(CollisionDetection& configurationSpace){
