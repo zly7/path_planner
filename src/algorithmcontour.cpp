@@ -4,6 +4,7 @@
 #include <CGAL/Cartesian.h>
 #include <CGAL/Segment_2.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <unordered_set>
 
 using namespace HybridAStar;
 
@@ -490,35 +491,35 @@ void AlgorithmContour::visualizePathAndItNarrowPair(std::vector<Node2D> & path, 
 }
 
 void AlgorithmContour::savePicturePathAndItNarrowPair(std::vector<Node2D> path2D) {
-    float mul = AlgorithmContour::visualizeMultiplier; // 放大倍数
+    float mul = 10; // 放大倍数
     cv::Mat mapCopy;
     cv::resize(this->gridMap, mapCopy, cv::Size(), mul, mul, cv::INTER_LINEAR);
     cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
     cv::bitwise_not(mapCopy, mapCopy);
     // 遍历所有 narrow pairs 和对应的路径
     for(uint i=0;i<path2D.size();i++){
-        cv::circle(mapCopy, cv::Point(path2D[i].getFloatX() * mul, path2D[i].getFloatY() * mul), 2, cv::Scalar(0, 255, 0), -1);
+        cv::circle(mapCopy, cv::Point(path2D[i].getFloatX() * mul, path2D[i].getFloatY() * mul), 2 * mul, cv::Scalar(0, 255, 0), -1);
     }
     for(uint i = 0; i < throughNarrowPairs.size(); i++) {
         std::pair<Node2D*, Node2D*> narrowPair = throughNarrowPairs[i];
         std::vector<Node2D> & path = throughNarrowPairsWaypoints[i];
 
         // 绘制 narrow pair
-        cv::circle(mapCopy, cv::Point(narrowPair.first->getFloatX() * mul, narrowPair.first->getFloatY() * mul), 6, cv::Scalar(0, 0, 255), -1);
-        cv::circle(mapCopy, cv::Point(narrowPair.second->getFloatX() * mul, narrowPair.second->getFloatY() * mul), 6, cv::Scalar(255, 0, 0), -1);
+        cv::circle(mapCopy, cv::Point(narrowPair.first->getFloatX() * mul, narrowPair.first->getFloatY() * mul), 4 * mul, cv::Scalar(0, 0, 255), -1);
+        cv::circle(mapCopy, cv::Point(narrowPair.second->getFloatX() * mul, narrowPair.second->getFloatY() * mul), 4 * mul, cv::Scalar(255, 0, 0), -1);
 
         // 绘制路径
         for(uint j = 0; j < path.size(); j++) {
-            cv::circle(mapCopy, cv::Point(path[j].getFloatX() * mul, path[j].getFloatY() * mul), 2, cv::Scalar(0, 255, 0), -1);
+            cv::circle(mapCopy, cv::Point(path[j].getFloatX() * mul, path[j].getFloatY() * mul), 2*mul, cv::Scalar(0, 255, 0), -1);
         }
     }
     // std::string packagePath = ros::package::getPath("hybrid_astar");
     std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
     std::string imagePath = packagePath + "/picture/PathAndNarrowPairsVisualization.jpg";
     // 调整图像大小并保存
-    cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
+    // cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
     cv::flip(mapCopy, mapCopy, 0);
-    cv::resize(mapCopy, mapCopy, newSize);
+    // cv::resize(mapCopy, mapCopy, newSize);
     cv::imwrite(imagePath, mapCopy);
 }
 
@@ -551,12 +552,12 @@ void AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(std::pair<Node2D*, N
 
 // 绘制向量中的点
 void drawPoints(const std::vector<Node3D>& points, cv::Mat& map, const cv::Scalar& color, float positionMul) {
-    int arrowLength = 8;
+    int arrowLength = 6 * positionMul;
     auto drawArrow = [&](const Node3D &startNode3D) {
       directionVector direction = directionVector::getUnitVectorFromNode3D(&startNode3D);
       cv::Point start(startNode3D.getX() * positionMul, startNode3D.getY() * positionMul);
       cv::Point end(start.x + direction.x * arrowLength, start.y + direction.y * arrowLength);
-      cv::arrowedLine(map, start, end, color, 1, 8, 0, 0.3);
+      cv::arrowedLine(map, start, end, color, 1 * positionMul, 8, 0, 0.3);
     };
     for (const auto& point : points) {
         drawArrow(point);
@@ -742,7 +743,7 @@ void AlgorithmContour::visualizePassSpaceBoundaryForThroughNarrowPair(keyInfoFor
     cv::waitKey(0); // 等待按键
 }
 void AlgorithmContour::savePictureNarrowSpaceBoundary(){
-    float mul = AlgorithmContour::visualizeMultiplier; // 放大倍数
+    float mul = 10; // 放大倍数
     cv::Mat mapCopy;
     cv::resize(this->gridMap, mapCopy, cv::Size(), mul, mul, cv::INTER_LINEAR);
     cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
@@ -754,9 +755,9 @@ void AlgorithmContour::savePictureNarrowSpaceBoundary(){
     std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
     std::string imagePath = packagePath + "/picture/PNarrowSpaceBoundaryVisualization.jpg";
     // 调整图像大小并保存
-    cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
+    // cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
     cv::flip(mapCopy, mapCopy, 0);
-    cv::resize(mapCopy, mapCopy, newSize);
+    // cv::resize(mapCopy, mapCopy, newSize);
     cv::imwrite(imagePath, mapCopy);
 }
 
@@ -863,9 +864,9 @@ std::vector<Node3D> AlgorithmContour::findInputSetOfNode3DByTwoVectorAndMiddleVe
       cv::imshow("visual the middle point", mapCopy); // 显示图像
       cv::waitKey(0); // 等待按键
     }
-    std::vector<Node3D> firstPath = interpolatePath(firstPoint, intersection, 1.0);
+    std::vector<Node3D> firstPath = interpolatePath(firstPoint, intersection, 3.0);
     // 计算从 Intersection 到 SecondPoint 的路径
-    std::vector<Node3D> secondPath = interpolatePath(intersection,secondPoint, 1.0);
+    std::vector<Node3D> secondPath = interpolatePath(intersection,secondPoint, 3.0);
     std::vector<Node3D> resultVector;
     // 反转 firstPath 以确保靠近 intersection 的点在前
     std::reverse(firstPath.begin(), firstPath.end());
@@ -912,7 +913,7 @@ void AlgorithmContour::visualizeInsetForThroughNarrowPairs(std::vector<finalPass
   }
 }
 void AlgorithmContour::savePictureNarrowSpaceInputSet(){
-    float mul = AlgorithmContour::visualizeMultiplier; // 放大倍数
+    float mul = 10; // 放大倍数
     cv::Mat mapCopy;
     cv::resize(this->gridMap, mapCopy, cv::Size(), mul, mul, cv::INTER_LINEAR);
     cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
@@ -923,19 +924,19 @@ void AlgorithmContour::savePictureNarrowSpaceInputSet(){
           cv::Point2f nodePos(node.getX() * mul, node.getY() * mul);
 
           // 计算方向向量的终点
-          float length = 10; // 可以根据需要调整长度
+          float length = 8 * mul; // 可以根据需要调整长度
           cv::Point2f direction(cos(node.getT()) * length, sin(node.getT()) * length);
           cv::Point2f endPoint = nodePos + direction;
           // 绘制线段
-          cv::arrowedLine(mapCopy, nodePos, endPoint, cv::Scalar(0, 0, 255), 1,8,0,0.3);
+          cv::arrowedLine(mapCopy, nodePos, endPoint, cv::Scalar(0, 0, 255), 0.8 * mul,8,0,0.3);
       }
     }
     std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
     std::string imagePath = packagePath + "/picture/NarrowSpaceInputSetVisualization.jpg";
     // 调整图像大小并保存
-    cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
+    // cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
     cv::flip(mapCopy, mapCopy, 0);
-    cv::resize(mapCopy, mapCopy, newSize);
+    // cv::resize(mapCopy, mapCopy, newSize);
     cv::imwrite(imagePath, mapCopy);
 }
 

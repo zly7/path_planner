@@ -15,6 +15,7 @@ namespace HybridAStar {
   class Visualize;
   class AlgorithmSplit {
   public:
+  bool whetherPrint = false;
     /// The deault constructor
     AlgorithmSplit() {}
 

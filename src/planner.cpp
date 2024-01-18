@@ -257,25 +257,21 @@ void Planner::plan() {
     }
 
     if(Constants::algorithm == "split_hybrid_astar"){
+      auto startTime = std::chrono::high_resolution_clock::now();
       Node2D* nodes2D = new Node2D[width * height]();
       Node2D* nSolution2D = Algorithm::aStar2D(nStart2D, nGoal2D, nodes2D, width, height, configurationSpace, visualization);
       smoother.tracePath2D(nSolution2D);
       
       std::vector<Node2D> path2D=smoother.getPath2D();
-      std::cout << "Path 2D Result: " << std::endl;
-      for (const auto& node : path2D) {
-        std::cout << "Node: X = " << node.getX() << ", Y = " << node.getY() << std::endl;
-      }
+      std::reverse(path2D.begin(),path2D.end());
       float deltaL=0.3;
       AlgorithmSplit::node2DToBox(path2D,width,height,configurationSpace,deltaL);
-      float threshold=13;
-      std::vector<Node3D> nodeBou=AlgorithmSplit::findBou(nStart,nGoal,path2D,threshold);
+      float threshold=Constants::width * 1.4;
+      std::vector<Node3D> nodeBou=AlgorithmSplit::findBou(nStart,nGoal,path2D,threshold); //当时陈睿瑶这里没有把path反向
       path.update2DPath(path2D);
 
       path.publishPath2DNodes();
       path.publishPathBoxes();
-      // smoothedPath.publishPathBoxes();
-      // smoothedPath.publishPath2DNodes();
       
       std::cout<<"findBou Finished!"<<std::endl;
       int k=0;
@@ -286,33 +282,23 @@ void Planner::plan() {
         Node2D* nodes2D = new Node2D[width * height]();
         std::cout << "start " << i << " " << nodeBou[i].getX() << " " << nodeBou[i].getY() <<std::endl;
         std::cout << "end   " << i << " " << nodeBou[i-1].getX() << " " << nodeBou[i-1].getY() <<std::endl;
-        nSolution = Algorithm::hybridAStar(nodeBou[i], nodeBou[i-1], nodes3D, nodes2D, width, height, 
+        nSolution = Algorithm::hybridAStar(nodeBou[i-1], nodeBou[i], nodes3D, nodes2D, width, height, 
               configurationSpace, dubinsLookup, visualization);
-        // nodeBou[i-1].setPred(nSolution);
         std::cout<<" nSolusion "<<nSolution->getX()<<" "<<nSolution->getY()<<std::endl;
         std::cout<<" nSolusion end "<<nodeBou[i-1].getX()<<" "<<nodeBou[i-1].getY()<<std::endl;
         // TRACE THE PATH
         smoother.tracePath(nSolution,0,smoother.getPath());
-        // CREATE THE UPDATED PATH
-        std::cout << "3D path number" << smoother.getPath().size() << std::endl;
-        // path.updatePathFromK(smoother.getPath(),k);
-        // smoother.smoothPath(voronoiDiagram); //you don't know its effect
-        // CREATE THE UPDATED PATH
-        // smoothedPath.updatePathFromK(smoother.getPath(),k);
-        // k++;
         delete [] nodes3D;
         delete [] nodes2D;
-
       }
-      // smoother.tracePath(nSolution);
-      //   // CREATE THE UPDATED PATH
-      // std::cout << "3D path number" << smoother.getPath().size() << std::endl;
-      // path.updatePathFromK(smoother.getPath(),k);
-      //   // smoother.smoothPath(voronoiDiagram); //you don't know its effect
-      //   // CREATE THE UPDATED PATH
-      smoothedPath.updatePathFromK(smoother.getPath(),k);
+      path.updatePath(smoother.getPath());
+      smoothedPath.updatePath(smoother.getPath());
       k++;
+      auto stop = std::chrono::high_resolution_clock::now();
+      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      std::cout << "split HA搜索消耗时间: "<< duration.count() << "  ms" << std::endl;
     }else if(Constants::algorithm == "hybrid_astar"){
+      auto startTime = std::chrono::high_resolution_clock::now();
       Node3D* nodes3D = new Node3D[length]();
       Node2D* nodes2D = new Node2D[width * height]();
       // FIND THE PATH
@@ -322,12 +308,15 @@ void Planner::plan() {
       // CREATE THE UPDATED PATH
       path.updatePath(smoother.getPath());
       // SMOOTH THE PATH
-      smoother.smoothPath(voronoiDiagram);
+      // smoother.smoothPath(voronoiDiagram);//计时的时候不应该计算这段
       // CREATE THE UPDATED PATH
       smoothedPath.updatePath(smoother.getPath());
 
-        delete [] nodes3D;
-        delete [] nodes2D;
+      delete [] nodes3D;
+      delete [] nodes2D;
+      auto stop = std::chrono::high_resolution_clock::now();
+      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      std::cout << "HA搜索消耗时间: "<< duration.count() << "  ms" << std::endl;
     }else if(Constants::algorithm == "contour_hybrid_astar"){
 
       Node2D* nodes2D = new Node2D[width * height]();
@@ -349,6 +338,8 @@ void Planner::plan() {
       algorithmContour.sortThroughNarrowPairsWaypoints();//按照路径前后重排序狭窄点
       stop  = std::chrono::high_resolution_clock::now();
       duration += std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      auto tempDuration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      std::cout << "寻找到狭窄点对消耗时间: "<< tempDuration.count() << "  ms" << std::endl;
       #ifdef DEBUG_VISUAL_ALGORITHMCONTOUR
       //AlgorithmContour::visualizeNarrowPairs(algorithmContour.narrowPairs,algorithmContour.gridMap);
       for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
@@ -362,6 +353,8 @@ void Planner::plan() {
       algorithmContour.findNarrowPassSpaceInputSetOfNode3DForAllPairs(configurationSpace);
       stop  = std::chrono::high_resolution_clock::now();
       duration += std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      tempDuration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      std::cout << "寻找到狭窄点对的可行域消耗时间: "<< tempDuration.count() << "  ms" << std::endl;
       #ifdef DEBUG_VISUAL_ALGORITHMCONTOUR
       for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(algorithmContour.throughNarrowPairs[i],
@@ -392,6 +385,9 @@ void Planner::plan() {
         nSolution1 = Algorithm::hybridAStarMultiGoals(tempStart, goals, nodes3D, nodes2DSplitSearch, width, height, 
             configurationSpace, dubinsLookup, visualization);
         smoother.tracePathAndReverse(nSolution1);//在h函数里面有可以省略后面两个参数的定义
+        if(!Constants::whetherSplitSearch){
+          tempStart = *nSolution1;
+        }
         #ifdef DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
         smoothedPath.tempUpdatePathNode(smoother.getPath());
         smoothedPath.publishPathNodes();
@@ -400,28 +396,34 @@ void Planner::plan() {
         visualization.publishNode3DCosts(nodes3D, width, height, depth);
         visualization.publishNode2DCosts(nodes2DSplitSearch, width, height);
         #endif
-        Node3D* nSolution2 = nullptr; //缓存目标节点
-        Node3D startSecondStage = *nSolution1;
-        delete [] nodes3D;
-        delete [] nodes2DSplitSearch;
-        Node3D* nodes3Dt = new Node3D[length]();
-        Node2D* nodes2DSplitSearcht = new Node2D[width * height]();
-        nSolution2= Algorithm::hybridAStar(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), nodes3Dt, nodes2DSplitSearcht, width, height, 
-          configurationSpace, dubinsLookup, visualization);
-        //tempGoal = Algorithm::ArcShot(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), configurationSpace);
-        if(nSolution2!=nullptr ){
-          smoother.tracePathAndReverse(nSolution2->getPred());
+        if(Constants::whetherSplitSearch){
+            Node3D* nSolution2 = nullptr; //缓存目标节点
+            Node3D startSecondStage = *nSolution1;
+            // auto startTime2 = std::chrono::high_resolution_clock::now();
+            delete [] nodes3D;
+            delete [] nodes2DSplitSearch;
+            Node3D* nodes3Dt = new Node3D[length]();
+            Node2D* nodes2DSplitSearcht = new Node2D[width * height]();
+            // auto endTime2 = std::chrono::high_resolution_clock::now();
+            // auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(endTime2 - startTime2);
+            // std::cout << "删除数组内存申请数组内存花费时间: "<< duration2.count() << "  ms" << std::endl;
+            nSolution2= Algorithm::hybridAStar(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), nodes3Dt, nodes2DSplitSearcht, width, height, 
+              configurationSpace, dubinsLookup, visualization);
+            //tempGoal = Algorithm::ArcShot(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), configurationSpace);
+            if(nSolution2!=nullptr ){
+              smoother.tracePathAndReverse(nSolution2->getPred());
+            }
+            if(nSolution2==nullptr){
+              std::cout<<"在Set之间的dubinsShot搜索出现了问题"<<std::endl;
+            }
+            tempStart = *nSolution2; 
+            #ifdef DEBUG_VISUAL_COSTMAP
+            visualization.publishNode3DCosts(nodes3Dt, width, height, depth);
+            visualization.publishNode2DCosts(nodes2DSplitSearcht, width, height);
+            #endif
+            delete [] nodes3Dt;
+            delete [] nodes2DSplitSearcht;
         }
-        if(nSolution2==nullptr){
-          std::cout<<"在Set之间的dubinsShot搜索出现了问题"<<std::endl;
-        }
-        tempStart = *nSolution2;
-        #ifdef DEBUG_VISUAL_COSTMAP
-        visualization.publishNode3DCosts(nodes3Dt, width, height, depth);
-        visualization.publishNode2DCosts(nodes2DSplitSearcht, width, height);
-        #endif
-        delete [] nodes3Dt;
-        delete [] nodes2DSplitSearcht;
         #ifdef DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
         std::cout<<"第"<<i<<"个Set搜索完毕"<<std::endl;
         smoothedPath.tempUpdatePathNode(smoother.getPath());
@@ -461,6 +463,8 @@ void Planner::plan() {
 
       stop = std::chrono::high_resolution_clock::now();
       duration += std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      tempDuration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      std::cout << "多次HA搜索消耗时间: "<< tempDuration.count() << "  ms" << std::endl;
       std::cout << "ALgorithmContour总花时间: "<< duration.count() << "  ms" << std::endl;
       // SMOOTH THE PATH
       smoother.smoothPath(voronoiDiagram);

@@ -1,7 +1,7 @@
 #include "algorithmsplit.h"
 
 #include <boost/heap/binomial_heap.hpp>
-
+// #define DEBUG_WHETHER_OUTPUT
 using namespace HybridAStar;
 
 void AlgorithmSplit::node2DToBox(std::vector<Node2D> &path2D, 
@@ -47,52 +47,58 @@ std::vector<Node3D> AlgorithmSplit::findBou(Node3D& start,
                   float threshold){
   // std::vector<Node2D> nodeSeq;
   std::vector<Node3D> nodeBou;
-  nodeBou.push_back(goal);
+  nodeBou.push_back(start);
   bool narrowFlag = false;
-  bool wideFlag = false;
-  std::cout<<"path2D "<< path2D.size() <<std::endl;
-  std::cout<<start.getT()<<" "<<goal.getT()<<std::endl;
+  bool wideFlag = true;
+  #ifdef DEBUG_WHETHER_OUTPUT
+    std::cout<<"path2D "<< path2D.size() <<std::endl;
+    std::cout<<start.getT()<<" "<<goal.getT()<<std::endl;
+  #endif
+
   
-  for (size_t i = 0; i < path2D.size(); ++i) {
+  for (size_t i = 0; i < path2D.size()-1; ++i) {
     float radius = path2D[i].getRadius();
-    std::cout<< i << " " << path2D[i].getX() << " " << path2D[i].getY() <<std::endl;
     if(radius*2>=threshold){
       wideFlag=true;
       path2D[i].setWide(true);
       if(narrowFlag){
         narrowFlag=false;
-        // nodeSeq.push_back(path2D[i-1]);
-        // nodeSeq.push_back(path2D[i]);
         path2D[i].setBoundary(true);
-        std::cout<<"x "<<(path2D[i].getX()-path2D[i+1].getX())<<" y "<<(path2D[i].getY()-path2D[i+1].getY())<<std::endl;
-        float nt=atan2f((path2D[i].getY()-path2D[i+1].getY()),(path2D[i].getX()-path2D[i+1].getX()));
+        #ifdef DEBUG_WHETHER_OUTPUT
+        std::cout<<"x "<<(path2D[i].getFloatX()-path2D[i+1].getFloatX())<<" y "<<(path2D[i].getFloatY()-path2D[i+1].getFloatY())<<std::endl;
+        #endif
+        float nt=atan2f((path2D[i+1].getFloatY()-path2D[i].getFloatY()),(path2D[i+1].getFloatX()-path2D[i].getFloatX()));
         nt=Helper::normalizeHeadingRad(nt);
-        Node3D node3d(path2D[i].getIntX(), path2D[i].getIntY(), nt, 0, 0, nullptr);
+        Node3D node3d(path2D[i].getFloatX(), path2D[i].getFloatX(), nt, 0, 0, nullptr);
         nodeBou.push_back(node3d);
+        #ifdef DEBUG_WHETHER_OUTPUT
         std::cout << "bouBox" << " " << i+1  << " " << path2D[i+1].getIntX()  << " " <<path2D[i+1].getIntY() << std::endl;
         std::cout << "bouBox" << " " << i  << " " << radius << " " << path2D[i].getIntX()  << " " <<path2D[i].getIntY() << " " << node3d.getT() << std::endl;
+        #endif
       }
     }else{
       narrowFlag=true;
       if(wideFlag){
         wideFlag=false;
-        // nodeSeq.push_back(path2D[i-1]);
-        // nodeSeq.push_back(path2D[i]);
         path2D[i].setBoundary(true);
-        std::cout<<"x "<<(path2D[i].getX()-path2D[i+1].getX())<<" y "<<(path2D[i].getY()-path2D[i+1].getY())<<std::endl;
-        float nt=atan2f((path2D[i].getY()-path2D[i+1].getY()),(path2D[i].getX()-path2D[i+1].getX()));
+        #ifdef DEBUG_WHETHER_OUTPUT
+        std::cout<<"x "<<(path2D[i].getFloatX()-path2D[i+1].getFloatX())<<" y "<<(path2D[i].getFloatY()-path2D[i+1].getFloatY())<<std::endl;
+        #endif
+        float nt=atan2f((path2D[i+1].getFloatY()-path2D[i].getFloatY()),(path2D[i+1].getFloatX()-path2D[i].getFloatX()));
         nt=Helper::normalizeHeadingRad(nt);
-        Node3D node3d(path2D[i].getIntX(), path2D[i].getIntY(), nt, 0, 0, nullptr);
+        Node3D node3d(path2D[i].getFloatX(), path2D[i].getFloatY(), nt, 0, 0, nullptr);
         nodeBou.push_back(node3d);
+        #ifdef DEBUG_WHETHER_OUTPUT
         std::cout << "bouBox" << " " << i-1  << " " << path2D[i+1].getIntX()  << " " <<path2D[i+1].getIntY() << std::endl;
         std::cout << "bouBox" << " " << i  << " " << radius << " " << path2D[i].getIntX()  << " " <<path2D[i].getIntY() << " " << node3d.getT() << std::endl;
+        #endif
       }
     }
   }
-  nodeBou.push_back(start);
+  nodeBou.push_back(goal);
   std::cout << "nodeBou number" << nodeBou.size() << std::endl;
   for (size_t i = 0; i < nodeBou.size()-1; ++i) {
-    // float nt=atan2f((nodeBou[i].getX()-nodeBou[i-1].getX()),(nodeBou[i].getY()-nodeBou[i-1].getY()));
+    // float nt=atan2f((nodeBou[i].getFloatX()-nodeBou[i-1].getFloatX()),(nodeBou[i].getFloatY()-nodeBou[i-1].getFloatY()));
     // nodeBou[i].setT(Helper::normalizeHeadingRad(nt));
     std::cout << i << " " << nodeBou[i].getX() << " "  << nodeBou[i].getY() << " "  << nodeBou[i].getT() << std::endl;
   }

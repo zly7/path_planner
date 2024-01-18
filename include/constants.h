@@ -63,7 +63,7 @@ static const bool twoD = true;
 // GENERAL CONSTANTS
 
 /// [#] --- Limits the maximum search depth of the algorithm, possibly terminating without the solution
-static const int iterations = 200000;
+static const int iterations = 500000;
 static const int iterationsToPrint = 10000;
 /// [m] --- Uniformly adds a padding around the vehicle
 static const double bloating = 0;
@@ -234,6 +234,7 @@ static const float fuzzyLength = length * 0.25;//现在暂定车长的前后0.25
 static const bool useAutoTest = true;
 static const float findNarrowSpaceMoveDistance = deltaHeadingRad * minRadius;
 static const float drwaOffset = 0.05 * each_meter_to_how_many_pixel;
+static const bool whetherSplitSearch = false;
 }
 }
 #endif // CONSTANTS

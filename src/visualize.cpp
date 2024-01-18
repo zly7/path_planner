@@ -128,8 +128,8 @@ void Visualize::publishNode3DStartAndGoal(Node3D& start, Node3D& goal){
   marker.pose.position.y = start.getY() * Constants::cellSize;
   marker.pose.position.z = 0;
   marker.pose.orientation = tf::createQuaternionMsgFromYaw(start.getT());
-  marker.scale.x = 1;  // 箭头长度
-  marker.scale.y = 0.5; // 箭头宽度
+  marker.scale.x = 2;  // 箭头长度
+  marker.scale.y = 1; // 箭头宽度
   marker.scale.z = 0; // 箭头高度
   marker.color.a = 0.6; 
   marker.color.r = 0.0;
@@ -143,6 +143,9 @@ void Visualize::publishNode3DStartAndGoal(Node3D& start, Node3D& goal){
   marker.pose.position.y = goal.getY() * Constants::cellSize;
   marker.pose.position.z = 0;
   marker.pose.orientation = tf::createQuaternionMsgFromYaw(goal.getT());
+  marker.scale.x = 2;  // 箭头长度
+  marker.scale.y = 1; // 箭头宽度
+  marker.scale.z = 0; // 箭头高度
   marker.color.r = 1.0;
   marker.color.g = 0.0;
   marker.color.b = 0.0; // 红色表示终点

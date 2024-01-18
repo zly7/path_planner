@@ -159,7 +159,7 @@ std::vector<Node3D> Node3D::interpolateDirect(const Node3D& start, const Node3D&
 
   // 计算两点之间的距离
   float distance = sqrt(pow(end.x - start.x, 2) + pow(end.y - start.y, 2));
-  int numPoints = distance / interval;
+  int numPoints = std::ceil(distance / interval);
   float deltaAngel = end.t-start.t;
   int primToInherit = start.prim;
   if(deltaAngel >  M_PI){
@@ -176,7 +176,5 @@ std::vector<Node3D> Node3D::interpolateDirect(const Node3D& start, const Node3D&
       interpolatedNodes.emplace_back(x, y, t);
       interpolatedNodes.back().prim = primToInherit;//这里主要是为了不影响是正着走还是反着走
   }
-  interpolatedNodes.push_back(end);
-
   return interpolatedNodes;
 }
