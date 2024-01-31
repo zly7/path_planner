@@ -78,7 +78,10 @@ Node3D* Node3D::createSuccessor(const int i) {
   float tSucc; 
   float tempDy[Node3D::dir];
   float tempDx[Node3D::dir];
-  float randomValue = Node3D::dis(Node3D::gen);
+  float randomValue = 1.0;
+  if(Constants::useRandomGeneratingSuccessor){
+    randomValue = Node3D::dis(Node3D::gen);
+  }
   // 对静态数组进行操作并除以随机数
   for (int j = 0; j < Node3D::dir; ++j) {
       tempDy[j] = dy[j] / randomValue;

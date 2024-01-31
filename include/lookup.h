@@ -146,12 +146,8 @@ inline void collisionLookup(Constants::config* lookup) {
   // vector for grid traversal
   point start;
   point end;
-  // cell index
-  int X;
-  int Y;
   // grid
   bool cSpace[size * size];
-  bool inside = false;
 
   // _____________________________
   // VARIABLES FOR LOOKUP CREATION
@@ -163,8 +159,6 @@ inline void collisionLookup(Constants::config* lookup) {
   // generate all discrete positions within one cell
   for (int i = 0; i < positionResolution; ++i) {
     for (int j = 0; j < positionResolution; ++j) {
-      // points[positionResolution * i + j].x = 1.f / positionResolution * j + 1.f / (2 * positionResolution);
-      // points[positionResolution * i + j].y = 1.f / positionResolution * i + 1.f / (2 * positionResolution);
       points[positionResolution * i + j].x = 1.f / positionResolution * j + 1/(2.f * positionResolution);
       points[positionResolution * i + j].y = 1.f / positionResolution * i + 1/(2.f * positionResolution);
     }
@@ -242,6 +236,21 @@ inline void collisionLookup(Constants::config* lookup) {
       // create the next angle
       theta += Constants::deltaHeadingRad;
 
+      auto drawLine = [](const point& start, const point& end, bool* cSpace, int size) {
+          int X = (int)start.x;
+          int Y = (int)start.y;
+          cSpace[Y * size + X] = true;
+
+          float lengthOfOneSide = std::sqrt(std::pow(end.x - start.x, 2) + std::pow(end.y - start.y, 2));
+          int lengthOfOneSideInt = std::ceil(lengthOfOneSide);
+
+          for (int i = 0; i <= lengthOfOneSideInt; ++i) {
+              float x = end.x + i * (start.x - end.x) / (float)lengthOfOneSideInt;
+              float y = end.y + i * (start.y - end.y) / (float)lengthOfOneSideInt;
+              cSpace[(int)y * size + (int)x] = true;
+          }
+      };
+
       // cell traversal clockwise
       for (int k = 0; k < 4; ++k) {
         // create the vectors clockwise
@@ -252,103 +261,14 @@ inline void collisionLookup(Constants::config* lookup) {
           start = nP[k];
           end = nP[0];
         }
-
-        //set indexes
-        X = (int)start.x;
-        Y = (int)start.y;
-        //      std::cout << "StartCell: " << X << "," << Y << std::endl;
-        cSpace[Y * size + X] = true;
-        /* t.x = end.x - start.x;
-        t.y = end.y - start.y;
-        stepX = sign(t.x);
-        stepY = sign(t.y);
-
-        // width and height normalized by t
-        if (t.x != 0) {
-          tDeltaX = 1.f / std::abs(t.x);
-        } else {
-          tDeltaX = 1000;
-        }
-
-        if (t.y != 0) {
-          tDeltaY = 1.f / std::abs(t.y);
-        } else {
-          tDeltaY = 1000;
-        }
-
-        // set maximum traversal values
-        if (stepX > 0) {
-          tMaxX = tDeltaX * (1 - (start.x - (long)start.x));
-        } else {
-          tMaxX = tDeltaX * (start.x - (long)start.x);
-        }
-
-        if (stepY > 0) {
-          tMaxY = tDeltaY * (1 - (start.y - (long)start.y));
-        } else {
-          tMaxY = tDeltaY * (start.y - (long)start.y);
-        }
-
-        while ((int)end.x != X || (int)end.y != Y) {
-          // only increment x if the t length is smaller and the result will be closer to the goal
-          if (tMaxX < tMaxY && std::abs(X + stepX - (int)end.x) < std::abs(X - (int)end.x)) {
-            tMaxX = tMaxX + tDeltaX;
-            X = X + stepX;
-            cSpace[Y * size + X] = true;
-            // only increment y if the t length is smaller and the result will be closer to the goal
-          } else if (tMaxY < tMaxX && std::abs(Y + stepY - (int)end.y) < std::abs(Y - (int)end.y)) {
-            tMaxY = tMaxY + tDeltaY;
-            Y = Y + stepY;
-            cSpace[Y * size + X] = true;
-          } else if (2 >= std::abs(X - (int)end.x) + std::abs(Y - (int)end.y)) {
-            if (std::abs(X - (int)end.x) > std::abs(Y - (int)end.y)) {
-              X = X + stepX;
-              cSpace[Y * size + X] = true;
-            } else {
-              Y = Y + stepY;
-              cSpace[Y * size + X] = true;
-            }
-          } else {
-            // this SHOULD NOT happen
-            std::cout << "\n--->tie occured, please check for error in script\n";
-            break;
-          }
-        }
+        drawLine(start, end, cSpace, size);
       }
-
-      // FILL THE SHAPE
-      for (int i = 0; i < size; ++i) {
-        // set inside to false
-        inside = false;
-
-        for (int j = 0; j < size; ++j) {
-
-          // determine horizontal crossings
-          for (int k = 0; k < size; ++k) {
-            if (cSpace[i * size + k] && !inside) {
-              hcross1 = k;
-              inside = true;
-            }
-
-            if (cSpace[i * size + k] && inside) {
-              hcross2 = k;
-            }
-          }
-
-          // if inside fill
-          if (j > hcross1 && j < hcross2 && inside) {
-            cSpace[i * size + j] = true;
-          }
-        }
-      }*/
-        float lengthOfOneSide = std::sqrt(std::pow(end.x - start.x,2) + std::pow(end.y - start.y,2));
-        int lengthOfOneSideInt = std::ceil(lengthOfOneSide);
-        for(int i = 0; i <= lengthOfOneSideInt ; ++i){ //这里留有一点点的富余
-            float x = end.x + i * (start.x - end.x) / (float)lengthOfOneSideInt;
-            float y = end.y + i * (start.y - end.y) / (float)lengthOfOneSideInt;
-            cSpace[(int)y * size + (int)x] = true;
-        }
-      }
+      start = point{(nP[0].x + nP[1].x)/2,(nP[0].y + nP[1].y)/2};
+      end = point{(nP[2].x + nP[3].x)/2,(nP[2].y + nP[3].y)/2};
+      drawLine(start, end, cSpace, size);
+      start = point{(nP[1].x + nP[2].x)/2,(nP[1].y + nP[2].y)/2};
+      end = point{(nP[3].x + nP[0].x)/2,(nP[3].y + nP[0].y)/2};
+      drawLine(start, end, cSpace, size);
       // GENERATE THE ACTUAL LOOKUP
       count = 0;
 

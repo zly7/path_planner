@@ -15,7 +15,8 @@
 
 #include "constants.h"
 #include "planner.h"
-
+#include <yaml-cpp/yaml.h>
+#include <regex>
 //###################################################
 //                              COUT STANDARD MESSAGE
 //###################################################
@@ -53,9 +54,31 @@ int main(int argc, char** argv) {
 
   ros::init(argc, argv, "a_star");
 
+
+  std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
+  std::string yamlPath = packagePath + "/src/path_planner/maps/map.yaml";
+  YAML::Node config = YAML::LoadFile(yamlPath);
+  std::string unique_number = "-1";
+  if (config["image"]) {
+    std::string map_image = config["image"].as<std::string>();
+    size_t tpcap_pos = map_image.find("TPCAP");
+    if (tpcap_pos != std::string::npos) {
+      std::regex number_regex("(\\d+)");
+      std::smatch match;
+      if (std::regex_search(map_image, match, number_regex)) {
+          unique_number = match[0].str();
+      }
+    }
+  }
+  std::ofstream out("/home/zly/plannerAll/catkin_path_planner/finalTime/ENHA/TPCAP_"+unique_number+".txt", std::ios::app);
+  std::streambuf *coutbuf = std::cout.rdbuf();
+  std::cout.rdbuf(out.rdbuf());
+
   HybridAStar::Planner hy;
   hy.plan(); 
 
   ros::spin();
+  std::cout.rdbuf(coutbuf);
+  out.close();
   return 0;
 }

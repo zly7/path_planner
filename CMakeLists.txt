@@ -78,7 +78,7 @@ endif(NOT OMPL_FOUND)
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 find_package(CGAL REQUIRED)
-
+find_package(yaml-cpp REQUIRED)
 
 include_directories(include ${catkin_INCLUDE_DIRS})
 include_directories(include ${OMPL_INCLUDE_DIRS})
@@ -93,6 +93,7 @@ target_link_libraries(hybrid_astar
     ${OMPL_LIBRARIES}
     ${OpenCV_LIBS}
     CGAL::CGAL
+    yaml-cpp
 )
 
 install(TARGETS ${PROJECT_NAME} tf_broadcaster

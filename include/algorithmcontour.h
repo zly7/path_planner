@@ -58,7 +58,7 @@ namespace HybridAStar {
     std::vector<int> aroundWaypointsIndexOfThroughNarrowPairs; //用来记录狭窄点周围的路径点平均index，方便按照路径排序
     std::vector<keyInfoForThrouthNarrowPair*> keyInfoForThrouthNarrowPairs;
     std::vector<finalPassSpaceInOutSet> finalPassSpaceInOutSets;
-
+    std::vector<std::vector<cv::Point2f>> refineContours;
     std::vector<std::vector<Node2D*>> findContour(nav_msgs::OccupancyGrid::Ptr grid);
     void findNarrowContourPair();
     void findThroughNarrowContourPair(const std::vector<Node2D> & path);
@@ -92,6 +92,7 @@ namespace HybridAStar {
     void savePicturePathAndItNarrowPair(std::vector<Node2D> path2D);
     void savePictureNarrowSpaceBoundary();
     void savePictureNarrowSpaceInputSet();
+    void saveMapCsv(Node3D start,Node3D goal);
     inline void RemoveWallConnection(const std::vector<cv::Point2f>& contour,
                                       const cv::Point2f& add_p,
                                       std::size_t& refined_idx)

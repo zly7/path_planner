@@ -324,6 +324,7 @@ void Planner::plan() {
       Node2D* nSolution2D = Algorithm::aStar2D(nStart2D, nGoal2D, nodes2D, width, height, configurationSpace, visualization);
       smoother.tracePath2D(nSolution2D);
       std::vector<Node2D> path2D=smoother.getPath2D();
+      std::reverse(path2D.begin(),path2D.end());
       path.update2DPath(path2D);//这里是为了画出2D的路径
       path.publishPath2DNodes();
       auto stop = std::chrono::high_resolution_clock::now();
@@ -333,7 +334,6 @@ void Planner::plan() {
       AlgorithmContour algorithmContour;
       algorithmContour.findContour(grid);     
       algorithmContour.findNarrowContourPair();
-      std::reverse(path2D.begin(),path2D.end());
       algorithmContour.findThroughNarrowContourPair(path2D);
       algorithmContour.sortThroughNarrowPairsWaypoints();//按照路径前后重排序狭窄点
       stop  = std::chrono::high_resolution_clock::now();
@@ -341,12 +341,15 @@ void Planner::plan() {
       auto tempDuration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
       std::cout << "寻找到狭窄点对消耗时间: "<< tempDuration.count() << "  ms" << std::endl;
       #ifdef DEBUG_VISUAL_ALGORITHMCONTOUR
-      //AlgorithmContour::visualizeNarrowPairs(algorithmContour.narrowPairs,algorithmContour.gridMap);
+      // AlgorithmContour::visualizeNarrowPairs(algorithmContour.narrowPairs,algorithmContour.gridMap);
       for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizePathAndItNarrowPair(algorithmContour.throughNarrowPairsWaypoints[i],
               algorithmContour.throughNarrowPairs[i],algorithmContour.gridMap);
       }
       #endif
+      if(Constants::saveMapCsv){
+        algorithmContour.saveMapCsv(nStart,nGoal);
+      }
       startTime = std::chrono::high_resolution_clock::now();
       algorithmContour.findKeyInformationForthrouthNarrowPairs();
       algorithmContour.findNarrowPassSpaceForAllPairs(configurationSpace,nGoal);
@@ -465,9 +468,7 @@ void Planner::plan() {
       duration += std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
       tempDuration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
       std::cout << "多次HA搜索消耗时间: "<< tempDuration.count() << "  ms" << std::endl;
-      std::cout << "ALgorithmContour总花时间: "<< duration.count() << "  ms" << std::endl;
-      // SMOOTH THE PATH
-      smoother.smoothPath(voronoiDiagram);
+      std::cout << "AlgorithmContour总花时间: "<< duration.count() << "  ms" << std::endl;
       // CREATE THE UPDATED PATH
       smoothedPath.updatePath(smoother.getPath());
     }else{
@@ -495,19 +496,6 @@ void Planner::plan() {
     smoothedPath.publishPath();
     smoothedPath.publishPathNodes();
     smoothedPath.publishPathVehicles();
-
-    
-    // if(Constants::algorithm == "split_hybrid_astar"){
-    //   path.publishPath2DNodes();
-    //   path.publishPathBoxes();
-    //   smoothedPath.publishPathBoxes();
-    //   smoothedPath.publishPath2DNodes();
-    // }
-
-
-
-    // delete [] nodes3D;
-    // delete [] nodes2D;
     std_msgs::Int32 msg;
     msg.data = -2;  
     pubNotification.publish(msg);

@@ -229,12 +229,14 @@ static const float theDistanceDerterminReverseMiddleDirection= length * 1.5;
 static const bool whetherFuzzyGoal = each_meter_to_how_many_pixel >= 6;
 
 static const bool useArcShot = false;
-static const float tolerance = 0.2 * each_meter_to_how_many_pixel;
+static const float tolerance = 0.3 * each_meter_to_how_many_pixel;
 static const float fuzzyLength = length * 0.25;//现在暂定车长的前后0.25倍
 static const bool useAutoTest = true;
 static const float findNarrowSpaceMoveDistance = deltaHeadingRad * minRadius;
 static const float drwaOffset = 0.05 * each_meter_to_how_many_pixel;
-static const bool whetherSplitSearch = false;
+static const bool whetherSplitSearch = false;//要不要触发每轮的第二次搜索
+static const bool useRandomGeneratingSuccessor = false;
+static const bool saveMapCsv =  true;
 }
 }
 #endif // CONSTANTS

@@ -144,11 +144,11 @@ void Path::addNode(const Node3D& node, int i) {
   pathNode.pose.position.x = node.getX() * Constants::cellSize;
   pathNode.pose.position.y = node.getY() * Constants::cellSize;
   pathNode.pose.position.z = node.getT();
-  if(node.getPrim() < Node3D::dir){
-    pathNode.pose.position.z = 1;
-  }else{
-    pathNode.pose.position.z = -1;
-  }
+  // if(node.getPrim() < Node3D::dir){
+  //   pathNode.pose.position.z = 1;
+  // }else{
+  //   pathNode.pose.position.z = -1;
+  // }
   pathNodes.markers.push_back(pathNode);
 }
 

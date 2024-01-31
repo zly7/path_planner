@@ -5,7 +5,8 @@
 #include <CGAL/Segment_2.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <unordered_set>
-
+#include <yaml-cpp/yaml.h>
+#include <regex>
 using namespace HybridAStar;
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel Kernel;
@@ -82,8 +83,54 @@ std::vector<std::vector<Node2D*>> AlgorithmContour::findContour(nav_msgs::Occupa
     result.push_back(contour);
   }
   this->contoursFromGrid = result;
+  if(Constants::saveMapCsv){
+    this->refineContours = refineContours;
+  }
   
   return result;
+}
+void AlgorithmContour::saveMapCsv(Node3D start,Node3D goal){
+  // std::string packagePath = ros::package::getPath("hybrid_astar");
+  std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
+  std::string yamlPath = packagePath + "/src/path_planner/maps/map.yaml";
+  YAML::Node config = YAML::LoadFile(yamlPath);
+  std::string unique_number = "-1";
+  if (config["image"]) {
+    std::string map_image = config["image"].as<std::string>();
+    size_t tpcap_pos = map_image.find("TPCAP");
+    if (tpcap_pos != std::string::npos) {
+      std::regex number_regex("(\\d+)");
+      std::smatch match;
+      if (std::regex_search(map_image, match, number_regex)) {
+          // 找到了数字，保存在 unique_number 中
+          unique_number = match[0].str();
+      }
+    }
+  }
+  std::string csvPath = packagePath + "/mapCsv/Case"+unique_number+".csv";
+  float mul = 0.1;
+  std::string csvMulPath = packagePath + "/mapCsv/Case"+unique_number+"Mul"+std::to_string(static_cast<int>(1/mul))+".csv";
+  auto saveScaledMap = [&](float scale, const std::string& scaledCsvPath) {
+      std::ofstream scaledFile(scaledCsvPath);
+      if (!scaledFile.is_open()) {
+          std::cerr << "Error opening file: " << scaledCsvPath << std::endl;
+          return;
+      }
+      scaledFile << start.getX() * scale << "," << start.getY() * scale << "," << start.getT() 
+                  << "," << goal.getX() * scale << "," << goal.getY() * scale << "," << goal.getT();
+      scaledFile << "," << refineContours.size();
+      for (const auto& contour : refineContours) {
+        scaledFile << "," << contour.size();
+      }
+      for (const auto& contour : refineContours) {
+          for (const auto& point : contour) {
+              scaledFile << "," << point.x * scale << "," << point.y * scale;
+          }
+      }
+      scaledFile.close();
+  };
+  saveScaledMap(1.0, csvMulPath);//这里原本的大小是放大了10倍的
+  saveScaledMap(mul, csvPath);
 }
 /*为了搜索contour 添加的代码*/
 void AlgorithmContour::AdjecentDistanceFilter(std::vector<std::vector<cv::Point2f>>& contoursInOut) {
@@ -124,7 +171,7 @@ void AlgorithmContour::findNarrowContourPair(){
     float minDistance = Constants::minContourPairDistance;
     float maxDistance = Constants::maxContourPairDistance;
     
-    // 将所有轮廓的节点合并到一个单一的 vector 中
+// 将所有轮廓的节点合并到一个单一的 vector 中
     std::vector<Node2D*> allNodes;
     for (const auto& contour : this->contoursFromGrid) {
         allNodes.insert(allNodes.end(), contour.begin(), contour.end());
