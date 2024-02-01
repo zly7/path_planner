@@ -242,8 +242,7 @@ inline void collisionLookup(Constants::config* lookup) {
           cSpace[Y * size + X] = true;
 
           float lengthOfOneSide = std::sqrt(std::pow(end.x - start.x, 2) + std::pow(end.y - start.y, 2));
-          int lengthOfOneSideInt = std::ceil(lengthOfOneSide);
-
+          int lengthOfOneSideInt = std::ceil(lengthOfOneSide * (1/1.8)); //相当于每1.8取一个格子
           for (int i = 0; i <= lengthOfOneSideInt; ++i) {
               float x = end.x + i * (start.x - end.x) / (float)lengthOfOneSideInt;
               float y = end.y + i * (start.y - end.y) / (float)lengthOfOneSideInt;

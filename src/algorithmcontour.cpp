@@ -108,6 +108,7 @@ void AlgorithmContour::saveMapCsv(Node3D start,Node3D goal){
     }
   }
   std::string csvPath = packagePath + "/mapCsv/Case"+unique_number+".csv";
+  this->TPCAP_index = std::stoi(unique_number);
   float mul = 0.1;
   std::string csvMulPath = packagePath + "/mapCsv/Case"+unique_number+"Mul"+std::to_string(static_cast<int>(1/mul))+".csv";
   auto saveScaledMap = [&](float scale, const std::string& scaledCsvPath) {
@@ -562,7 +563,7 @@ void AlgorithmContour::savePicturePathAndItNarrowPair(std::vector<Node2D> path2D
     }
     // std::string packagePath = ros::package::getPath("hybrid_astar");
     std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
-    std::string imagePath = packagePath + "/picture/PathAndNarrowPairsVisualization.jpg";
+    std::string imagePath = packagePath + "/picture/TPCAP_"+std::to_string(this->TPCAP_index)+"/PathAndNarrowPairsVisualization.jpg";
     // 调整图像大小并保存
     // cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
     cv::flip(mapCopy, mapCopy, 0);
@@ -800,7 +801,7 @@ void AlgorithmContour::savePictureNarrowSpaceBoundary(){
         drawPoints(keyInfo->containingWaypointsSecondBPBackward, mapCopy, cv::Scalar(255,0, 0),mul);
     }
     std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
-    std::string imagePath = packagePath + "/picture/PNarrowSpaceBoundaryVisualization.jpg";
+    std::string imagePath = packagePath + "/picture/TPCAP_"+std::to_string(this->TPCAP_index)+"/PNarrowSpaceBoundaryVisualization.jpg";
     // 调整图像大小并保存
     // cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
     cv::flip(mapCopy, mapCopy, 0);
@@ -979,7 +980,7 @@ void AlgorithmContour::savePictureNarrowSpaceInputSet(){
       }
     }
     std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
-    std::string imagePath = packagePath + "/picture/NarrowSpaceInputSetVisualization.jpg";
+    std::string imagePath = packagePath + "/picture/TPCAP_"+std::to_string(this->TPCAP_index)+"/NarrowSpaceInputSetVisualization.jpg";
     // 调整图像大小并保存
     // cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
     cv::flip(mapCopy, mapCopy, 0);

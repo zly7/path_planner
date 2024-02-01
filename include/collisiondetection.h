@@ -113,7 +113,11 @@ class CollisionDetection {
   }
 
   template<typename T> bool isObstacleThisPoint(const T* node) const {
-    // std::cout<<" idx: "<<node->getIdx()<<" grid:"<<!grid->data[node->getIdx()]<<std::endl;
+      return !grid->data[node->getIdx()];
+  }
+
+  template<typename T> bool isObstacleWidthCircle(const T* node) const {
+      float width = Constants::width;
       return !grid->data[node->getIdx()];
   }
 

@@ -31,8 +31,8 @@ namespace Constants {
 // CONFIG FLAGS
 
 // static const std::string algorithm = "split_hybrid_astar";
-// static const std::string algorithm = "hybrid_astar";
-static const std::string algorithm = "contour_hybrid_astar";
+static const std::string algorithm = "hybrid_astar";
+// static const std::string algorithm = "contour_hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
@@ -58,6 +58,8 @@ static const bool dubins = false;
 static const bool dubinsLookup = false && dubins;
 /// A flag to toggle the 2D heuristic (true = on; false = off)
 static const bool twoD = true;
+/// A flag to toggle the 2D heuristic by Dubin or ReedSheep (true = on; false = off)
+static const bool useDubinReedSheepHeuristic = false;
 
 // _________________
 // GENERAL CONSTANTS

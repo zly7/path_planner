@@ -60,6 +60,7 @@ namespace HybridAStar {
     std::vector<finalPassSpaceInOutSet> finalPassSpaceInOutSets;
     std::vector<std::vector<cv::Point2f>> refineContours;
     std::vector<std::vector<Node2D*>> findContour(nav_msgs::OccupancyGrid::Ptr grid);
+    int TPCAP_index = -1;
     void findNarrowContourPair();
     void findThroughNarrowContourPair(const std::vector<Node2D> & path);
 

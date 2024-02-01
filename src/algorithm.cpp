@@ -542,7 +542,7 @@ void updateHFor3DNode(Node3D& start, const Node3D& goal, Node2D* nodes2D, float*
   #endif
   // if dubins heuristic is activated calculate the shortest path
   // constrained without obstacles
-  if (Constants::dubins) {
+  if (Constants::dubins && Constants::useDubinReedSheepHeuristic) {
     ompl::base::DubinsStateSpace dubinsPath(Constants::r);
     State* dbStart = (State*)dubinsPath.allocState();
     State* dbEnd = (State*)dubinsPath.allocState();
@@ -557,7 +557,8 @@ void updateHFor3DNode(Node3D& start, const Node3D& goal, Node2D* nodes2D, float*
   #ifdef DEBUG_TIME_UPDATEH
   auto startReedSheppTime = std::chrono::high_resolution_clock::now();
   #endif
-  if (Constants::reverse && !Constants::dubins) {
+  //这个reedsheep distance 相当于不考虑障碍物的distance，而且无视半径，觉得没必要计算
+  if (Constants::reverse && !Constants::dubins && Constants::useDubinReedSheepHeuristic) {
     ompl::base::ReedsSheppStateSpace reedsSheppPath(Constants::r);
     State* rsStart = (State*)reedsSheppPath.allocState();
     State* rsEnd = (State*)reedsSheppPath.allocState();
