@@ -4,6 +4,7 @@ using namespace HybridAStar;
 
 // possible directions
 const int Node2D::dir = 8;
+int Node2D::widthForMap = 0;
 // possible movements
 const int Node2D::dx[] = { -1, -1, 0, 1, 1, 1, 0, -1 };
 const int Node2D::dy[] = { 0, 1, 1, 1, 0, -1, -1, -1 };

@@ -20,7 +20,7 @@ Planner::Planner() {
   // _________________
   // TOPICS TO PUBLISH
   pubStart = n.advertise<geometry_msgs::PoseStamped>("/move_base_simple/start", 1);
-
+  pubAlgorithm = n.advertise<std_msgs::String>("/algForHA", 1);
   pubNotification = n.advertise<std_msgs::Int32>("start_notification", 5);
   if(Constants::useAutoTest){
     timerForAutoTest = n.createTimer(ros::Duration(1.0), &Planner::timerForAutoTestCallback, this);
@@ -71,6 +71,9 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map) {  // 这里显然�
   //  ros::Time t0 = ros::Time::now(); 这里没有根据resolution,cellSize修改
   int height = map->info.height;
   int width = map->info.width;
+  Node3D::widthForMap = width;
+  Node2D::widthForMap = width;
+  Node3D::heightForMap = height;
   std::cout << "when setting map in Planner, height: " << height << " width: " << width << std::endl;
   bool** binMap;
   binMap = new bool*[width];
@@ -114,17 +117,6 @@ void Planner::setMap(const nav_msgs::OccupancyGrid::Ptr map) {  // 这里显然�
     msg.data = point_index;  
     pubNotification.publish(msg);
   }
-  // sleep(15);
-  // float centerX = 20*Constants::each_meter_to_how_many_pixel;
-  // float centerY = 20*Constants::each_meter_to_how_many_pixel;
-  // float radius = Constants::r;int indexT = 0;
-  // for(float angel = 0;angel<2*M_PI;angel+=M_PI/20){
-  //   float currentVehicleAngel = Helper::normalizeHeadingRad(angel+M_PI/2);
-  //   Node3D node(centerX+radius*cos(angel),centerY+radius*sin(angel),currentVehicleAngel,0,0,nullptr);
-  //   path.addVehicle(node,indexT++);
-  //   path.publishPathVehicles();
-  //   sleep(1);
-  // }
 }
 
 //###################################################
@@ -182,7 +174,10 @@ void Planner::setGoal(const geometry_msgs::PoseStamped::ConstPtr& end) {
 //###################################################
 //                                      PLAN THE PATH  这个函数是大核心，规划路径
 //###################################################
-void Planner::plan() {
+void Planner::plan() { //plan 这个函数是可能被反复调用的
+  std_msgs::String msgAlg;
+  msgAlg.data = Constants::algorithm;
+  pubAlgorithm.publish(msgAlg);
   // if a start as well as goal are defined go ahead and plan
   if (validStart && validGoal) {
 
@@ -202,12 +197,12 @@ void Planner::plan() {
     float y = goal.pose.position.y / Constants::cellSize;
     float t = tf::getYaw(goal.pose.orientation);
     #ifdef DEBUG_MANUAL_START_GOAL
-    //TPCAP22:173,145,0
+    //TPCAP22:173,145,0 128.2587064677 80.0000000000 8.0694652727
     //TPCAP5:128.2587064677 80.0000000000 8.0694652727
     //TPCAP8:179.0049751244 80.0000000000 8.1156136567
-    x = 173;
-    y = 145;
-    t = Helper::normalizeHeadingRad(0);
+    x = 128.2587064677;
+    y = 80;
+    t = Helper::normalizeHeadingRad(8.06946);
     #endif
 
     // set theta to a value (0,2PI]
@@ -219,12 +214,12 @@ void Planner::plan() {
     y = start.pose.pose.position.y / Constants::cellSize;
     t = tf::getYaw(start.pose.pose.orientation);
     #ifdef DEBUG_MANUAL_START_GOAL
-    // TPCAP22:68 184 4.71
+    // TPCAP22:68 184 4.71 5:80.0000000000 134.7263681592 3.6742185844 
     //TPCAP5:80.0000000000 134.7263681592 3.6742185844 
     //TPCAP8:80.0000000000 109.3532338308 6.5222085871 
-    x = 68;
-    y = 184;
-    t = Helper::normalizeHeadingRad(4.71);
+    x = 80;
+    y = 134.7263681592;
+    t = Helper::normalizeHeadingRad(3.6742);
     #endif
     // set theta to a value (0,2PI]
     t = Helper::normalizeHeadingRad(t);
@@ -264,36 +259,48 @@ void Planner::plan() {
       
       std::vector<Node2D> path2D=smoother.getPath2D();
       std::reverse(path2D.begin(),path2D.end());
-      float deltaL=0.3;
+      float deltaL=0.1 * Constants::each_meter_to_how_many_pixel;
       AlgorithmSplit::node2DToBox(path2D,width,height,configurationSpace,deltaL);
-      float threshold=Constants::width * 1.4;
-      std::vector<Node3D> nodeBou=AlgorithmSplit::findBou(nStart,nGoal,path2D,threshold); //当时陈睿瑶这里没有把path反向
       path.update2DPath(path2D);
-
       path.publishPath2DNodes();
       path.publishPathBoxes();
-      
+      float threshold=Constants::width * 1.4;
+      std::vector<Node3D> nodeBou=AlgorithmSplit::findBou(nStart,nGoal,path2D,threshold); //当时陈睿瑶这里没有把path反向
+      std::vector<multiGoalSet3D> multiGoalsBou;
+      for(size_t k = 0; k<nodeBou.size();k++){
+        if(k==0 || k==nodeBou.size()-1){
+          multiGoalSet3D goals = multiGoalSet3D();
+          goals.addGoal(nodeBou[k]);
+          multiGoalsBou.push_back(goals);
+        }else{
+          multiGoalSet3D goals = multiGoalSet3D::fuzzyOneNodeToSetForSplitAstar(configurationSpace,nodeBou[k]);
+          if(goals.goals.size()>0){
+            multiGoalsBou.push_back(goals);
+          }
+        }
+      }
+      // multiGoalSet3D::printMultiGoalsBou(multiGoalsBou);
       std::cout<<"findBou Finished!"<<std::endl;
-      int k=0;
-      Node3D* nSolution=nullptr;
+      Node3D tempSolution=nStart;
+      Node3D * nSolution = nullptr;
       delete [] nodes2D;
+      
       for(size_t i = 1; i<nodeBou.size() ; i++){
         Node3D* nodes3D = new Node3D[length]();
         Node2D* nodes2D = new Node2D[width * height]();
-        std::cout << "start " << i << " " << nodeBou[i].getX() << " " << nodeBou[i].getY() <<std::endl;
-        std::cout << "end   " << i << " " << nodeBou[i-1].getX() << " " << nodeBou[i-1].getY() <<std::endl;
-        nSolution = Algorithm::hybridAStar(nodeBou[i-1], nodeBou[i], nodes3D, nodes2D, width, height, 
+        nSolution = Algorithm::hybridAStarMultiGoals(tempSolution, multiGoalsBou[i], nodes3D, nodes2D, width, height, 
               configurationSpace, dubinsLookup, visualization);
-        std::cout<<" nSolusion "<<nSolution->getX()<<" "<<nSolution->getY()<<std::endl;
-        std::cout<<" nSolusion end "<<nodeBou[i-1].getX()<<" "<<nodeBou[i-1].getY()<<std::endl;
         // TRACE THE PATH
-        smoother.tracePath(nSolution,0,smoother.getPath());
+        smoother.tracePathAndReverse(nSolution);
+        if(nSolution!=nullptr){
+          tempSolution = *nSolution;
+        }else{
+          std::cout<<"Split A-star第"<<i<<"个目标点搜索失败,出现重大问题"<<std::endl;
+        }
         delete [] nodes3D;
         delete [] nodes2D;
       }
-      path.updatePath(smoother.getPath());
-      smoothedPath.updatePath(smoother.getPath());
-      k++;
+      this->path.updatePath(smoother.getPath());
       auto stop = std::chrono::high_resolution_clock::now();
       auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
       std::cout << "split HA搜索消耗时间: "<< duration.count() << "  ms" << std::endl;

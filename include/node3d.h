@@ -29,7 +29,7 @@ class Node3D {
     this->pred = pred;
     this->o = false;
     this->c = false;
-    this->idx = -1;
+    this->idx = std::min((int)(t / Constants::deltaHeadingRad),Constants::headings-1) + (int)(y) * Constants::headings + (int)(x)* Constants::headings * Node3D::heightForMap;
     this->prim = prim;
   }
 
@@ -71,10 +71,10 @@ class Node3D {
   /// set the cost-to-come (heuristic value)
   void setH(const float& h) { this->h = h; }
   /// set and get the index of the node in the 3D grid
-  int setIdx(int width, int height) { //极端情况下有可能越界和headings正好相等
-    // this->idx = std::min((int)(t / Constants::deltaHeadingRad),Constants::headings-1)* width * height + (int)(y) * width + (int)(x); return idx;
-    this->idx = std::min((int)(t / Constants::deltaHeadingRad),Constants::headings-1) + (int)(y) * Constants::headings + (int)(x)* Constants::headings * height; return idx;
-  }
+  // int setIdx(int width, int height) { //极端情况下有可能越界和headings正好相等
+  //   // this->idx = std::min((int)(t / Constants::deltaHeadingRad),Constants::headings-1)* width * height + (int)(y) * width + (int)(x); return idx;
+  //   this->idx = std::min((int)(t / Constants::deltaHeadingRad),Constants::headings-1) + (int)(y) * Constants::headings + (int)(x)* Constants::headings * height; return idx;
+  // }
   void setPrim(int prim) { this->prim = prim; }
   /// open the node
   void open() { o = true; c = false;}
@@ -126,7 +126,8 @@ class Node3D {
   static std::uniform_real_distribution<> dis; // 分布
   static void initializeVectorsForForward(); // 初始化向量
   static std::vector<Node3D> interpolateDirect(const Node3D& start, const Node3D& end, float interval);
-
+  static int widthForMap;
+  static int heightForMap;
  private:
   /// the x position
   float x;

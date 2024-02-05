@@ -116,10 +116,31 @@ class CollisionDetection {
       return !grid->data[node->getIdx()];
   }
 
-  template<typename T> bool isObstacleWidthCircle(const T* node) const {
+  bool isObstacleWidthCircle(Node2D* node) const {
       float width = Constants::width;
-      return !grid->data[node->getIdx()];
+      float radius = Constants::width / 2; // 假设半径为宽度的一半
+      int centerX = node->getFloatX();
+      int centerY = node->getFloatY();
+      float diagonalRadius = radius * std::sqrt(2) / 2; 
+      std::vector<std::pair<int, int>> directions = {
+          {centerX + radius, centerY},                        // 右
+          {centerX - radius, centerY},                        // 左
+          {centerX, centerY + radius},                        // 上
+          {centerX, centerY - radius},                        // 下
+          {centerX + diagonalRadius, centerY + diagonalRadius}, // 右上
+          {centerX - diagonalRadius, centerY + diagonalRadius}, // 左上
+          {centerX + diagonalRadius, centerY - diagonalRadius}, // 右下
+          {centerX - diagonalRadius, centerY - diagonalRadius}  // 左下
+      };
+      for (const auto& direction : directions) {
+          size_t index = direction.second * Node2D::widthForMap + direction.first;
+          if (index < grid->data.size() && grid->data[index]) {
+              return false; 
+          }
+      }
+      return !grid->data[node->getIdx()]; 
   }
+
 
   /*!
      \brief Calculates the cost of the robot taking a specific configuration q int the World W  这个函数显然还没有完成

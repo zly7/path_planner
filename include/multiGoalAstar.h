@@ -20,7 +20,10 @@ class multiGoalSet3D {
     void addGoals(const std::set<Node3D>& nodeset);
     void addGoals(const std::vector<Node3D>& nodes);
     static multiGoalSet3D fuzzyOneNodeToSet(const CollisionDetection & collectionDection,const Node3D& node);
+    static multiGoalSet3D fuzzyOneNodeToSetForSplitAstar(const CollisionDetection & collectionDection,const Node3D& node); 
     Node3D getRandomGoal();
+    // 函数用于输出multiGoalsBou的内容
+    static void printMultiGoalsBou(const std::vector<multiGoalSet3D>& multiGoalsBou);
 private:
     void updateVirtualCenterNode();
 };

@@ -29,7 +29,7 @@ class Path {
     std::string pathVehicleTopic = "/pathVehicle";
     std::string path2DNodesTopic = "/path2DNodes";
     std::string pathBoxesTopic = "/pathBoxes";
-
+   
     if (smoothed) {
       pathTopic = "/sPath";
       pathNodesTopic = "/sPathNodes";

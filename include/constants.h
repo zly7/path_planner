@@ -30,8 +30,8 @@ namespace Constants {
 // _________________
 // CONFIG FLAGS
 
-// static const std::string algorithm = "split_hybrid_astar";
-static const std::string algorithm = "hybrid_astar";
+static const std::string algorithm = "split_hybrid_astar";
+// static const std::string algorithm = "hybrid_astar";
 // static const std::string algorithm = "contour_hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
@@ -46,7 +46,7 @@ static const bool visualization2D = false && manual;
 static const bool reverse = true;
 /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
 static const bool dubinsShot = true;
-static const bool randomDubinsShot = true && dubinsShot;
+static const bool randomDubinsShot = true && dubinsShot && (algorithm == "contour_hybrid_astar" || algorithm == "hybrid_astar");
 static const float useDubinsShotMinDeltaAngel = (120.0/180.0) * M_PI ;
 /// A flag to toggle the Dubin's heuristic, this should be false, if reversing is enabled (true = on; false = off)
 static const bool dubins = false;
@@ -65,7 +65,7 @@ static const bool useDubinReedSheepHeuristic = false;
 // GENERAL CONSTANTS
 
 /// [#] --- Limits the maximum search depth of the algorithm, possibly terminating without the solution
-static const int iterations = 500000;
+static const int iterations = 5000000;
 static const int iterationsToPrint = 10000;
 /// [m] --- Uniformly adds a padding around the vehicle
 static const double bloating = 0;

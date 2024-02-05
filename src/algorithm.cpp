@@ -93,7 +93,8 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
   start.open();
   // push on priority queue aka open list
   O.push(&start);
-  iPred = start.setIdx(width, height); //这里的3D指的是带有xyt的节点，最后一个t是yaw角，
+  // iPred = start.setIdx(width, height); //这里的3D指的是带有xyt的节点，最后一个t是yaw角，
+  iPred = start.getIdx();
   nodes3D[iPred] = start;
   std::cout<<"start "<<start.getX()<<" "<<start.getY()<< " " << start.getT()<<std::endl;
   // NODE POINTER
@@ -116,7 +117,8 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
     // pop node with lowest cost from priority queue pop出堆的第一步
     nPred = O.top();
     // set index
-    iPred = nPred->setIdx(width, height);
+    // iPred = nPred->setIdx(width, height);
+    iPred = nPred->getIdx();
     iterations++;
 
     // RViz visualization
@@ -196,12 +198,12 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
           for (auto &goal : goalSet.goals){
             nSucc = dubinsShot(*nPred, goal, configurationSpace);
             if (nSucc != nullptr && *nSucc == goal) {  // 这里的相等就很妙，就是整数相等，整数映射空间
-              std::cout << "通过dubinShot 命中结束点" << std::endl;
+              std::cout << "通过直接搜索 命中结束点" << std::endl;
               std::cout<<"nSucc "<<nSucc->getX()<<" "<<nSucc->getY()<<std::endl;
               std::cout<<"goal "<<goal.getX()<<" "<<goal.getY()<<std::endl; 
               return nSucc;
             }
-         }
+          }
         }
         #ifdef DEBUG_TIME_ASTAR3D
         auto stopDubinsShotTime = std::chrono::high_resolution_clock::now();
@@ -216,7 +218,8 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
         // create possible successor
         nSucc = nPred->createSuccessor(i);
         // set index of the successor
-        iSucc = nSucc->setIdx(width, height);
+        // iSucc = nSucc->setIdx(width, height);
+        iSucc = nSucc->getIdx();
 
         // ensure successor is on grid and traversable
         #ifdef DEBUG_TIME_ASTAR3D
@@ -229,7 +232,9 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
         allRuningTimeisTraversal += elapsedisTraversable.count();
         #endif
         if (nSucc->isOnGrid(width, height) && isTraversable) {
-
+          if(nSucc->getY()>Node3D::heightForMap){
+            std::cout<<"nSucc->getY() > Node3D::heightForMap 出现重大失误"<<std::endl;
+          }
           // ensure successor is not on closed list or it has the same index as the predecessor
           if (!nodes3D[iSucc].isClosed() || iPred == iSucc) {
 
@@ -329,7 +334,8 @@ float aStar2DForUpdateHValueOf3DNode(Node2D& start,
   start.open();
   // push on priority queue
   O.push(&start);
-  iPred = start.setIdx(width);
+  // iPred = start.setIdx(width);
+  iPred = start.getIdx();
   nodes2D[iPred] = start;
 
   // NODE POINTER
@@ -341,8 +347,8 @@ float aStar2DForUpdateHValueOf3DNode(Node2D& start,
     // pop node with lowest cost from priority queue
     nPred = O.top();
     // set index
-    iPred = nPred->setIdx(width);
-
+    // iPred = nPred->setIdx(width);
+    iPred = nPred->getIdx();
     // _____________________________
     // LAZY DELETION of rewired node
     // if there exists a pointer this node has already been expanded
@@ -383,12 +389,12 @@ float aStar2DForUpdateHValueOf3DNode(Node2D& start,
           // create possible successor
           nSucc = nPred->createSuccessor(i); //创建后继这里会做g的继承
           // set index of the successor
-          iSucc = nSucc->setIdx(width);
-
+          // iSucc = nSucc->setIdx(width);
+          iSucc = nSucc->getIdx();
           // ensure successor is on grid ROW MAJOR
           // ensure successor is not blocked by obstacle
           // ensure successor is not on closed list
-          if (nSucc->isOnGrid(width, height) &&  configurationSpace.isObstacleThisPoint(nSucc) && !nodes2D[iSucc].isClosed()) {
+          if (nSucc->isOnGrid(width, height) &&  configurationSpace.isObstacleWidthCircle(nSucc) && !nodes2D[iSucc].isClosed()) {
             // calculate new G value
             nSucc->updateG(); //在这里的G应该累加,然而事实上确实累加了
             newG = nSucc->getG();
@@ -441,7 +447,8 @@ Node2D* Algorithm::aStar2D(Node2D& start,
   start.open();
   // push on priority queue
   O.push(&start);
-  iPred = start.setIdx(width);
+  // iPred = start.setIdx(width);
+  iPred = start.getIdx();
   nodes2D[iPred] = start;
 
   // NODE POINTER
@@ -453,8 +460,8 @@ Node2D* Algorithm::aStar2D(Node2D& start,
     // pop node with lowest cost from priority queue
     nPred = O.top();
     // set index
-    iPred = nPred->setIdx(width);
-
+    // iPred = nPred->setIdx(width);
+    iPred = nPred->getIdx();
     // _____________________________
     // LAZY DELETION of rewired node
     // if there exists a pointer this node has already been expanded
@@ -471,7 +478,7 @@ Node2D* Algorithm::aStar2D(Node2D& start,
       nodes2D[iPred].discover();
 
       // RViz visualization
-      if (Constants::visualization2D) {
+      if (Constants::visualization2D && false) {
         visualization.publishNode2DPoses(*nPred);
         visualization.publishNode2DPose(*nPred);
         d.sleep();
@@ -494,8 +501,8 @@ Node2D* Algorithm::aStar2D(Node2D& start,
           // create possible successor
           nSucc = nPred->createSuccessor(i);
           // set index of the successor
-          iSucc = nSucc->setIdx(width);
-
+          // iSucc = nSucc->setIdx(width);
+          iSucc = nSucc->getIdx();
           // ensure successor is on grid ROW MAJOR
           // ensure successor is not blocked by obstacle
           // ensure successor is not on closed list

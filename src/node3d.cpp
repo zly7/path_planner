@@ -2,10 +2,12 @@
 
 using namespace HybridAStar;
 
+
 // CONSTANT VALUES
 // possible directions
 const int Node3D::dir = 3;
-
+int Node3D::widthForMap = 0;
+int Node3D::heightForMap = 0;
 const float Node3D::resolution_mutiplier = Constants::each_meter_to_how_many_pixel;
 const float Node3D::arcLength = Constants::arcLengthForAstarSuccessor;
 const float Node3D::steeringAngle = Node3D::arcLength / Constants::radiusForAstarSuccessor;

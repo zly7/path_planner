@@ -23,6 +23,7 @@
 #include "algorithmcontour.h"
 #include "algorithmsplit.h"
 #include "std_msgs/Int32.h"
+#include <std_msgs/String.h>
 
 namespace HybridAStar {   // 这里是定义了一个namespace HybridAStar
 /*!
@@ -75,6 +76,7 @@ class Planner {
   /// @brief 和测试框架相关
   ros::Publisher pubNotification;
   /// A subscriber for receiving map updates
+  ros::Publisher pubAlgorithm;
   ros::Subscriber subMap;
   /// A subscriber for receiving goal updates
   ros::Subscriber subGoal;

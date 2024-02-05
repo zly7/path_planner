@@ -18,7 +18,6 @@ class Node2D {
   Node2D(): Node2D(0, 0, 0, 0, nullptr) {}
   /// Constructor for a node with the given arguments
   Node2D(int x, int y, float g, float h, Node2D* pred) {
-    this->whether_store_float = false;
     this->x = x;
     this->y = y;
     this->g = g;
@@ -27,7 +26,7 @@ class Node2D {
     this->o = false;
     this->c = false;
     this->d = false;
-    this->idx = -1;
+    this->idx = this->y * Node2D::widthForMap + this->x;
     this->float_x = static_cast<float>(x);
     this->float_y = static_cast<float>(y);
     this->wide = false;
@@ -36,7 +35,6 @@ class Node2D {
   }
 
   Node2D(float x, float y) { //prevent implicit call
-    this->whether_store_float = true;
     this->x = int(x);
     this->y = int(y);
     this->g = 0;
@@ -45,7 +43,7 @@ class Node2D {
     this->o = false;
     this->c = false;
     this->d = false;
-    this->idx = -1;
+    this->idx = this->y * Node2D::widthForMap + this->x;
     this->radius = 0;
     this->float_x = x;
     this->float_y = y;
@@ -92,7 +90,7 @@ class Node2D {
   /// set the cost-to-come (heuristic value)
   void setH(const float& h) { this->h = h; }
   /// set and get the index of the node in the 2D array
-  int setIdx(int width) { 
+  /*int setIdx(int width) { 
     if(this->whether_store_float){
       // std::cout<<"aaa "<< this->float_x<<" "<<this->float_y<<std::endl;
       assert(this->float_x >= 0 && this->float_y >= 0);
@@ -100,7 +98,7 @@ class Node2D {
     }else{
       this->idx = y * width + x; return idx;
     }
-  }
+  }*/
   /// open the node
   void open() { o = true; c = false; }
   /// close the node
@@ -157,7 +155,7 @@ class Node2D {
   static Node2D* middle(const Node2D* a, const Node2D* b) {
       return new Node2D((a->float_x + b->float_x) / 2, (a->float_y + b->float_y) / 2);
   }
-
+  static int widthForMap;
  private:
   /// the x position
   int x;
