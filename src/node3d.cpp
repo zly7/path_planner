@@ -42,6 +42,10 @@ bool Node3D::isOnGrid(const int width, const int height) const {
   return x >= 0 && x < width && y >= 0 && y < height && (int)(t / Constants::deltaHeadingRad) >= 0 && (int)(t / Constants::deltaHeadingRad) < Constants::headings;
 }
 
+bool Node3D::isOnGrid() const {
+  return x >= 0 && x < Node3D::widthForMap && y >= 0 && y < Node3D::heightForMap && (int)(t / Constants::deltaHeadingRad) >= 0 && (int)(t / Constants::deltaHeadingRad) < Constants::headings;
+}
+
 
 //###################################################
 //                                        IS IN RANGE
@@ -152,11 +156,11 @@ bool Node3D::operator == (const Node3D& rhs) const {
           std::abs(t - rhs.t) >= Constants::deltaHeadingNegRad);
 }
 
-bool Node3D::isEqualWithTolerance (const Node3D& rhs) const {
-  return  std::abs(x-rhs.x)<=Constants::tolerance &&
-          std::abs(y-rhs.y)<=Constants::tolerance &&
-          (std::abs(t - rhs.t) <= Constants::deltaHeadingRad ||
-          std::abs(t - rhs.t) >= Constants::deltaHeadingNegRad);
+bool Node3D::isEqualWithTolerance(const Node3D& rhs,Tolerance tol) const {
+  return  std::abs(x-rhs.x)<=tol.distanceTolerance &&
+          std::abs(y-rhs.y)<=tol.distanceTolerance &&
+          (std::abs(t - rhs.t) <= tol.angelTolerance ||
+          std::abs(t - rhs.t) >= 2 * M_PI - tol.angelTolerance);
 }
 
 std::vector<Node3D> Node3D::interpolateDirect(const Node3D& start, const Node3D& end, float interval) {

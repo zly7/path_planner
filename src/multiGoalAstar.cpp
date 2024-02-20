@@ -53,13 +53,13 @@ multiGoalSet3D multiGoalSet3D::fuzzyOneNodeToSet(const CollisionDetection & coll
         float currentX = centerX + currentOffset * cos(vehicleAngle);
         float currentY = centerY + currentOffset * sin(vehicleAngle);
         Node3D currentForwardNode(currentX,currentY,vehicleAngle);
-        if(collectionDection.isTraversable(&currentForwardNode)){
+        if( currentX>=0 && currentY >=0 && currentX < Node3D::widthForMap && currentY < Node3D::heightForMap && collectionDection.isTraversable(&currentForwardNode)){
             returnSet.addGoal(currentForwardNode);
         }
         currentX = centerX - currentOffset * cos(vehicleAngle);
         currentY = centerY - currentOffset * sin(vehicleAngle);
         Node3D currentBackwardNode(currentX,currentY,vehicleAngle);
-        if(collectionDection.isTraversable(&currentBackwardNode)){
+        if( currentX>=0 && currentY >=0 && currentX < Node3D::widthForMap && currentY < Node3D::heightForMap &&collectionDection.isTraversable(&currentBackwardNode)){
             returnSet.addGoal(currentBackwardNode);
         }
     }
@@ -82,7 +82,7 @@ multiGoalSet3D multiGoalSet3D::fuzzyOneNodeToSetForSplitAstar(const CollisionDet
                 for(float deltaA = -5 * Constants::deltaHeadingRad;deltaA < 5 * Constants::deltaHeadingRad;deltaA += Constants::deltaHeadingRad) {
                     float angelVehicle = Helper::normalizeHeadingRad(node.getT() + deltaA);
                     Node3D currentNode(currentX, currentY, angelVehicle); // 使用原始节点的角度
-                    if(collectionDetection.isTraversable(&currentNode)) {
+                    if(currentX>=0 && currentY >=0 && currentX < Node3D::widthForMap && currentY < Node3D::heightForMap && collectionDetection.isTraversable(&currentNode)) {
                         returnSet.addGoal(currentNode);
                     }
                 }   

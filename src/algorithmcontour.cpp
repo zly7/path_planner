@@ -451,15 +451,10 @@ bool AlgorithmContour::two3DPointsWhetherCloseAndReverseDirection(CollisionDetec
     float y1 = middlePoint->getFloatY();
     float x2 = goal.getX();
     float y2 = goal.getY();
-    // float t1 = Helper::normalizeHeadingRad(atan2(centerVerticalUnitVector.y,centerVerticalUnitVector.x));
-    // float t2 = goal.getT();
-    // float deltaAngle = Helper::normalizeHeadingRad(t2 - t1);
-    // Calculate Euclidean distance
     float distance = sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2));
     if (distance >= Constants::theDistanceDerterminReverseMiddleDirection) {
         return false; // Points are too far apart
     }
-
     int steps = int(sqrt((pow(x2 - x1, 2) + pow(y2 - y1, 2))));
     for (int i = 0; i <= steps; ++i) {
         float ratio = static_cast<float>(i) / steps;
@@ -480,7 +475,7 @@ bool AlgorithmContour::two3DPointsWhetherCloseAndReverseDirection(CollisionDetec
     // Dot product of vectors
     float dotProduct = goalDirection.x * centerVerticalUnitVector.x + goalDirection.y * centerVerticalUnitVector.y;
     // Check if angle is acute (cosine is positive)
-    if (dotProduct <= 0) {
+    if (dotProduct <= -0.5) { //这里至少要夹角120度
         return true; // Angle is not acute
     }
     return false; 
@@ -650,7 +645,8 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
     finalCirclePath.clear();
     float currentRotatedAngel = 0;
     float deltaAngel = Constants::findNarrowSpaceMoveDistance/radius;////做一个自适应的angel增加
-    for(currentRotatedAngel=0;currentRotatedAngel<Constants::maxAngleRag;currentRotatedAngel+=deltaAngel){
+    float maxAngel = Constants::maxAngleRag * Constants::minRadius / radius;
+    for(currentRotatedAngel=0;currentRotatedAngel<maxAngel;currentRotatedAngel+=deltaAngel){
       if(radius * currentRotatedAngel > Constants::maxNarrowSpaceArcLength){
         break;
       }
@@ -716,7 +712,7 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
     while(true){
       successFlag = true;
       finalCirclePath.clear();
-      for(float l = 0;l<=Constants::length/2;l+=Constants::findNarrowSpaceMoveDistance){//增加的距离应该和findnarrowspace的契合,这里不应该能倒退，因为是startPoint
+      for(float l = 0;l<=Constants::length/4;l+=Constants::findNarrowSpaceMoveDistance){//增加的距离应该和findnarrowspace的契合,这里不应该能倒退，因为是startPoint
         float pointX=tempStart.getFloatX()+l*tangentVector.x;
         float pointY=tempStart.getFloatY()+l*tangentVector.y;
         Node3D NodeCurrentVehicle =  Node3D(pointX, pointY, Helper::normalizeHeadingRad(angleVehicleCurrent+M_PI*whetherReverse + M_PI*whetherCloseReverseGoal));
@@ -811,10 +807,10 @@ void AlgorithmContour::savePictureNarrowSpaceBoundary(){
 
 
 finalPassSpaceInOutSet AlgorithmContour::findNarrowPassSpaceInputSetOfNode3D(CollisionDetection& configurationSpace,keyInfoForThrouthNarrowPair* inputPair){
-  uint minLength = min(inputPair->containingWaypointsFirstBPBackward.size(), inputPair->containingWaypointsSecondBPBackward.size());
   finalPassSpaceInOutSet resultSet;
   uint size1 = inputPair->containingWaypointsFirstBPBackward.size();
   uint size2 = inputPair->containingWaypointsSecondBPBackward.size();
+  uint minLength = std::min(size1,size2);
   std::vector<Node3D> inSetAllNode;
   int successIndex = 0;
   for(uint i = 0; i < minLength; i++){//这里需要迭代的原因是，中间可能有突出来的障碍物，但是这种情况很少见
@@ -822,10 +818,6 @@ finalPassSpaceInOutSet AlgorithmContour::findNarrowPassSpaceInputSetOfNode3D(Col
     Node3D* nodeSecond = &inputPair->containingWaypointsSecondBPBackward[size2-i-1];
     std::vector<Node3D> resultVector = findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine
       (*nodeFirst,*nodeSecond,*inputPair->centerPoint,inputPair->centerVerticalUnitVector,inputPair->whetherCloseReverseToGoal);
-    // nodeFirst = &inputPair->containingWaypointsFirstBPBackward[i]; //把前面层圆弧的点也加进去
-    // nodeSecond = &inputPair->containingWaypointsSecondBPBackward[i];
-    // std::vector<Node3D> resultVector2 = findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine
-    //   (*nodeFirst,*nodeSecond,*inputPair->centerPoint,inputPair->centerVerticalUnitVector,inputPair->whetherCloseReverseToGoal);
     bool flag = true;
     for(auto node:resultVector){
       if(!configurationSpace.isTraversableWithTolerance(&node,5)){
@@ -843,7 +835,7 @@ finalPassSpaceInOutSet AlgorithmContour::findNarrowPassSpaceInputSetOfNode3D(Col
     }
   }
   if(inSetAllNode.size() == 0){
-    std::cout << "插值集合是空，非常危险！" << std::endl;
+    std::cout << "插值集合是空，非常危险,必定出现问题！" << std::endl;
   }
   resultSet.inSet = inSetAllNode;
   return resultSet;
@@ -912,9 +904,9 @@ std::vector<Node3D> AlgorithmContour::findInputSetOfNode3DByTwoVectorAndMiddleVe
       cv::imshow("visual the middle point", mapCopy); // 显示图像
       cv::waitKey(0); // 等待按键
     }
-    std::vector<Node3D> firstPath = interpolatePath(firstPoint, intersection, 3.0);
+    std::vector<Node3D> firstPath = interpolatePath(firstPoint, intersection, Constants::interpolateGapForInputNarrowSpace);
     // 计算从 Intersection 到 SecondPoint 的路径
-    std::vector<Node3D> secondPath = interpolatePath(intersection,secondPoint, 3.0);
+    std::vector<Node3D> secondPath = interpolatePath(intersection,secondPoint, Constants::interpolateGapForInputNarrowSpace);
     std::vector<Node3D> resultVector;
     // 反转 firstPath 以确保靠近 intersection 的点在前
     std::reverse(firstPath.begin(), firstPath.end());

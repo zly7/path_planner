@@ -53,11 +53,11 @@ Node3D* Algorithm::hybridAStar(Node3D& start,
                                int height,
                                CollisionDetection& configurationSpace,
                                float* dubinsLookup,
-                               Visualize& visualization)
+                               Visualize& visualization,Tolerance tol) 
                               {
   multiGoalSet3D goalSet;
   goalSet.addGoal(goal);
-  return hybridAStarMultiGoals(start, goalSet, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
+  return hybridAStarMultiGoals(start, goalSet, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization, tol);
                                }
 Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
                                multiGoalSet3D& goalSet,
@@ -67,7 +67,7 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
                                int height,
                                CollisionDetection& configurationSpace,
                                float* dubinsLookup,
-                               Visualize& visualization) {
+                               Visualize& visualization,Tolerance tol) {
   if(Constants::visualizationStartAndGoal){
     visualization.publishNode3DStartAndGoal(start, goalSet.virtualCenterNode3D);
   }
@@ -147,7 +147,7 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
       // GOAL TEST //既然能走到这，nPred肯定是通的
       if(nPred->get2DDistance(goalSet.virtualCenterNode3D) < Constants::length){//至少一个车长采用检查goalSet是不是到了吧
         for(auto &goal : goalSet.goals){
-          if ((*nPred).isEqualWithTolerance(goal)) {
+          if ((*nPred).isEqualWithTolerance(goal,tol)) {
             std::cout<<"总迭代次数: "<< iterations<<std::endl;
             std::cout<<"npred "<<nPred->getX()<<" "<<nPred->getY()<< " " << nPred->getT()<<std::endl;
             std::cout<<"goal "<<goal.getX()<<" "<<goal.getY() << ""<< goal.getT()<<std::endl; 
@@ -169,7 +169,7 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
       
       // _______________________
       // SEARCH WITH DUBINS SHOT
-      if (Constants::useArcShot && nPred->isInArcRange(goalSet.virtualCenterNode3D )){
+      if (Constants::useArcShot && nPred->isInArcRange(goalSet.virtualCenterNode3D)){
         for (auto &goal : goalSet.goals){
           nSucc = ArcShot(*nPred, goal, configurationSpace);
           if (nSucc != nullptr && *nSucc == goal) {  // 这里的相等就很妙，就是整数相等，整数映射空间
@@ -232,9 +232,6 @@ Node3D* Algorithm::hybridAStarMultiGoals(Node3D& start,
         allRuningTimeisTraversal += elapsedisTraversable.count();
         #endif
         if (nSucc->isOnGrid(width, height) && isTraversable) {
-          if(nSucc->getY()>Node3D::heightForMap){
-            std::cout<<"nSucc->getY() > Node3D::heightForMap 出现重大失误"<<std::endl;
-          }
           // ensure successor is not on closed list or it has the same index as the predecessor
           if (!nodes3D[iSucc].isClosed() || iPred == iSucc) {
 
@@ -651,7 +648,7 @@ Node3D* Algorithm::dubinsShot(Node3D& start, const Node3D& goal, CollisionDetect
     dubinsNodes[i].setT(Helper::normalizeHeadingRad(q[2]));
     dubinsNodes[i].setPrim(primToInherit);//为了能让prim正确继承是向前还是向后
     // collision check
-    if (configurationSpace.isTraversable(&dubinsNodes[i])) {
+    if ( dubinsNodes[i].isOnGrid() &&configurationSpace.isTraversable(&dubinsNodes[i])) {
 
       // set the predecessor to the previous step
       if (i > 0) {

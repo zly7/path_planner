@@ -1,6 +1,6 @@
-// #define DEBUG_VISUAL_ALGORITHMCONTOUR
+#define DEBUG_VISUAL_ALGORITHMCONTOUR
 // #define DEBUG_MANUAL_START_GOAL
-// #define DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
+#define DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
 // #define DEBUG_VISUAL_COSTMAP
 #define DEBUG_SAVE_PICTURE
 #include "planner.h"
@@ -200,9 +200,10 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
     //TPCAP22:173,145,0 128.2587064677 80.0000000000 8.0694652727
     //TPCAP5:128.2587064677 80.0000000000 8.0694652727
     //TPCAP8:179.0049751244 80.0000000000 8.1156136567
-    x = 128.2587064677;
-    y = 80;
-    t = Helper::normalizeHeadingRad(8.06946);
+    //TPCAP29:569 226 3.1415
+    x = 569;
+    y = 226;
+    t = Helper::normalizeHeadingRad(3.1415);
     #endif
 
     // set theta to a value (0,2PI]
@@ -217,9 +218,10 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
     // TPCAP22:68 184 4.71 5:80.0000000000 134.7263681592 3.6742185844 
     //TPCAP5:80.0000000000 134.7263681592 3.6742185844 
     //TPCAP8:80.0000000000 109.3532338308 6.5222085871 
-    x = 80;
-    y = 134.7263681592;
-    t = Helper::normalizeHeadingRad(3.6742);
+    //TPCAP29:120 364 3.1415
+    x = 120;
+    y = 364;
+    t = Helper::normalizeHeadingRad(3.1415);
     #endif
     // set theta to a value (0,2PI]
     t = Helper::normalizeHeadingRad(t);
@@ -289,7 +291,7 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
         Node3D* nodes3D = new Node3D[length]();
         Node2D* nodes2D = new Node2D[width * height]();
         nSolution = Algorithm::hybridAStarMultiGoals(tempSolution, multiGoalsBou[i], nodes3D, nodes2D, width, height, 
-              configurationSpace, dubinsLookup, visualization);
+              configurationSpace, dubinsLookup, visualization,Tolerance());
         // TRACE THE PATH
         smoother.tracePathAndReverse(nSolution);
         if(nSolution!=nullptr){
@@ -309,7 +311,7 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
       Node3D* nodes3D = new Node3D[length]();
       Node2D* nodes2D = new Node2D[width * height]();
       // FIND THE PATH
-      Node3D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization);
+      Node3D* nSolution = Algorithm::hybridAStar(nStart, nGoal, nodes3D, nodes2D, width, height, configurationSpace, dubinsLookup, visualization,Tolerance());
       // TRACE THE PATH
       smoother.tracePath(nSolution);
       // CREATE THE UPDATED PATH
@@ -393,14 +395,16 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
         multiGoalSet3D goals = multiGoalSet3D();
         goals.addGoals(algorithmContour.finalPassSpaceInOutSets[i].inSet);
         nSolution1 = Algorithm::hybridAStarMultiGoals(tempStart, goals, nodes3D, nodes2DSplitSearch, width, height, 
-            configurationSpace, dubinsLookup, visualization);
+            configurationSpace, dubinsLookup, visualization,Tolerance(2*Constants::tolerance,2*Constants::deltaHeadingRad));
         smoother.tracePathAndReverse(nSolution1);//在h函数里面有可以省略后面两个参数的定义
         if(!Constants::whetherSplitSearch){
           tempStart = *nSolution1;
         }
         #ifdef DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
-        smoothedPath.tempUpdatePathNode(smoother.getPath());
+        smoothedPath.updatePath(smoother.getPath());
+        smoothedPath.publishPath();
         smoothedPath.publishPathNodes();
+        smoothedPath.publishPathVehicles();
         #endif
         #ifdef DEBUG_VISUAL_COSTMAP
         visualization.publishNode3DCosts(nodes3D, width, height, depth);
@@ -418,7 +422,7 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
             // auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(endTime2 - startTime2);
             // std::cout << "删除数组内存申请数组内存花费时间: "<< duration2.count() << "  ms" << std::endl;
             nSolution2= Algorithm::hybridAStar(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), nodes3Dt, nodes2DSplitSearcht, width, height, 
-              configurationSpace, dubinsLookup, visualization);
+              configurationSpace, dubinsLookup, visualization,Tolerance());
             //tempGoal = Algorithm::ArcShot(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), configurationSpace);
             if(nSolution2!=nullptr ){
               smoother.tracePathAndReverse(nSolution2->getPred());
@@ -434,11 +438,7 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
             delete [] nodes3Dt;
             delete [] nodes2DSplitSearcht;
         }
-        #ifdef DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
-        std::cout<<"第"<<i<<"个Set搜索完毕"<<std::endl;
-        smoothedPath.tempUpdatePathNode(smoother.getPath());
-        smoothedPath.publishPathNodes();
-        #endif
+        std::cout<<"第"<<i<<"次搜索结束"<<std::endl;
       }
       Node3D* nodes3D = new Node3D[length]();
       Node2D* nodes2DSplitSearch = new Node2D[width * height]();
@@ -451,10 +451,10 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
       if (Constants::each_meter_to_how_many_pixel >= 6) {
           multiGoalSet3D goalsMulFinal = multiGoalSet3D::fuzzyOneNodeToSet(configurationSpace,nGoal);
           auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? smoother.getPath().back(): nStart;//最后这个节点这里是带方向的
-          tempGoal = Algorithm::hybridAStarMultiGoals(startGoal, goalsMulFinal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization);
+          tempGoal = Algorithm::hybridAStarMultiGoals(startGoal, goalsMulFinal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization,Tolerance());
       } else {
           auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? smoother.getPath().back() : nStart;
-          tempGoal = Algorithm::hybridAStar(startGoal, nGoal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization);
+          tempGoal = Algorithm::hybridAStar(startGoal, nGoal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization,Tolerance());
       }
       if(tempGoal!=nullptr ){//每次都会反向trace一下
         smoother.tracePathAndReverse(tempGoal);
@@ -500,9 +500,6 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
     path.publishPath();
     path.publishPathNodes();
     path.publishPathVehicles();
-    smoothedPath.publishPath();
-    smoothedPath.publishPathNodes();
-    smoothedPath.publishPathVehicles();
     std_msgs::Int32 msg;
     msg.data = -2;  
     pubNotification.publish(msg);

@@ -58,7 +58,7 @@ class Algorithm {
                              int height,
                              CollisionDetection& configurationSpace,
                              float* dubinsLookup,
-                             Visualize& visualization);
+                             Visualize& visualization,Tolerance tol);
 
    static Node3D* hybridAStarMultiGoals(Node3D& start,
                              multiGoalSet3D& goals,
@@ -68,7 +68,7 @@ class Algorithm {
                              int height,
                              CollisionDetection& configurationSpace,
                              float* dubinsLookup,
-                             Visualize& visualization);              
+                             Visualize& visualization,Tolerance tol);              
 
    static Node2D* aStar2D(Node2D& start,
                               const Node2D& goal,
@@ -81,5 +81,6 @@ class Algorithm {
    static Node3D* dubinsShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
    static Node3D* ArcShot(Node3D& start, const Node3D& goal, CollisionDetection& configurationSpace);
 };
+
 }
 #endif // ALGORITHM_H

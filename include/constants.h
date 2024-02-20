@@ -30,9 +30,9 @@ namespace Constants {
 // _________________
 // CONFIG FLAGS
 
-static const std::string algorithm = "split_hybrid_astar";
+// static const std::string algorithm = "split_hybrid_astar";
 // static const std::string algorithm = "hybrid_astar";
-// static const std::string algorithm = "contour_hybrid_astar";
+static const std::string algorithm = "contour_hybrid_astar";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
@@ -46,7 +46,7 @@ static const bool visualization2D = false && manual;
 static const bool reverse = true;
 /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
 static const bool dubinsShot = true;
-static const bool randomDubinsShot = true && dubinsShot && (algorithm == "contour_hybrid_astar" || algorithm == "hybrid_astar");
+static const bool randomDubinsShot = true && dubinsShot;
 static const float useDubinsShotMinDeltaAngel = (120.0/180.0) * M_PI ;
 /// A flag to toggle the Dubin's heuristic, this should be false, if reversing is enabled (true = on; false = off)
 static const bool dubins = false;
@@ -108,18 +108,17 @@ static const float tieBreaker = 0.01;
 /// [#] --- A factor to ensure admissibility of the holonomic with obstacles heuristic
 static const float factor2D = sqrt(5) / sqrt(2) + 1;
 /// [#] --- A movement cost penalty for turning (choosing non straight motion primitives)
-static const float penaltyTurning = 1.1;
+static const float penaltyTurning = 1.05;
 /// [#] --- A movement cost penalty for reversing (choosing motion primitives > 2)
 static const float penaltyReversing = 1.05;
 /// [#] --- A movement cost penalty for change of direction (changing from primitives < 3 to primitives > 2)
-static const float penaltyCOD = 2.0;
+static const float penaltyCOD = 20.0;
 /// [m] --- The distance to the goal when the analytical solution (Dubin's shot) first triggers
 static const float dubinsShotMAXDistance =  10 * length;
 static const float dubinsShotMINDistance = 0.5 * length;
 /// [m]
 static const float arcShotDistance = 2 * length;
-/// [m] --- The step size for the analytical solution (Dubin's shot) primarily relevant for collision checking
-static const float dubinsStepSize = 1 * sqrt(each_meter_to_how_many_pixel);
+
 
 /* For split hybrid A*:
 */
@@ -218,11 +217,14 @@ static const float maxContourPairDistance = width * 1.65;
 static const float maxNarrowSpaceArcLength = length * 1.25; // narrow space 延伸出去的弧度不能太长
 static const int howManyNode2DDeterminesWhetherThroughNarrowContourPair = 3;
 static const int howManyLevelInputPick  = 5; //衡量进入集合应该选取多少层圆弧上的节点
+static const float interpolateGapForInputNarrowSpace = 2;
 static float offsetPercentForHalfVehicleWidth = 1.1;
 /// [m] --- The minimum distance between two nodes in the astar and its successor, the unit is meter
 static const float arcLengthForAstarSuccessor = length / 24;
+/// [m] --- The step size for the analytical solution (Dubin's shot) primarily relevant for collision checking
+static const float dubinsStepSize = arcLengthForAstarSuccessor;
 static const float radiusForAstarSuccessor = r * 1.05;
-static const int toleranceForCollisionCheck = 3;//有些地图太过狭窄，让判断容易忽略反向的问题
+static const int toleranceForCollisionCheck = 2;//有些地图太过狭窄，让判断容易忽略反向的问题
 /*
 */
 static const float DIST_LIMIT = 1.5;

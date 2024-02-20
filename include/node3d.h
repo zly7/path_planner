@@ -6,8 +6,14 @@
 #include "constants.h"
 #include "helper.h"
 #include <iostream>
-
 namespace HybridAStar {
+  class Tolerance {
+  public:
+    float distanceTolerance;
+    float angelTolerance;
+    Tolerance(float distanceTolerance, float angelTolerance) : distanceTolerance(distanceTolerance), angelTolerance(angelTolerance) {}
+    Tolerance() : distanceTolerance(Constants::tolerance), angelTolerance(Constants::deltaHeadingRad) {}
+  };
 /*!
    \brief A three dimensional node class that is at the heart of the algorithm.
 
@@ -90,7 +96,7 @@ class Node3D {
   // CUSTOM OPERATORS
   /// Custom operator to compare nodes. Nodes are equal if their x and y position as well as heading is similar.
   bool operator == (const Node3D& rhs) const;
-  bool isEqualWithTolerance (const Node3D& rhs) const;
+  bool isEqualWithTolerance (const Node3D& rhs,Tolerance tol) const;
   // RANGE CHECKING
   /// Determines whether it is appropriate to find a analytical solution.
   bool isInRange(const Node3D& goal) const;
@@ -100,6 +106,7 @@ class Node3D {
   // GRID CHECKING
   /// Validity check to test, whether the node is in the 3D array.
   bool isOnGrid(const int width, const int height) const;
+  bool isOnGrid() const;
 
   // SUCCESSOR CREATION
   /// Creates a successor in the continous space.
