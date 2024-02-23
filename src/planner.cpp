@@ -201,9 +201,9 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
     //TPCAP5:128.2587064677 80.0000000000 8.0694652727
     //TPCAP8:179.0049751244 80.0000000000 8.1156136567
     //TPCAP29:569 226 3.1415
-    x = 569;
-    y = 226;
-    t = Helper::normalizeHeadingRad(3.1415);
+    x = 173;
+    y = 145;
+    t = Helper::normalizeHeadingRad(0);
     #endif
 
     // set theta to a value (0,2PI]
@@ -219,9 +219,9 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
     //TPCAP5:80.0000000000 134.7263681592 3.6742185844 
     //TPCAP8:80.0000000000 109.3532338308 6.5222085871 
     //TPCAP29:120 364 3.1415
-    x = 120;
-    y = 364;
-    t = Helper::normalizeHeadingRad(3.1415);
+    x = 65;
+    y = 200;
+    t = Helper::normalizeHeadingRad(4.71);
     #endif
     // set theta to a value (0,2PI]
     t = Helper::normalizeHeadingRad(t);
@@ -395,49 +395,25 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
         multiGoalSet3D goals = multiGoalSet3D();
         goals.addGoals(algorithmContour.finalPassSpaceInOutSets[i].inSet);
         nSolution1 = Algorithm::hybridAStarMultiGoals(tempStart, goals, nodes3D, nodes2DSplitSearch, width, height, 
-            configurationSpace, dubinsLookup, visualization,Tolerance(2*Constants::tolerance,2*Constants::deltaHeadingRad));
+            configurationSpace, dubinsLookup, visualization,Tolerance(Constants::tolerance,Constants::deltaHeadingRad));
         smoother.tracePathAndReverse(nSolution1);//在h函数里面有可以省略后面两个参数的定义
         if(!Constants::whetherSplitSearch){
           tempStart = *nSolution1;
         }
         #ifdef DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
+        auto StartTimeSub = std::chrono::high_resolution_clock::now();
         smoothedPath.updatePath(smoother.getPath());
         smoothedPath.publishPath();
         smoothedPath.publishPathNodes();
         smoothedPath.publishPathVehicles();
+        auto stopSub = std::chrono::high_resolution_clock::now();
+        auto durationSub = std::chrono::duration_cast<std::chrono::milliseconds>(stopSub - StartTimeSub);
+        duration -= durationSub;
         #endif
         #ifdef DEBUG_VISUAL_COSTMAP
         visualization.publishNode3DCosts(nodes3D, width, height, depth);
         visualization.publishNode2DCosts(nodes2DSplitSearch, width, height);
         #endif
-        if(Constants::whetherSplitSearch){
-            Node3D* nSolution2 = nullptr; //缓存目标节点
-            Node3D startSecondStage = *nSolution1;
-            // auto startTime2 = std::chrono::high_resolution_clock::now();
-            delete [] nodes3D;
-            delete [] nodes2DSplitSearch;
-            Node3D* nodes3Dt = new Node3D[length]();
-            Node2D* nodes2DSplitSearcht = new Node2D[width * height]();
-            // auto endTime2 = std::chrono::high_resolution_clock::now();
-            // auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(endTime2 - startTime2);
-            // std::cout << "删除数组内存申请数组内存花费时间: "<< duration2.count() << "  ms" << std::endl;
-            nSolution2= Algorithm::hybridAStar(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), nodes3Dt, nodes2DSplitSearcht, width, height, 
-              configurationSpace, dubinsLookup, visualization,Tolerance());
-            //tempGoal = Algorithm::ArcShot(startSecondStage, algorithmContour.keyInfoForThrouthNarrowPairs[i]->getSecondStageMiddleVerticalPoint(), configurationSpace);
-            if(nSolution2!=nullptr ){
-              smoother.tracePathAndReverse(nSolution2->getPred());
-            }
-            if(nSolution2==nullptr){
-              std::cout<<"在Set之间的dubinsShot搜索出现了问题"<<std::endl;
-            }
-            tempStart = *nSolution2; 
-            #ifdef DEBUG_VISUAL_COSTMAP
-            visualization.publishNode3DCosts(nodes3Dt, width, height, depth);
-            visualization.publishNode2DCosts(nodes2DSplitSearcht, width, height);
-            #endif
-            delete [] nodes3Dt;
-            delete [] nodes2DSplitSearcht;
-        }
         std::cout<<"第"<<i<<"次搜索结束"<<std::endl;
       }
       Node3D* nodes3D = new Node3D[length]();
@@ -448,7 +424,7 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
           std::cout<<"目标设置有误，无法搜索"<<std::endl;
         }
       #endif
-      if (Constants::each_meter_to_how_many_pixel >= 6) {
+      if (Constants::whetherFuzzyGoal) {
           multiGoalSet3D goalsMulFinal = multiGoalSet3D::fuzzyOneNodeToSet(configurationSpace,nGoal);
           auto startGoal = algorithmContour.finalPassSpaceInOutSets.size() > 0 ? smoother.getPath().back(): nStart;//最后这个节点这里是带方向的
           tempGoal = Algorithm::hybridAStarMultiGoals(startGoal, goalsMulFinal, nodes3D, nodes2DSplitSearch, width, height, configurationSpace, dubinsLookup, visualization,Tolerance());
@@ -461,7 +437,7 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
       }else{
         std::cout<<"在进入最后一段搜索的时候tempgoal是nullptr"<<std::endl;
       }
-      if(Constants::whetherFuzzyGoal){
+      if(Constants::whetherFuzzyGoal){//如果选择了fuzzyGoal，就要扩展回去的代码
         // Node3D nonConstGoal{nGoal.getX(),nGoal.getY(),nGoal.getT(),0,0,nullptr};
         std::vector<Node3D> interpolatedPath = Node3D::interpolateDirect(*tempGoal,nGoal,Constants::arcLengthForAstarSuccessor);
         smoother.getPathNotConst().insert(smoother.getPathNotConst().end(), interpolatedPath.begin(), interpolatedPath.end());
@@ -476,8 +452,6 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
       tempDuration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
       std::cout << "多次HA搜索消耗时间: "<< tempDuration.count() << "  ms" << std::endl;
       std::cout << "AlgorithmContour总花时间: "<< duration.count() << "  ms" << std::endl;
-      // CREATE THE UPDATED PATH
-      smoothedPath.updatePath(smoother.getPath());
     }else{
       std::cout<<"algorithm error"<<std::endl;
     }

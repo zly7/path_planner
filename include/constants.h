@@ -59,7 +59,7 @@ static const bool dubinsLookup = false && dubins;
 /// A flag to toggle the 2D heuristic (true = on; false = off)
 static const bool twoD = true;
 /// A flag to toggle the 2D heuristic by Dubin or ReedSheep (true = on; false = off)
-static const bool useDubinReedSheepHeuristic = false;
+static const bool useDubinReedSheepHeuristic = true;
 
 // _________________
 // GENERAL CONSTANTS
@@ -108,11 +108,11 @@ static const float tieBreaker = 0.01;
 /// [#] --- A factor to ensure admissibility of the holonomic with obstacles heuristic
 static const float factor2D = sqrt(5) / sqrt(2) + 1;
 /// [#] --- A movement cost penalty for turning (choosing non straight motion primitives)
-static const float penaltyTurning = 1.05;
+static const float penaltyTurning = 1.1;
 /// [#] --- A movement cost penalty for reversing (choosing motion primitives > 2)
 static const float penaltyReversing = 1.05;
 /// [#] --- A movement cost penalty for change of direction (changing from primitives < 3 to primitives > 2)
-static const float penaltyCOD = 20.0;
+static const float penaltyCOD = 5.0;
 /// [m] --- The distance to the goal when the analytical solution (Dubin's shot) first triggers
 static const float dubinsShotMAXDistance =  10 * length;
 static const float dubinsShotMINDistance = 0.5 * length;
@@ -203,7 +203,7 @@ static constexpr color blue = {0.f / 255.f, 191.f / 255.f, 255.f / 255.f};
 /*For algorithmcontour:
 */
 //需要通过的路径对应的转过的角度
-static float maxAngleRag = M_PI * 75 /180 ;
+static float maxAngleRag = M_PI * 60 /180 ;
 //小车可以达到的最大转向角对应的半径长度,这个半径的长度应该是车辆的最小转弯半径
 static float minRadius = r;
 
@@ -230,7 +230,7 @@ static const int toleranceForCollisionCheck = 2;//有些地图太过狭窄，让
 static const float DIST_LIMIT = 1.5;
 static const float ALIGN_ANGLE_COS = cos(15.0/180.0 * M_PI);
 static const float theDistanceDerterminReverseMiddleDirection= length * 1.5;
-static const bool whetherFuzzyGoal = each_meter_to_how_many_pixel >= 6;
+static const bool whetherFuzzyGoal = false && each_meter_to_how_many_pixel >= 6;
 
 static const bool useArcShot = false;
 static const float tolerance = 0.3 * each_meter_to_how_many_pixel;
@@ -241,6 +241,7 @@ static const float drwaOffset = 0.05 * each_meter_to_how_many_pixel;
 static const bool whetherSplitSearch = false;//要不要触发每轮的第二次搜索
 static const bool useRandomGeneratingSuccessor = false;
 static const bool saveMapCsv =  true;
+static const float reverseBackDistance = wheelBase * 0.6;//控制反向退的距离
 }
 }
 #endif // CONSTANTS

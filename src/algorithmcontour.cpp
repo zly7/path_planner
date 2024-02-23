@@ -14,7 +14,7 @@ typedef Kernel::Point_2 Point_2;
 typedef Kernel::Segment_2 Segment_2;
 typedef Kernel::Line_2 Line_2;
 
-
+//这个函数应该是在不用splitSearch的时候已经废弃了
 Node3D keyInfoForThrouthNarrowPair::getSecondStageMiddleVerticalPoint(){
   float tempT;
   if(this->whetherCloseReverseToGoal){
@@ -22,8 +22,8 @@ Node3D keyInfoForThrouthNarrowPair::getSecondStageMiddleVerticalPoint(){
     return Node3D(centerVerticalPoint3D.getX(),centerVerticalPoint3D.getY(),tempT,0,0,nullptr);
   }else{
     tempT = centerVerticalPoint3D.getT();
-    float x = centerVerticalPoint3D.getX() - Constants::wheelBase * cos(tempT);
-    float y = centerVerticalPoint3D.getY() - Constants::wheelBase * sin(tempT);
+    float x = centerVerticalPoint3D.getX() - Constants::reverseBackDistance * cos(tempT);
+    float y = centerVerticalPoint3D.getY() - Constants::reverseBackDistance * sin(tempT);
     return Node3D(x,y,tempT,0,0,nullptr);
   }
 }
@@ -270,6 +270,12 @@ void AlgorithmContour::findThroughNarrowContourPair(const std::vector<Node2D> & 
     for (const auto& narrowPair : this->narrowPairs) {
         std::vector<Node2D> containingWaypointsTorecord;
         int aroundWaypointsIndex = 0;
+        // cv::Mat mapCopy;
+        // cv::cvtColor(gridMap,mapCopy, cv::COLOR_GRAY2BGR);
+        // cv::circle(mapCopy, cv::Point(narrowPair.first->getFloatX(), narrowPair.first->getFloatY()), 3, cv::Scalar(0, 0, 255), -1);
+        // cv::circle(mapCopy, cv::Point(narrowPair.second->getFloatX(), narrowPair.second->getFloatY()), 3, cv::Scalar(0, 0, 255), -1);
+        // cv::imshow("img", mapCopy);
+        // cv::waitKey(0);
         if (this->determineWhetherThrough2DPath(path, narrowPair,containingWaypointsTorecord,aroundWaypointsIndex)) {
             Node2D * nodeRepeat1 = narrowPair.first;
             Node2D * nodeRepeat2 = narrowPair.second;
@@ -306,7 +312,6 @@ bool AlgorithmContour::determineWhetherThrough2DPath(const std::vector<Node2D>& 
           std::pair<Node2D*, Node2D*> narrowPair,std::vector<Node2D> & containingWaypointsTorecord,int & aroundWaypointsIndex){
     int minContinue = Constants::howManyNode2DDeterminesWhetherThroughNarrowContourPair;
     int continueCount = 0;
-    int continueCountMax = 0;
     Node2D* pairFirst = narrowPair.first;
     Node2D* pairSecond = narrowPair.second;
     //应该是再互化同心圆的相交里面
@@ -319,14 +324,10 @@ bool AlgorithmContour::determineWhetherThrough2DPath(const std::vector<Node2D>& 
             continueCount++;
             containingWaypointsTorecord.push_back(node);
             allIndex += index;
-            if(continueCount > continueCountMax){
-                continueCountMax = continueCount;
-            }
         }
         else {
             continueCount = 0;
             if(isFlag==true){
-              aroundWaypointsIndex = allIndex / containingWaypointsTorecord.size();
               break;
             }else{
               allIndex = 0;
@@ -337,6 +338,9 @@ bool AlgorithmContour::determineWhetherThrough2DPath(const std::vector<Node2D>& 
             isFlag = true;
         }
         index++;
+    }
+    if(isFlag==true){//保证一定会出来结束
+      aroundWaypointsIndex = allIndex / containingWaypointsTorecord.size();
     }
     //如果只是在2个圆内，但是没有相交，这个还是不能算作我们需要求的狭窄路径点
     if(isFlag==true && !Helper::isIntersect(pairFirst, pairSecond, &containingWaypointsTorecord[0], &containingWaypointsTorecord[containingWaypointsTorecord.size() - 1])){
@@ -675,7 +679,7 @@ std::vector<Node3D> AlgorithmContour::findNarrowPassSpace(CollisionDetection& co
       cv::imshow("Key Information Visualization", mapCopy);
       cv::waitKey(0);
     }
-    if(flag){//代表我直接找到90度的圆
+    if(flag){//代表我直接找到Constants::maxAngel的圆
       return finalCirclePath;
     }else{
       radius+=Constants::deltaRadius;
@@ -751,8 +755,8 @@ void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &config
     Node2D * realStartPoint = new Node2D(KIpair->firstBoundPoint->getFloatX(),
                                             KIpair->firstBoundPoint->getFloatY());
     if(whetherCloseReverseToGoalSignals == 0 && Constants::useRearAsCenter == 1){
-      realStartPoint->setFloatx(realStartPoint->getFloatX()+CVUR.x*Constants::wheelBase);
-      realStartPoint->setFloaty(realStartPoint->getFloatY()+CVUR.y*Constants::wheelBase);
+      realStartPoint->setFloatx(realStartPoint->getFloatX()+CVUR.x*Constants::reverseBackDistance);
+      realStartPoint->setFloaty(realStartPoint->getFloatY()+CVUR.y*Constants::reverseBackDistance);
     }
     KIpair->containingWaypointsFirstBPBackward=findNarrowPassSpace(configurationSpace,
         KIpair->wireUnitVector.getReverseVector(),CVUR,realStartPoint,1,whetherCloseReverseToGoalSignals);
@@ -760,8 +764,8 @@ void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &config
     realStartPoint = new Node2D(KIpair->secondBoundPoint->getFloatX(),
                                             KIpair->secondBoundPoint->getFloatY());
     if(whetherCloseReverseToGoalSignals == 0 && Constants::useRearAsCenter == 1){
-      realStartPoint->setFloatx(realStartPoint->getFloatX()+CVUR.x*Constants::wheelBase);
-      realStartPoint->setFloaty(realStartPoint->getFloatY()+CVUR.y*Constants::wheelBase);
+      realStartPoint->setFloatx(realStartPoint->getFloatX()+CVUR.x*Constants::reverseBackDistance);
+      realStartPoint->setFloaty(realStartPoint->getFloatY()+CVUR.y*Constants::reverseBackDistance);
     }
     KIpair->containingWaypointsSecondBPBackward=findNarrowPassSpace(configurationSpace,
         KIpair->wireUnitVector,CVUR,realStartPoint,1,whetherCloseReverseToGoalSignals);
@@ -813,7 +817,9 @@ finalPassSpaceInOutSet AlgorithmContour::findNarrowPassSpaceInputSetOfNode3D(Col
   uint minLength = std::min(size1,size2);
   std::vector<Node3D> inSetAllNode;
   int successIndex = 0;
-  for(uint i = 0; i < minLength; i++){//这里需要迭代的原因是，中间可能有突出来的障碍物，但是这种情况很少见
+  uint startIndex = std::floor(float(minLength)/1.5);
+  // uint startIndex = 0;
+  for(uint i = startIndex; i < minLength; i++){//这里需要迭代的原因是，中间可能有突出来的障碍物，但是这种情况很少见
     Node3D* nodeFirst = &inputPair->containingWaypointsFirstBPBackward[size1-i-1];
     Node3D* nodeSecond = &inputPair->containingWaypointsSecondBPBackward[size2-i-1];
     std::vector<Node3D> resultVector = findInputSetOfNode3DByTwoVectorAndMiddleVerticalLine
