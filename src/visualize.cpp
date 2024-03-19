@@ -102,7 +102,7 @@ void Visualize::publishNode2DPose(Node2D& node) {
 //                              ALL EXPANDED 2D NODES
 //###################################################
 void Visualize::publishNode2DPoses(Node2D& node) {
-  if (node.isDiscovered()) {
+  if (node.isDiscovered() || Constants::algorithm=="rrt") {
     geometry_msgs::Pose pose;
     pose.position.x = (node.getX() + 0.5) * Constants::cellSize;
     pose.position.y = (node.getY() + 0.5) * Constants::cellSize;

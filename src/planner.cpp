@@ -1,4 +1,4 @@
-#define DEBUG_VISUAL_ALGORITHMCONTOUR
+// #define DEBUG_VISUAL_ALGORITHMCONTOUR
 // #define DEBUG_MANUAL_START_GOAL
 #define DEBUG_SHOW_INSTANT_ALGORITHMCONTOUR
 // #define DEBUG_VISUAL_COSTMAP
@@ -330,6 +330,7 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
 
       Node2D* nodes2D = new Node2D[width * height]();
       auto startTime = std::chrono::high_resolution_clock::now();
+      // clock_t start = clock();
       Node2D* nSolution2D = Algorithm::aStar2D(nStart2D, nGoal2D, nodes2D, width, height, configurationSpace, visualization);
       smoother.tracePath2D(nSolution2D);
       std::vector<Node2D> path2D=smoother.getPath2D();
@@ -337,18 +338,26 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
       path.update2DPath(path2D);//这里是为了画出2D的路径
       path.publishPath2DNodes();
       auto stop = std::chrono::high_resolution_clock::now();
+      // clock_t end = clock();
       auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      // double duration_clock = static_cast<double>(end - start) / CLOCKS_PER_SEC * 1000;
       std::cout << "2D A* 使用时间: "<< duration.count() << "  ms" << std::endl;
+      // std::cout << "2D A* clock 使用时间:" << duration_clock << "  ms" << std::endl;
       startTime = std::chrono::high_resolution_clock::now();
+      // start = clock();
       AlgorithmContour algorithmContour;
       algorithmContour.findContour(grid);     
       algorithmContour.findNarrowContourPair();
       algorithmContour.findThroughNarrowContourPair(path2D);
       algorithmContour.sortThroughNarrowPairsWaypoints();//按照路径前后重排序狭窄点
       stop  = std::chrono::high_resolution_clock::now();
+      // end = clock();
       duration += std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      // duration_clock += static_cast<double>(end - start) / CLOCKS_PER_SEC * 1000;
       auto tempDuration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      // double tempDuration_clock = static_cast<double>(end - start) / CLOCKS_PER_SEC * 1000;
       std::cout << "寻找到狭窄点对消耗时间: "<< tempDuration.count() << "  ms" << std::endl;
+      // std::cout << "寻找到狭窄点对消耗时间 clock: "<< tempDuration_clock << "  ms" << std::endl;
       #ifdef DEBUG_VISUAL_ALGORITHMCONTOUR
       // AlgorithmContour::visualizeNarrowPairs(algorithmContour.narrowPairs,algorithmContour.gridMap);
       for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
@@ -360,13 +369,18 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
         algorithmContour.saveMapCsv(nStart,nGoal);
       }
       startTime = std::chrono::high_resolution_clock::now();
-      algorithmContour.findKeyInformationForthrouthNarrowPairs();
+      // start = clock();
+      algorithmContour.findKeyInformationForThrouthNarrowPairs();
       algorithmContour.findNarrowPassSpaceForAllPairs(configurationSpace,nGoal);
       algorithmContour.findNarrowPassSpaceInputSetOfNode3DForAllPairs(configurationSpace);
       stop  = std::chrono::high_resolution_clock::now();
+      // end = clock();
       duration += std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      // duration_clock += static_cast<double>(end - start) / CLOCKS_PER_SEC * 1000;
       tempDuration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      // tempDuration_clock = static_cast<double>(end - start) / CLOCKS_PER_SEC * 1000;
       std::cout << "寻找到狭窄点对的可行域消耗时间: "<< tempDuration.count() << "  ms" << std::endl;
+      // std::cout << "寻找到狭窄点对的可行域消耗时间 clock: "<< tempDuration_clock << "  ms" << std::endl;
       #ifdef DEBUG_VISUAL_ALGORITHMCONTOUR
       for(uint i = 0;i<algorithmContour.throughNarrowPairs.size();i++){
         AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(algorithmContour.throughNarrowPairs[i],
@@ -378,11 +392,13 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
       AlgorithmContour::visualizeInsetForThroughNarrowPairs(algorithmContour.finalPassSpaceInOutSets,algorithmContour.gridMap);
       #endif
       #ifdef  DEBUG_SAVE_PICTURE
-      algorithmContour.savePicturePathAndItNarrowPair(path2D);
+      algorithmContour.savePicturePathAndContour(path2D);
+      algorithmContour.savePicturePairAndKeyInformation();
       algorithmContour.savePictureNarrowSpaceBoundary();
       algorithmContour.savePictureNarrowSpaceInputSet();
       #endif  
       startTime = std::chrono::high_resolution_clock::now();
+      // start = clock();
       Node3D tempStart;
 
       for(uint i = 0;i<algorithmContour.finalPassSpaceInOutSets.size();i++){
@@ -448,11 +464,27 @@ void Planner::plan() { //plan 这个函数是可能被反复调用的
       delete [] nodes2D;
 
       stop = std::chrono::high_resolution_clock::now();
+      // end = clock();
       duration += std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      // duration_clock += static_cast<double>(end - start) / CLOCKS_PER_SEC * 1000;
       tempDuration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - startTime);
+      // tempDuration_clock = static_cast<double>(end - start) / CLOCKS_PER_SEC * 1000;
       std::cout << "多次HA搜索消耗时间: "<< tempDuration.count() << "  ms" << std::endl;
+      // std::cout << "多次HA搜索消耗时间 clock: "<< tempDuration_clock << "  ms" << std::endl;
       std::cout << "AlgorithmContour总花时间: "<< duration.count() << "  ms" << std::endl;
-    }else{
+      // std::cout << "AlgorithmContour总花时间 clock: "<< duration_clock << "  ms" << std::endl;
+    }else if(Constants::algorithm == "rrt"){
+      RrtAlgorithm rrtAlgorithm;
+      Node2D* nodes2D = new Node2D[width * height]();
+      Node2D* nSolution2D = rrtAlgorithm.rrtStar(nStart2D, nGoal2D, nodes2D, width, height, configurationSpace, visualization,Constants::iterations);
+      smoother.tracePath2D(nSolution2D);
+      std::vector<Node2D> path2D=smoother.getPath2D();
+      std::reverse(path2D.begin(),path2D.end());
+      path.update2DPath(path2D);
+      path.publishPath2DNodes();
+      delete [] nodes2D;
+    }
+    else{
       std::cout<<"algorithm error"<<std::endl;
     }
  

@@ -384,7 +384,7 @@ void AlgorithmContour::sortThroughNarrowPairsWaypoints(){
   throughNarrowPairs = sortedThroughNarrowPairs;
 }
 
-void AlgorithmContour::findKeyInformationForthrouthNarrowPairs(){
+void AlgorithmContour::findKeyInformationForThrouthNarrowPairs(){
   int index = 0;
   float offsetForHalfVehicleWidth = ((float) (Constants::width+1)) / 2.0 * Constants::offsetPercentForHalfVehicleWidth; //稍微留一些余地,+1也是为了留余地
   for (const auto& pair : this->throughNarrowPairs) {
@@ -414,7 +414,7 @@ void AlgorithmContour::findKeyInformationForthrouthNarrowPairs(){
                                               centerPoint->getFloatY() , 
                                               tempT, 0, 0, nullptr);
       keyInfo->centerVerticalPoint3D = centerVerticalPoint;
-      Node2D* firstBoundPoint = new Node2D(firstPoint->getFloatX() + offsetForHalfVehicleWidth * unitWireVector.x, 
+      Node2D* firstBoundPoint = new Node2D(firstPoint->getFloatX() + offsetForHalfVehicleWidth * unitWireVector.x, //offsetForHalfVehicleWidth 这个offset主要是为了不要完全贴着障碍物
                                           firstPoint->getFloatY() + offsetForHalfVehicleWidth * unitWireVector.y);
       Node2D* secondBoundPoint = new Node2D(secondPoint->getFloatX() - offsetForHalfVehicleWidth * unitWireVector.x, 
                                             secondPoint->getFloatY() - offsetForHalfVehicleWidth * unitWireVector.y);
@@ -537,7 +537,7 @@ void AlgorithmContour::visualizePathAndItNarrowPair(std::vector<Node2D> & path, 
     cv::waitKey(0);
 }
 
-void AlgorithmContour::savePicturePathAndItNarrowPair(std::vector<Node2D> path2D) {
+void AlgorithmContour::savePicturePathAndContour(std::vector<Node2D> path2D) {
     float mul = 10; // 放大倍数
     cv::Mat mapCopy;
     cv::resize(this->gridMap, mapCopy, cv::Size(), mul, mul, cv::INTER_LINEAR);
@@ -547,29 +547,57 @@ void AlgorithmContour::savePicturePathAndItNarrowPair(std::vector<Node2D> path2D
     for(uint i=0;i<path2D.size();i++){
         cv::circle(mapCopy, cv::Point(path2D[i].getFloatX() * mul, path2D[i].getFloatY() * mul), 2 * mul, cv::Scalar(0, 255, 0), -1);
     }
-    for(uint i = 0; i < throughNarrowPairs.size(); i++) {
-        std::pair<Node2D*, Node2D*> narrowPair = throughNarrowPairs[i];
-        std::vector<Node2D> & path = throughNarrowPairsWaypoints[i];
-
-        // 绘制 narrow pair
-        cv::circle(mapCopy, cv::Point(narrowPair.first->getFloatX() * mul, narrowPair.first->getFloatY() * mul), 4 * mul, cv::Scalar(0, 0, 255), -1);
-        cv::circle(mapCopy, cv::Point(narrowPair.second->getFloatX() * mul, narrowPair.second->getFloatY() * mul), 4 * mul, cv::Scalar(255, 0, 0), -1);
-
-        // 绘制路径
-        for(uint j = 0; j < path.size(); j++) {
-            cv::circle(mapCopy, cv::Point(path[j].getFloatX() * mul, path[j].getFloatY() * mul), 2*mul, cv::Scalar(0, 255, 0), -1);
+    for(auto & contour:this->refineContours){
+        for(uint i=0;i<contour.size();i++){
+            cv::circle(mapCopy, cv::Point(contour[i].x * mul, contour[i].y * mul), 2 * mul, cv::Scalar(255, 0, 0), -1);
         }
     }
     // std::string packagePath = ros::package::getPath("hybrid_astar");
     std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
     std::string imagePath = packagePath + "/picture/TPCAP_"+std::to_string(this->TPCAP_index)+"/PathAndNarrowPairsVisualization.jpg";
+    std::string directoryPath = packagePath + "/picture/TPCAP_"+std::to_string(this->TPCAP_index);
+    if (!boost::filesystem::exists(directoryPath)) {
+        boost::filesystem::create_directories(directoryPath);
+    }
     // 调整图像大小并保存
     // cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
     cv::flip(mapCopy, mapCopy, 0);
     // cv::resize(mapCopy, mapCopy, newSize);
     cv::imwrite(imagePath, mapCopy);
 }
+void AlgorithmContour::savePicturePairAndKeyInformation(){
+    float mul = 10; // 放大倍数
+    cv::Mat mapCopy;
+    cv::resize(this->gridMap, mapCopy, cv::Size(), mul, mul, cv::INTER_LINEAR);
+    cv::cvtColor(mapCopy, mapCopy, cv::COLOR_GRAY2BGR);
+    cv::bitwise_not(mapCopy, mapCopy);
+        for(uint i = 0; i < throughNarrowPairs.size(); i++) {
+        std::pair<Node2D*, Node2D*> narrowPair = throughNarrowPairs[i];
+        std::vector<Node2D> & path = throughNarrowPairsWaypoints[i];
 
+        // 绘制 narrow pair
+        cv::circle(mapCopy, cv::Point(narrowPair.first->getFloatX() * mul, narrowPair.first->getFloatY() * mul), 3 * mul, cv::Scalar(0, 0, 255), -1);
+        cv::circle(mapCopy, cv::Point(narrowPair.second->getFloatX() * mul, narrowPair.second->getFloatY() * mul), 3 * mul, cv::Scalar(255, 0, 0), -1);
+    }
+    for(keyInfoForThrouthNarrowPair* keyInfo:keyInfoForThrouthNarrowPairs) {
+        cv::circle(mapCopy,cv::Point(keyInfo->firstBoundPoint->getFloatX()*mul,keyInfo->firstBoundPoint->getFloatY()*mul),2*mul,cv::Scalar(0, 255, 255), -1);
+        cv::circle(mapCopy,cv::Point(keyInfo->secondBoundPoint->getFloatX()*mul,keyInfo->secondBoundPoint->getFloatY()*mul),2*mul,cv::Scalar(0, 255, 255), -1);
+        cv::circle(mapCopy,cv::Point(keyInfo->firstBoundRealPoint.getFloatX()*mul,keyInfo->firstBoundRealPoint.getFloatY()*mul),2*mul,cv::Scalar(19, 69, 139), -1);
+        cv::circle(mapCopy,cv::Point(keyInfo->secondBoundRealPoint.getFloatX()*mul,keyInfo->secondBoundRealPoint.getFloatY()*mul),2*mul,cv::Scalar(19, 69, 139), -1);
+        cv::Point center(keyInfo->centerPoint->getFloatX()*mul, keyInfo->centerPoint->getFloatY()*mul);
+        cv::Point centerVerticalEnd(center.x + Constants::each_meter_to_how_many_pixel * keyInfo->centerVerticalUnitVector.x * mul, center.y + Constants::each_meter_to_how_many_pixel * keyInfo->centerVerticalUnitVector.y * mul);
+        cv::arrowedLine(mapCopy, center, centerVerticalEnd, cv::Scalar(255, 255, 0), int(1.5*mul));
+    }
+    std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
+    std::string imagePath = packagePath + "/picture/TPCAP_"+std::to_string(this->TPCAP_index)+"/PKeyInformation.jpg";
+    std::string directoryPath = packagePath + "/picture/TPCAP_"+std::to_string(this->TPCAP_index);
+    if (!boost::filesystem::exists(directoryPath)) {
+        boost::filesystem::create_directories(directoryPath);
+    }
+    // 调整图像大小并保存
+    cv::flip(mapCopy, mapCopy, 0);
+    cv::imwrite(imagePath, mapCopy);
+}
 void AlgorithmContour::visualizekeyInfoForThrouthNarrowPair(std::pair<Node2D*, Node2D*> narrowPair, keyInfoForThrouthNarrowPair* keyInfo, const cv::Mat & gridMap) {
     cv::Mat mapCopy;
     float mul = AlgorithmContour::visualizeMultiplier;  // 放大倍数
@@ -760,6 +788,7 @@ void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &config
     }
     KIpair->containingWaypointsFirstBPBackward=findNarrowPassSpace(configurationSpace,
         KIpair->wireUnitVector.getReverseVector(),CVUR,realStartPoint,1,whetherCloseReverseToGoalSignals);
+    KIpair->firstBoundRealPoint = *realStartPoint;
     delete realStartPoint;
     realStartPoint = new Node2D(KIpair->secondBoundPoint->getFloatX(),
                                             KIpair->secondBoundPoint->getFloatY());
@@ -769,6 +798,7 @@ void AlgorithmContour::findNarrowPassSpaceForAllPairs(CollisionDetection &config
     }
     KIpair->containingWaypointsSecondBPBackward=findNarrowPassSpace(configurationSpace,
         KIpair->wireUnitVector,CVUR,realStartPoint,1,whetherCloseReverseToGoalSignals);
+    KIpair->secondBoundRealPoint = *realStartPoint;
     delete realStartPoint;
   }
 }
@@ -802,6 +832,10 @@ void AlgorithmContour::savePictureNarrowSpaceBoundary(){
     }
     std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
     std::string imagePath = packagePath + "/picture/TPCAP_"+std::to_string(this->TPCAP_index)+"/PNarrowSpaceBoundaryVisualization.jpg";
+    std::string directoryPath = packagePath + "/picture/TPCAP_"+std::to_string(this->TPCAP_index);
+    if (!boost::filesystem::exists(directoryPath)) {
+        boost::filesystem::create_directories(directoryPath);
+    }
     // 调整图像大小并保存
     // cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
     cv::flip(mapCopy, mapCopy, 0);
@@ -979,6 +1013,10 @@ void AlgorithmContour::savePictureNarrowSpaceInputSet(){
     }
     std::string packagePath = "/home/zly/plannerAll/catkin_path_planner";
     std::string imagePath = packagePath + "/picture/TPCAP_"+std::to_string(this->TPCAP_index)+"/NarrowSpaceInputSetVisualization.jpg";
+    std::string directoryPath = packagePath + "/picture/TPCAP_"+std::to_string(this->TPCAP_index);
+    if (!boost::filesystem::exists(directoryPath)) {
+        boost::filesystem::create_directories(directoryPath);
+    }
     // 调整图像大小并保存
     // cv::Size newSize(500 * gridMap.cols / gridMap.rows, 500);
     cv::flip(mapCopy, mapCopy, 0);

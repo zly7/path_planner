@@ -32,7 +32,8 @@ namespace Constants {
 
 // static const std::string algorithm = "split_hybrid_astar";
 // static const std::string algorithm = "hybrid_astar";
-static const std::string algorithm = "contour_hybrid_astar";
+// static const std::string algorithm = "contour_hybrid_astar";
+static const std::string algorithm = "rrt";
 /// A flag for additional debugging output via `std::cout`
 static const bool coutDEBUG = true;
 /// A flag for the mode (true = manual; false = dynamic). Manual for static map or dynamic for dynamic map.
@@ -41,7 +42,7 @@ static const bool manual = true;
 static const bool visualization = false && manual;
 static const bool visualizationStartAndGoal = true && manual;
 /// A flag for the visualization of 2D nodes (true = on; false = off)
-static const bool visualization2D = false && manual;
+static const bool visualization2D = true && manual;
 /// A flag to toggle reversing (true = on; false = off)
 static const bool reverse = true;
 /// A flag to toggle the connection of the path via Dubin's shot (true = on; false = off)
@@ -60,7 +61,8 @@ static const bool dubinsLookup = false && dubins;
 static const bool twoD = true;
 /// A flag to toggle the 2D heuristic by Dubin or ReedSheep (true = on; false = off)
 static const bool useDubinReedSheepHeuristic = true;
-
+/// @brief 启发值衰减系数，越小代表扩展的搜索节点越看重groud value
+static const float heuristicDecayCoefficient = algorithm=="contour_hybrid_astar"? 0.95:0.98;
 // _________________
 // GENERAL CONSTANTS
 
@@ -80,7 +82,6 @@ static const double rearHangLength = 0.929 * each_meter_to_how_many_pixel;
 /// [m] --- The length of the vehicle
 static const double length = frontHangLength + wheelBase + rearHangLength + 2 * bloating;
 /// [m] --- The minimum turning radius of the vehicle
-// static const float r = 0.5 * each_meter_to_how_many_pixel; 
 static const float r = 3.0059 * each_meter_to_how_many_pixel;
 /// [m] --- The number of discretizations in heading
 static const int headings = 72;

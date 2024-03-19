@@ -51,7 +51,7 @@ class Node3D {
   /// get the cost-to-come (heuristic value)
   float getH() const { return h; }
   /// get the total estimated cost
-  float getC() const { return g + h; }
+  float getC() const { return g + Constants::heuristicDecayCoefficient * h; }
   /// get the index of the node in the 3D array
   int getIdx() const { return idx; }
   /// get the number associated with the motion primitive of the node

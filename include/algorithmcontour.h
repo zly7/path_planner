@@ -9,7 +9,7 @@
 #include "constants.h"
 #include <cmath>
 #include <directionVector.h>
-
+#include <boost/filesystem.hpp>
 namespace HybridAStar {
   class keyInfoForThrouthNarrowPair{
    public:
@@ -17,7 +17,9 @@ namespace HybridAStar {
    Node2D* centerPoint;
    directionVector centerVerticalUnitVector;//中垂线的单位向量
    Node2D* firstBoundPoint;
+   Node2D firstBoundRealPoint;
    Node2D* secondBoundPoint;
+   Node2D secondBoundRealPoint;
    Node3D centerVerticalPoint3D;
    std::vector<Node3D> containingWaypointsFirstBPForward;
    std::vector<Node3D> containingWaypointsFirstBPBackward; ///沿着反方向路径走的圆弧上的点
@@ -66,7 +68,7 @@ namespace HybridAStar {
 
     bool determineWhetherThrough2DPath(const std::vector<Node2D> & path, std::pair<Node2D*, Node2D*> narrowPair,std::vector<Node2D> & containingWaypointsTorecord,int & aroundWaypointsIndex);
     void sortThroughNarrowPairsWaypoints();
-    void findKeyInformationForthrouthNarrowPairs(); //找一些关键的信息比如中垂方向向量，中点，
+    void findKeyInformationForThrouthNarrowPairs(); //找一些关键的信息比如中垂方向向量，中点，
     static bool samplePathAndjudgeAcuteAngel(std::vector<Node2D> & path,directionVector midperpendicular);
     static void visualizeNarrowPairs(std::vector<std::pair<Node2D*,Node2D*>> narrowPairs, const cv::Mat & gridMap);
     static void visualizePathAndItNarrowPair(std::vector<Node2D> & path,std::pair<Node2D*,Node2D*> narrowPair,const cv::Mat & gridMap);
@@ -90,7 +92,8 @@ namespace HybridAStar {
     // static std::vector<Node3D> findArcByTwoPoints(const Node3D & firstPoint,const Node2D& middlePoint, const directionVector middleVerticalLine);
 
     //save picture
-    void savePicturePathAndItNarrowPair(std::vector<Node2D> path2D);
+    void savePicturePathAndContour(std::vector<Node2D> path2D);
+    void savePicturePairAndKeyInformation();
     void savePictureNarrowSpaceBoundary();
     void savePictureNarrowSpaceInputSet();
     void saveMapCsv(Node3D start,Node3D goal);

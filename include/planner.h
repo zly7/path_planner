@@ -24,6 +24,7 @@
 #include "algorithmsplit.h"
 #include "std_msgs/Int32.h"
 #include <std_msgs/String.h>
+#include "rrtalgorithm.h"
 
 namespace HybridAStar {   // 这里是定义了一个namespace HybridAStar
 /*!

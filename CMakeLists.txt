@@ -15,7 +15,7 @@ elseif(COMPILER_SUPPORTS_CXX11)
 else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no C++14 or C++11 support. Please use a different C++ compiler.")
 endif()
-
+find_package(Boost REQUIRED COMPONENTS filesystem system)
 find_package(catkin REQUIRED COMPONENTS
     roscpp
     rospy
@@ -40,6 +40,7 @@ set(SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/algorithmsplit.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/multiGoalAstar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/directionVector.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/rrtalgorithm.cpp
     )
 set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/algorithm.h
@@ -63,6 +64,7 @@ set(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/include/algorithmsplit.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/multiGoalAstar.h
     ${CMAKE_CURRENT_SOURCE_DIR}/include/directionVector.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/rrtalgorithm.h
     )
 add_library(HYAS ${SOURCES} ${HEADERS})
 
@@ -83,7 +85,10 @@ find_package(yaml-cpp REQUIRED)
 include_directories(include ${catkin_INCLUDE_DIRS})
 include_directories(include ${OMPL_INCLUDE_DIRS})
 include_directories(include include)
-
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+    add_definitions("-DHAS_BOOST")
+endif()
 add_executable(tf_broadcaster src/tf_broadcaster.cpp)
 target_link_libraries(tf_broadcaster ${catkin_LIBRARIES})
 
@@ -94,6 +99,7 @@ target_link_libraries(hybrid_astar
     ${OpenCV_LIBS}
     CGAL::CGAL
     yaml-cpp
+    ${Boost_LIBRARIES}
 )
 
 install(TARGETS ${PROJECT_NAME} tf_broadcaster

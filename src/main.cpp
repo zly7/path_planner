@@ -86,7 +86,8 @@ int main(int argc, char** argv) {
   }
   std::string baseDir = "/home/zly/plannerAll/catkin_path_planner/finalTime/";
   std::string dirPath = baseDir + (HybridAStar::Constants::algorithm == "contour_hybrid_astar" ? "ENHA" :
-                                  HybridAStar::Constants::algorithm == "hybrid_astar" ? "HybridA" : "EHHA");
+                                  HybridAStar::Constants::algorithm == "hybrid_astar" ? "HA" : 
+                                  HybridAStar::Constants::algorithm == "rrt" ? "RRT" : "EHHA");
   std::string filePattern = "TPCAP_" + unique_number + "_";
   struct dirent* entry;
   int maxIndex = -1;
